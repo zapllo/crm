@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+import { ThemeProvider } from "@/providers/theme-provider";
+import NextTopLoader from 'nextjs-toploader';
+import { UserProvider } from "@/contexts/userContext";
+
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -25,11 +29,18 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="dark"
+        enableSystem
+        disableTransitionOnChange
       >
-        {children}
-      </body>
+        {/* <FloatingNavbar /> */}
+        <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+          <NextTopLoader />
+          <UserProvider>{children}</UserProvider>
+        </body>
+      </ThemeProvider>
     </html>
   );
 }
