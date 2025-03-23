@@ -23,7 +23,7 @@ interface ILead extends Document {
     contact: Schema.Types.ObjectId; // Reference to Contact model
     amount: number;
     closeDate: Date;
-    source: string;
+    source: Schema.Types.ObjectId;
     assignedTo: Schema.Types.ObjectId; // Reference to the pipeline
     remarks: string;
     pipeline: Schema.Types.ObjectId; // Reference to the pipeline
@@ -59,12 +59,12 @@ const leadSchema = new Schema<ILead>(
         contact: { type: Schema.Types.ObjectId, ref: 'Contact', required: true },
         amount: { type: Number },
         closeDate: { type: Date },
-        source: { type: String },
+        source: { type: Schema.Types.ObjectId, ref: "Source" },
         assignedTo: { type: Schema.Types.ObjectId, ref: "User" },
         remarks: { type: String },
         pipeline: { type: Schema.Types.ObjectId, ref: 'Pipeline', required: true },
         organization: { type: Schema.Types.ObjectId, ref: "Organization" },
-        stage: { type: String, required: true },
+        stage: { type: String, required: true, default:"" },
         timeline: [timelineSchema], // Array of timeline entries
         followups: [{ type: Schema.Types.ObjectId, ref: 'Followup' }], // Array of followup IDs
         notes: [noteSchema], // Array of notes

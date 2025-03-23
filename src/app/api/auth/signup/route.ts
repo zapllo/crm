@@ -1,7 +1,5 @@
-// /app/api/auth/signup/route.ts
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
-
 import { Organization } from '@/models/organizationModel';
 import { Role } from '@/models/roleModel';
 import { User } from '@/models/userModel';
@@ -26,10 +24,10 @@ export async function POST(request: Request) {
             teamSize,
             description,
             country,
-            categories
+            categories = []
         } = data;
 
-        if (!email || !password || !confirmPassword || !firstName || !lastName || !companyName) {
+        if (!email || !password || !confirmPassword || !firstName || !lastName || !companyName || !industry || !teamSize || !description || !country) {
             return NextResponse.json({ error: 'Missing required fields.' }, { status: 400 });
         }
         if (password !== confirmPassword) {
@@ -42,6 +40,10 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Email already registered.' }, { status: 400 });
         }
 
+        // Set trial expiry to 14 days from now
+        const trialExpires = new Date();
+        trialExpires.setDate(trialExpires.getDate() + 14);
+
         // 1) Create Organization
         const organization = await Organization.create({
             companyName,
@@ -49,7 +51,9 @@ export async function POST(request: Request) {
             teamSize,
             description,
             country,
-            categories
+            categories,
+            trialExpires,
+            users: [] // Will be updated after user creation
         });
 
         // 2) Create a default "OrgAdmin" role for that new org
@@ -79,7 +83,13 @@ export async function POST(request: Request) {
             role: orgAdminRole._id
         });
 
-        // 4) Generate JWT & set as HttpOnly cookie
+        // 4) Update organization with user reference
+        await Organization.findByIdAndUpdate(
+            organization._id,
+            { $push: { users: newUser._id } }
+        );
+
+        // 5) Generate JWT & set as HttpOnly cookie
         if (!process.env.JWT_SECRET_KEY) {
             throw new Error('JWT_SECRET_KEY is not set in environment variables.');
         }

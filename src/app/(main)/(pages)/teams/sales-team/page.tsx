@@ -2,17 +2,34 @@
 
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { Pencil, Trash, Plus } from "lucide-react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useUserContext } from "@/contexts/userContext";
 import AddSalesTeamMember from "@/components/modals/sales-team/AddSalesTeamMember";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
 
 interface UserDoc {
   _id: string;
   firstName: string;
   lastName: string;
   email: string;
-  role?: string; // or an object
+  role?: string;
 }
 
 interface SalesTeam {
@@ -23,18 +40,12 @@ interface SalesTeam {
 
 export default function SalesTeamPage() {
   const { user } = useUserContext();
-  // The org ID from the current user context:
   const orgId = user?.organization ?? "";
-
-  // The single "Sales Team" doc, storing its members
   const [team, setTeam] = useState<SalesTeam | null>(null);
-  // All org users (we need them to see who’s already in the team, and who isn’t)
   const [allUsers, setAllUsers] = useState<UserDoc[]>([]);
-  // All roles in the org
   const [allRoles, setAllRoles] = useState<{ _id: string; name: string }[]>([]);
-
-  // For the “Add Member” dialog
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     fetchTeam();
@@ -42,7 +53,6 @@ export default function SalesTeamPage() {
     fetchAllRoles();
   }, []);
 
-  // 1) Fetch the "Sales Team" doc
   const fetchTeam = async () => {
     try {
       const res = await axios.get<SalesTeam>(`/api/team-sales?orgId=${orgId}`);
@@ -52,7 +62,6 @@ export default function SalesTeamPage() {
     }
   };
 
-  // 2) Fetch all users in this org
   const fetchAllUsers = async () => {
     try {
       const res = await axios.get<UserDoc[]>(`/api/members?orgId=${orgId}`);
@@ -62,7 +71,6 @@ export default function SalesTeamPage() {
     }
   };
 
-  // 3) Fetch all roles in the org
   const fetchAllRoles = async () => {
     try {
       const res = await axios.get<{ _id: string; name: string }[]>(
@@ -74,123 +82,149 @@ export default function SalesTeamPage() {
     }
   };
 
-  // Called after we add a user in the AddSalesTeamMember dialog
   const handleAdded = () => {
     setIsAddDialogOpen(false);
-    fetchTeam();     // Refresh team doc to see the new member
-    fetchAllUsers(); // Optionally refresh the org users list
+    fetchTeam();
+    fetchAllUsers();
   };
 
-  // Optional: Remove user from the team
   const handleRemoveMember = async (userId: string) => {
     try {
-      // 1) find the current members array minus this user
       const memberIds = new Set(team?.members.map((m) => m._id) || []);
       memberIds.delete(userId);
-
-      // 2) POST to /api/team-sales to update members
       await axios.post("/api/team-sales", {
         orgId,
         memberIds: Array.from(memberIds),
       });
-
       fetchTeam();
+      setUserToDelete(null);
     } catch (error) {
       console.error("Error removing member:", error);
     }
   };
 
   return (
-    <div className="p-6 text-xs">
-      <h2 className="text-xl font-bold mb-4">Sales Team</h2>
-
-      {/* If no Sales Team doc, let user create it */}
-      {!team && (
-        <div>
-          <p>No Sales Team found. Create one?</p>
-          <Button
-            variant="default"
-            onClick={() =>
-              axios
-                .post("/api/team-sales", { orgId, memberIds: [] })
-                .then(fetchTeam)
-            }
-            className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 text-xs"
-          >
-            Create Sales Team
-          </Button>
-        </div>
-      )}
-
-      {/* If the team doc exists, show the members */}
-      {team && (
-        <>
-          {/* Table listing all members already in the team */}
-          <div className="mb-4">
-            <h3 className="text-sm font-bold mb-2">Team Members</h3>
-            <table className="w-full border border-gray-700 rounded">
-              <thead>
-                <tr className="bg-gray-800 text-white text-left">
-                  <th className="p-2">Name</th>
-                  <th className="p-2">Email</th>
-                  <th className="p-2">Role</th>
-                  <th className="p-2">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {team.members.length === 0 && (
-                  <tr>
-                    <td colSpan={4} className="p-2 text-center text-gray-400">
-                      No members yet
-                    </td>
-                  </tr>
-                )}
-                {team.members.map((mem) => (
-                  <tr key={mem._id} className="border-b">
-                    <td className="p-2">
-                      {mem.firstName} {mem.lastName}
-                    </td>
-                    <td className="p-2">{mem.email}</td>
-                    <td className="p-2">{mem.role || "No Role"}</td>
-                    <td className="p-2 flex gap-2">
-                      <button className="text-blue-500">
-                        <Pencil size={16} />
-                      </button>
-                      <button
-                        onClick={() => handleRemoveMember(mem._id)}
-                        className="text-red-500"
-                      >
-                        <Trash size={16} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+    <div className="p-6 space-y-6">
+      <Card>
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <div>
+              <CardTitle className="text-xl font-semibold">Sales Team</CardTitle>
+              <CardDescription>Manage your sales team members and their roles</CardDescription>
+            </div>
+            {team && (
+              <Button
+                onClick={() => setIsAddDialogOpen(true)}
+                className="bg-[#815bf5] hover:bg-[#815bf5]/90"
+              >
+                <Plus className="h-4 w-4 mr-2" /> Add Member
+              </Button>
+            )}
           </div>
+        </CardHeader>
+        <CardContent>
+          {!team ? (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground mb-4">No Sales Team found. Would you like to create one?</p>
+              <Button
+                onClick={() =>
+                  axios
+                    .post("/api/team-sales", { orgId, memberIds: [] })
+                    .then(fetchTeam)
+                }
+                className="bg-[#815bf5] hover:bg-[#815bf5]/90"
+              >
+                Create Sales Team
+              </Button>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {team.members.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center text-muted-foreground">
+                      No team members yet
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  team.members.map((member) => (
+                    <TableRow key={member._id}>
+                      <TableCell className="font-medium">
+                        {member.firstName} {member.lastName}
+                      </TableCell>
+                      <TableCell>{member.email}</TableCell>
+                      <TableCell>
+                        {member.role ? (
+                          <Badge variant="secondary">{member.role}</Badge>
+                        ) : (
+                          <Badge variant="outline">No Role</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 p-0 text-blue-500 hover:text-blue-700"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Remove Team Member</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to remove {member.firstName} {member.lastName} from the sales team?
+                                  This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleRemoveMember(member._id)}
+                                  className="bg-red-500 hover:bg-red-600"
+                                >
+                                  Remove
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
 
-          {/* Button to open the dialog to add new members */}
-          <Button
-            variant="default"
-            className="bg-green-500 hover:bg-green-600 text-white text-xs px-3 py-1 flex items-center gap-1"
-            onClick={() => setIsAddDialogOpen(true)}
-          >
-            <Plus size={14} /> Add Member
-          </Button>
-        </>
-      )}
-
-      {/* AddSalesTeamMember Dialog */}
       <AddSalesTeamMember
         isOpen={isAddDialogOpen}
         setIsOpen={setIsAddDialogOpen}
         orgId={orgId}
-        // Filter out only users not already in the team
         availableUsers={allUsers.filter(
           (u) => !team?.members.find((m) => m._id === u._id)
         )}
         availableRoles={allRoles}
-        // For manager selection, you could pass entire org or just the team
         allOrgUsers={allUsers}
         onAdded={handleAdded}
       />

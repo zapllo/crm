@@ -2,6 +2,16 @@
 
 import { useState } from "react";
 import axios from "axios";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
+import { Input } from "@/components/ui/input";
+import { Loader2, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface AddFieldFormProps {
     pipelines: { _id: string; name: string }[];
@@ -12,9 +22,10 @@ interface AddFieldFormProps {
 export default function AddFieldForm({ pipelines, onClose, onUpdate }: AddFieldFormProps) {
     const [selectedPipelineId, setSelectedPipelineId] = useState("");
     const [name, setName] = useState("");
-    const [type, setType] = useState("Text");
+    const [type, setType] = useState("");
     const [options, setOptions] = useState<string[]>([]);
     const [optionInput, setOptionInput] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
 
     const handleAddOption = () => {
         if (optionInput.trim()) {
@@ -31,6 +42,7 @@ export default function AddFieldForm({ pipelines, onClose, onUpdate }: AddFieldF
         }
 
         try {
+            setIsLoading(true);
             const response = await axios.patch(`/api/pipelines/${selectedPipelineId}/custom-fields`, {
                 customField: {
                     name,
@@ -40,8 +52,9 @@ export default function AddFieldForm({ pipelines, onClose, onUpdate }: AddFieldF
             });
 
             if (response.status === 200) {
-                onUpdate(); // Refresh the pipelines after successful update
-                onClose(); // Close the modal
+                onUpdate();
+                setIsLoading(false);
+                onClose();
             }
         } catch (error) {
             console.error("Failed to add custom field:", error);
@@ -49,81 +62,93 @@ export default function AddFieldForm({ pipelines, onClose, onUpdate }: AddFieldF
         }
     };
 
-
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
-            <h2 className="text-lg font-semibold text-white">Add Custom Field</h2>
+            {/* <h2 className="text-lg font-semibold dark:text-white">Add Custom Field</h2> */}
             <div>
-                <label className="text-sm text-gray-400">Select Pipeline</label>
-                <select
+                {/* <label className="text-sm text-gray-400">Select Pipeline</label> */}
+                <Select
                     value={selectedPipelineId}
-                    onChange={(e) => setSelectedPipelineId(e.target.value)}
-                    className="w-full p-2 rounded bg-[#0b0d29] outline-none text-white border  focus:ring-2 focus:ring-[#815bf5]"
+                    onValueChange={(value) => setSelectedPipelineId(value)}
                     required
                 >
-                    <option value="">Select a Pipeline</option>
-                    {pipelines.map((pipeline) => (
-                        <option key={pipeline._id} value={pipeline._id}>
-                            {pipeline.name}
-                        </option>
-                    ))}
-                </select>
+                    <SelectTrigger className="w-full  dark:text-white border ">
+                        <SelectValue placeholder="Select a Pipeline" />
+                    </SelectTrigger>
+                    <SelectContent className="z-[100]">
+                        <SelectItem value="All">Select a Pipeline</SelectItem>
+                        {pipelines.map((pipeline) => (
+                            <SelectItem className="hover:bg-accent" key={pipeline._id} value={pipeline._id}>
+                                {pipeline.name}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
             </div>
             <div>
-                <label className="text-sm text-gray-400">Field Name</label>
-                <input
+                {/* <label className="text-sm text-gray-400">Field Name</label> */}
+                <Input
+                    label="Field Name"
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full p-2 rounded bg-[#0b0d29] text-white outline-none border  focus:ring-2 focus:ring-[#815bf5]"
+                    className="w-full p-2 rounded ] dark:text-white outline-none border  "
                     required
                 />
             </div>
             <div>
-                <label className="text-sm text-gray-400">Field Type</label>
-                <select
+                {/* <label className="text-sm text-gray-400">Field Type</label> */}
+                <Select
                     value={type}
-                    onChange={(e) => setType(e.target.value)}
-                    className="w-full p-2 rounded bg-[#0b0d29]  text-white outline-none border  focus:ring-2 focus:ring-[#815bf5]"
+                    onValueChange={(value) => setType(value)}
                 >
-                    <option value="Text">Text</option>
-                    <option value="Date">Date</option>
-                    <option value="Number">Number</option>
-                    <option value="MultiSelect">MultiSelect</option>
-                </select>
+                    <SelectTrigger className="w-full  dark:text-white border ">
+                        <SelectValue placeholder="Select field type" />
+                    </SelectTrigger>
+                    <SelectContent className="z-[100]">
+                        <SelectItem className="hover:bg-accent" value="None">Select Field Type</SelectItem>
+
+                        <SelectItem className="hover:bg-accent" value="Text">Text</SelectItem>
+                        <SelectItem className="hover:bg-accent" value="Date">Date</SelectItem>
+                        <SelectItem className="hover:bg-accent" value="Number">Number</SelectItem>
+                        <SelectItem className="hover:bg-accent" value="MultiSelect">MultiSelect</SelectItem>
+                    </SelectContent>
+                </Select>
             </div>
             {type === "MultiSelect" && (
                 <div>
-                    <label className="text-sm text-gray-400">Options</label>
+                    {/* <label className="text-sm text-gray-400">Options</label> */}
                     <div className="flex items-center space-x-2">
-                        <input
+                        <Input
                             type="text"
+                            label="Add Option"
                             value={optionInput}
                             onChange={(e) => setOptionInput(e.target.value)}
-                            className="flex-grow p-2 rounded bg-transparent text-white  outline-none border  focus:ring-2 focus:ring-[#815bf5]"
+                            className="flex-grow p-2 rounded bg-transparent dark:text-white  outline-none border  "
                             placeholder="Add an option"
                         />
                         <button
                             type="button"
                             onClick={handleAddOption}
-                            className="px-4 py-2 bg-[#815bf5] text-white rounded hover:bg-[#5f31e9]"
+                            className="px-4 py-2 bg-[#815bf5] text-white rounded hover:bg-primary/80 text-sm"
                         >
                             Add
                         </button>
                     </div>
                     <div className="mt-2 space-y-1">
                         {options.map((option, index) => (
-                            <div key={index} className="flex items-center justify-between">
-                                <span className="text-white">{option}</span>
-                                <button
+                            <div key={index} className="flex border-b items-center justify-between">
+                                <span className="dark:text-white text-sm">Option: {option}</span>
+                                <Button
                                     type="button"
+                                    variant='ghost'
                                     onClick={() =>
                                         setOptions((prev) => prev.filter((_, i) => i !== index))
                                     }
-                                    className="text-red-500 hover:underline"
+                                    className="text-red-500 h-8 w-8 rounded-full p-1 hover:underline"
                                 >
-                                    Remove
-                                </button>
+                                    <X className="h-5 text-red-500" />
+                                </Button>
                             </div>
                         ))}
                     </div>
@@ -132,9 +157,9 @@ export default function AddFieldForm({ pipelines, onClose, onUpdate }: AddFieldF
             <div className="flex justify-end">
                 <button
                     type="submit"
-                    className="px-4 py-2 bg-[#815bf5] text-white rounded hover:bg-[#5f31e9]"
+                    className="px-4 py-2 bg-[#815bf5] text-white rounded hover:bg-primary/80 text-sm w-full"
                 >
-                    Add Field
+                    {isLoading ? <Loader2 className="text-white animate-spin h-5" /> : "Add Field"}
                 </button>
             </div>
         </form>

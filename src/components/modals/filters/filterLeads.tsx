@@ -11,12 +11,16 @@ import {
 } from "@/components/ui/dialog";
 import { CrossCircledIcon } from "@radix-ui/react-icons";
 import { Button } from "@/components/ui/button";
-
-// For the left nav sections
-interface Section {
-    name: string;
-  
-}
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Check, Filter, Search, UserRound, Tag, Building2, GitCommitHorizontal } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { cn } from "@/lib/utils";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 // For the data references
 interface TeamUser {
@@ -70,24 +74,24 @@ const FilterModal: React.FC<FilterModalProps> = ({
     onApply,
     onClear,
 }) => {
-    // Local state for the user’s current selections
+    // Local state for the user's current selections
     const [tempAssignedTo, setTempAssignedTo] = useState<string[]>(selectedAssignedTo);
     const [tempStages, setTempStages] = useState<string[]>(selectedStages);
     const [tempTags, setTempTags] = useState<string[]>(selectedTags);
     const [tempCompanies, setTempCompanies] = useState<string[]>(selectedCompanies);
 
-    // For the left nav
-    const [activeSection, setActiveSection] = useState<string>("Assigned To");
+    // For the active tab and search
+    const [activeTab, setActiveTab] = useState<string>("assignedTo");
     const [searchTerm, setSearchTerm] = useState<string>("");
 
-    // Re-initialize local states when the modal opens
+    // Initialize or reset the local states when the modal opens
     useEffect(() => {
         if (isOpen) {
             setTempAssignedTo(selectedAssignedTo);
             setTempStages(selectedStages);
             setTempTags(selectedTags);
             setTempCompanies(selectedCompanies);
-            setActiveSection("Assigned To");
+            setActiveTab("assignedTo");
             setSearchTerm("");
         }
     }, [
@@ -98,20 +102,23 @@ const FilterModal: React.FC<FilterModalProps> = ({
         selectedCompanies
     ]);
 
+    // Calculate total number of filters applied
+    const totalFiltersApplied = tempAssignedTo.length + tempStages.length + tempTags.length + tempCompanies.length;
+
     // Generic toggle helper
+    // Update the toggleItem function to properly handle state
     const toggleItem = (
         item: string,
         collection: string[],
         setCollection: React.Dispatch<React.SetStateAction<string[]>>
     ) => {
-        if (collection.includes(item)) {
-            setCollection(collection.filter((i) => i !== item));
-        } else {
-            setCollection([...collection, item]);
-        }
+        setCollection(prev =>
+            prev.includes(item)
+                ? prev.filter(i => i !== item)
+                : [...prev, item]
+        );
     };
-
-    // “Apply” the local state to the parent
+    // "Apply" the local state to the parent
     const handleApplyFilters = () => {
         onApply({
             assignedTo: tempAssignedTo,
@@ -122,7 +129,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
         onClose();
     };
 
-    // “Clear” means reset local and call parent’s onClear
+    // "Clear" means reset local and call parent's onClear
     const handleClearFilters = () => {
         setTempAssignedTo([]);
         setTempStages([]);
@@ -131,234 +138,353 @@ const FilterModal: React.FC<FilterModalProps> = ({
         onClear();
     };
 
-    // The left nav sections
-    const sections: Section[] = [
-        { name: "Assigned To" },
-        { name: "Stage" },
-        { name: "Tags" },
-        { name: "Companies" },
-    ];
-
-    // The dynamic right content
-    const lowerSearch = searchTerm.toLowerCase();
-
-    const renderRightPanel = () => {
-        switch (activeSection) {
-            case "Assigned To":
-                return (
-                    <div>
-                        <input
-                            type="text"
-                            placeholder="Search members"
-                            className="w-full px-2 py-2 bg-transparent border border-gray-600 outline-none text-white mb-4 rounded-md text-xs"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                        <div className="max-h-60 overflow-y-auto space-y-1">
-                            {teamMembers
-                                .filter((tm) =>
-                                    `${tm.firstName} ${tm.lastName}`
-                                        .toLowerCase()
-                                        .includes(lowerSearch)
-                                )
-                                .map((tm) => {
-                                    const checked = tempAssignedTo.includes(tm._id);
-                                    return (
-                                        <label
-                                            key={tm._id}
-                                            className="flex justify-between cursor-pointer items-center"
-                                        >
-                                            <div className="flex items-center">
-                                                <div className="h-6 w-6 bg-[#815BF5] text-center rounded-full mr-2 text-xs flex items-center justify-center">
-                                                    {tm.firstName.slice(0, 1)}
-                                                    {tm.lastName.slice(0, 1)}
-                                                </div>
-                                                <span className="text-xs">
-                                                    {tm.firstName} {tm.lastName}
-                                                </span>
-                                            </div>
-                                            <input
-                                                type="checkbox"
-                                                checked={checked}
-                                                onChange={() =>
-                                                    toggleItem(tm._id, tempAssignedTo, setTempAssignedTo)
-                                                }
-                                                className="mr-2 rounded-full"
-                                            />
-                                        </label>
-                                    );
-                                })}
-                        </div>
-                    </div>
-                );
-            case "Stage":
-                return (
-                    <div>
-                        <input
-                            type="text"
-                            placeholder="Search stages"
-                            className="w-full px-2 py-2 bg-transparent border border-gray-600 outline-none text-white mb-4 rounded-md text-xs"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                        <div className="max-h-60 overflow-y-auto space-y-1">
-                            {stages
-                                .filter((st) => st.toLowerCase().includes(lowerSearch))
-                                .map((st) => {
-                                    const checked = tempStages.includes(st);
-                                    return (
-                                        <label
-                                            key={st}
-                                            className="flex justify-between cursor-pointer items-center"
-                                        >
-                                            <span className="text-xs">{st}</span>
-                                            <input
-                                                type="checkbox"
-                                                checked={checked}
-                                                onChange={() => toggleItem(st, tempStages, setTempStages)}
-                                                className="mr-2 rounded-full"
-                                            />
-                                        </label>
-                                    );
-                                })}
-                        </div>
-                    </div>
-                );
-            case "Tags":
-                return (
-                    <div>
-                        <input
-                            type="text"
-                            placeholder="Search tags"
-                            className="w-full px-2 py-2 bg-transparent border border-gray-600 outline-none text-white mb-4 rounded-md text-xs"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                        <div className="max-h-60 overflow-y-auto space-y-1">
-                            {tags
-                                .filter((tag) => tag.toLowerCase().includes(lowerSearch))
-                                .map((tag) => {
-                                    const checked = tempTags.includes(tag);
-                                    return (
-                                        <label
-                                            key={tag}
-                                            className="flex justify-between cursor-pointer items-center"
-                                        >
-                                            <span className="text-xs">{tag}</span>
-                                            <input
-                                                type="checkbox"
-                                                checked={checked}
-                                                onChange={() => toggleItem(tag, tempTags, setTempTags)}
-                                                className="mr-2 rounded-full"
-                                            />
-                                        </label>
-                                    );
-                                })}
-                        </div>
-                    </div>
-                );
-            case "Companies":
-                return (
-                    <div>
-                        <input
-                            type="text"
-                            placeholder="Search companies"
-                            className="w-full px-2 py-2 bg-transparent border border-gray-600 outline-none text-white mb-4 rounded-md text-xs"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                        <div className="max-h-60 overflow-y-auto space-y-1">
-                            {companies
-                                .filter((co) => co.toLowerCase().includes(lowerSearch))
-                                .map((co) => {
-                                    const checked = tempCompanies.includes(co);
-                                    return (
-                                        <label
-                                            key={co}
-                                            className="flex justify-between cursor-pointer items-center"
-                                        >
-                                            <span className="text-xs">{co}</span>
-                                            <input
-                                                type="checkbox"
-                                                checked={checked}
-                                                onChange={() =>
-                                                    toggleItem(co, tempCompanies, setTempCompanies)
-                                                }
-                                                className="mr-2 rounded-full"
-                                            />
-                                        </label>
-                                    );
-                                })}
-                        </div>
-                    </div>
-                );
-            default:
-                return null;
-        }
-    };
-
     if (!isOpen) return null;
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-            <DialogContent className="h-fit bg-[#0b0d29] text-white">
+            <DialogContent className="max-w-3xl h-fit z-[100] p-0 gap-0 bg-background">
                 {/* Header */}
-                <DialogHeader>
-                    <div className="flex justify-between items-center border-b py-4 px-6">
-                        <DialogTitle className="text-lg text-white">Filter Leads</DialogTitle>
-                        <DialogClose className="text-white hover:bg-white rounded-full hover:text-[#815BF5]">
-                            <CrossCircledIcon className="scale-150 cursor-pointer " />
+                <DialogHeader className="px-6 py-3 border-b sticky top-0 bg-background z-10">
+                    <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                            <Filter className="h-5 w-5" />
+                            <DialogTitle className="text-lg">Filter Leads</DialogTitle>
+                            {totalFiltersApplied > 0 && (
+                                <Badge variant="secondary" className="ml-2">
+                                    {totalFiltersApplied} active
+                                </Badge>
+                            )}
+                        </div>
+                        <DialogClose className="rounded-full hover:bg-muted">
+                            <CrossCircledIcon className="scale-125 cursor-pointer" />
                         </DialogClose>
                     </div>
                 </DialogHeader>
 
-                <div className="flex">
-                    {/* Left nav with sections */}
-                    <div className="border-r h-[300px] -mt-4 min-w-[120px]">
-                        <ul className="space-y-2 mt-2 text-xs">
-                            {sections.map((section) => (
-                                <li
-                                    key={section.name}
-                                    className={`cursor-pointer text-sm px-8 py-3 w-full flex items-center 
-                    ${activeSection === section.name
-                                            ? "bg-[#282D32]"
-                                            : "hover:bg-[#1f222a]"
-                                        }
-                  `}
-                                    onClick={() => {
-                                        setActiveSection(section.name);
-                                        setSearchTerm("");
-                                    }}
-                                >
-                                    {/* <img src={section.imgSrc} alt={section.name} className="mr-2 h-4" /> */}
-                                    {section.name}
-                                </li>
-                            ))}
-                        </ul>
+                <div className="flex flex-col md:flex-row h-full">
+                    {/* Tabs for mobile, sidebar for desktop */}
+                    <div className="md:hidden w-full border-b">
+                        <Tabs defaultValue="assignedTo" value={activeTab} onValueChange={setActiveTab} className="w-full">
+                            <TabsList className="grid grid-cols-4 w-full">
+                                <TabsTrigger value="assignedTo" className="text-xs">
+                                    Team
+                                    {tempAssignedTo.length > 0 && (
+                                        <Badge variant="secondary" className="ml-1 h-5 w-5 p-0 flex items-center justify-center">
+                                            {tempAssignedTo.length}
+                                        </Badge>
+                                    )}
+                                </TabsTrigger>
+                                <TabsTrigger value="stages" className="text-xs">
+                                    Stages
+                                    {tempStages.length > 0 && (
+                                        <Badge variant="secondary" className="ml-1 h-5 w-5 p-0 flex items-center justify-center">
+                                            {tempStages.length}
+                                        </Badge>
+                                    )}
+                                </TabsTrigger>
+                                <TabsTrigger value="tags" className="text-xs">
+                                    Tags
+                                    {tempTags.length > 0 && (
+                                        <Badge variant="secondary" className="ml-1 h-5 w-5 p-0 flex items-center justify-center">
+                                            {tempTags.length}
+                                        </Badge>
+                                    )}
+                                </TabsTrigger>
+                                <TabsTrigger value="companies" className="text-xs">
+                                    Companies
+                                    {tempCompanies.length > 0 && (
+                                        <Badge variant="secondary" className="ml-1 h-5 w-5 p-0 flex items-center justify-center">
+                                            {tempCompanies.length}
+                                        </Badge>
+                                    )}
+                                </TabsTrigger>
+                            </TabsList>
+                        </Tabs>
                     </div>
 
-                    {/* Right panel */}
-                    <div className="w-[60%] p-4 overflow-y-auto scrollbar-hide" style={{ maxHeight: '400px' }}>
-                        {renderRightPanel()}
+                    {/* Sidebar Navigation (hidden on mobile) */}
+                    <div className="hidden md:block w-56 border-r h-full bg-muted/30">
+                        <div className="space-y-1 p-2">
+                            {[
+                                { id: "assignedTo", label: "Team Members", icon: <UserRound className="h-4 w-4" />, count: tempAssignedTo.length },
+                                { id: "stages", label: "Stages", icon: <GitCommitHorizontal className="h-4 w-4" />, count: tempStages.length },
+                                { id: "tags", label: "Tags", icon: <Tag className="h-4 w-4" />, count: tempTags.length },
+                                { id: "companies", label: "Companies", icon: <Building2 className="h-4 w-4" />, count: tempCompanies.length }
+                            ].map((item) => (
+                                <Button
+                                    key={item.id}
+                                    variant={activeTab === item.id ? "secondary" : "ghost"}
+                                    className={cn(
+                                        "w-full justify-start text-left",
+                                        activeTab === item.id ? "bg-secondary" : ""
+                                    )}
+                                    onClick={() => setActiveTab(item.id)}
+                                >
+                                    <div className="flex items-center gap-2">
+                                        {item.icon}
+                                        <span>{item.label}</span>
+                                    </div>
+                                    {item.count > 0 && (
+                                        <Badge
+                                            variant={activeTab === item.id ? "default" : "secondary"}
+                                            className="ml-auto"
+                                        >
+                                            {item.count}
+                                        </Badge>
+                                    )}
+                                </Button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Content Area */}
+                    <div className="flex-1 overflow-hidden">
+                        <div className="flex flex-col h-full">
+                            {/* Search input */}
+                            <div className="p-4 border-b">
+                                <div className="relative">
+                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                    <Input
+                                        type="text"
+                                        placeholder={`Search ${activeTab === "assignedTo" ? "members" : activeTab}...`}
+                                        className="pl-9"
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Content based on selected tab */}
+                            <ScrollArea className="flex-1 p-4">
+                                <AnimatePresence mode="wait">
+                                    <motion.div
+                                        key={activeTab}
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -10 }}
+                                        transition={{ duration: 0.2 }}
+                                        className="space-y-2"
+                                    >
+                                        {/* Team Members */}
+                                        {activeTab === "assignedTo" && (
+                                            <div className="space-y-2">
+                                                {teamMembers
+                                                    .filter(tm =>
+                                                        `${tm.firstName} ${tm.lastName}`
+                                                            .toLowerCase()
+                                                            .includes(searchTerm.toLowerCase())
+                                                    )
+                                                    .map(tm => (
+                                                        <div
+                                                            key={tm._id}
+                                                            className={cn(
+                                                                "flex items-center justify-between p-3 rounded-md",
+                                                                tempAssignedTo.includes(tm._id)
+                                                                    ? "bg-primary/10 border border-primary/20"
+                                                                    : "hover:bg-muted border border-transparent"
+                                                            )}
+                                                            onClick={() => toggleItem(tm._id, tempAssignedTo, setTempAssignedTo)}
+                                                        >
+                                                            <div className="flex items-center gap-3">
+                                                                <Avatar className="h-8 w-8">
+                                                                    <AvatarFallback className="bg-primary/20 text-primary">
+                                                                        {tm.firstName.charAt(0)}{tm.lastName.charAt(0)}
+                                                                    </AvatarFallback>
+                                                                </Avatar>
+                                                                <span>{tm.firstName} {tm.lastName}</span>
+                                                            </div>
+                                                            <Checkbox
+                                                                checked={tempAssignedTo.includes(tm._id)}
+                                                                onCheckedChange={() => toggleItem(tm._id, tempAssignedTo, setTempAssignedTo)}
+                                                            />
+                                                        </div>
+                                                    ))}
+                                                {teamMembers.filter(tm =>
+                                                    `${tm.firstName} ${tm.lastName}`
+                                                        .toLowerCase()
+                                                        .includes(searchTerm.toLowerCase())
+                                                ).length === 0 && (
+                                                        <div className="text-center p-8 text-muted-foreground">
+                                                            No team members found matching your search
+                                                        </div>
+                                                    )}
+                                            </div>
+                                        )}
+
+                                        {/* Stages */}
+                                        {activeTab === "stages" && (
+                                            <div className="space-y-2">
+                                                {stages
+                                                    .filter(stage =>
+                                                        stage.toLowerCase().includes(searchTerm.toLowerCase())
+                                                    )
+                                                    .map(stage => (
+                                                        <div
+                                                            key={stage}
+                                                            className={cn(
+                                                                "flex items-center justify-between p-3 rounded-md",
+                                                                tempStages.includes(stage)
+                                                                    ? "bg-primary/10 border border-primary/20"
+                                                                    : "hover:bg-muted border border-transparent"
+                                                            )}
+                                                            onClick={() => toggleItem(stage, tempStages, setTempStages)}
+                                                        >
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="h-2 w-2 rounded-full bg-primary"></div>
+                                                                <span>{stage}</span>
+                                                            </div>
+                                                            <Checkbox
+                                                                checked={tempStages.includes(stage)}
+                                                                onCheckedChange={() => toggleItem(stage, tempStages, setTempStages)}
+                                                            />
+                                                        </div>
+                                                    ))}
+                                                {stages.filter(stage =>
+                                                    stage.toLowerCase().includes(searchTerm.toLowerCase())
+                                                ).length === 0 && (
+                                                        <div className="text-center p-8 text-muted-foreground">
+                                                            No stages found matching your search
+                                                        </div>
+                                                    )}
+                                            </div>
+                                        )}
+
+                                        {/* Tags */}
+                                        {activeTab === "tags" && (
+                                            <div className="space-y-2">
+                                                {tags
+                                                    .filter(tag =>
+                                                        tag.toLowerCase().includes(searchTerm.toLowerCase())
+                                                    )
+                                                    .map(tag => (
+                                                        <div
+                                                            key={tag}
+                                                            className={cn(
+                                                                "flex items-center justify-between p-3 rounded-md",
+                                                                tempTags.includes(tag)
+                                                                    ? "bg-primary/10 border border-primary/20"
+                                                                    : "hover:bg-muted border border-transparent"
+                                                            )}
+                                                            onClick={() => toggleItem(tag, tempTags, setTempTags)}
+                                                        >
+                                                            <div className="flex items-center gap-3">
+                                                                <Badge variant="outline" className="bg-muted/50">
+                                                                    <Tag className="h-3 w-3 mr-1" />
+                                                                    {tag}
+                                                                </Badge>
+                                                            </div>
+                                                            <Checkbox
+                                                                checked={tempTags.includes(tag)}
+                                                                onCheckedChange={() => toggleItem(tag, tempTags, setTempTags)}
+                                                            />
+                                                        </div>
+                                                    ))}
+                                                {tags.filter(tag =>
+                                                    tag.toLowerCase().includes(searchTerm.toLowerCase())
+                                                ).length === 0 && (
+                                                        <div className="text-center p-8 text-muted-foreground">
+                                                            No tags found matching your search
+                                                        </div>
+                                                    )}
+                                            </div>
+                                        )}
+
+                                        {/* Companies */}
+                                        {activeTab === "companies" && (
+                                            <div className="space-y-2">
+                                                {companies
+                                                    .filter(company =>
+                                                        company.toLowerCase().includes(searchTerm.toLowerCase())
+                                                    )
+                                                    .map(company => (
+                                                        <div
+                                                            key={company}
+                                                            className={cn(
+                                                                "flex items-center justify-between p-3 rounded-md",
+                                                                tempCompanies.includes(company)
+                                                                    ? "bg-primary/10 border border-primary/20"
+                                                                    : "hover:bg-muted border border-transparent"
+                                                            )}
+                                                            onClick={() => toggleItem(company, tempCompanies, setTempCompanies)}
+                                                        >
+                                                            <div className="flex items-center gap-3">
+                                                                <Building2 className="h-4 w-4 text-muted-foreground" />
+                                                                <span>{company}</span>
+                                                            </div>
+                                                            <Checkbox
+                                                                checked={tempCompanies.includes(company)}
+                                                                onCheckedChange={() => toggleItem(company, tempCompanies, setTempCompanies)}
+                                                            />
+                                                        </div>
+                                                    ))}
+                                                {companies.filter(company =>
+                                                    company.toLowerCase().includes(searchTerm.toLowerCase())
+                                                ).length === 0 && (
+                                                        <div className="text-center p-8 text-muted-foreground">
+                                                            No companies found matching your search
+                                                        </div>
+                                                    )}
+                                            </div>
+                                        )}
+                                    </motion.div>
+                                </AnimatePresence>
+                            </ScrollArea>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Filter Summary Bar */}
+                <div className="p-4 border-t">
+                    <div className="flex flex-wrap gap-2 mb-3">
+                        {tempAssignedTo.length > 0 && (
+                            <Badge variant="secondary" className="flex items-center gap-1">
+                                <UserRound className="h-3 w-3" />
+                                {tempAssignedTo.length} Team {tempAssignedTo.length === 1 ? 'Member' : 'Members'}
+                            </Badge>
+                        )}
+                        {tempStages.length > 0 && (
+                            <Badge variant="secondary" className="flex items-center gap-1">
+                                <GitCommitHorizontal className="h-3 w-3" />
+                                {tempStages.length} {tempStages.length === 1 ? 'Stage' : 'Stages'}
+                            </Badge>
+                        )}
+                        {tempTags.length > 0 && (
+                            <Badge variant="secondary" className="flex items-center gap-1">
+                                <Tag className="h-3 w-3" />
+                                {tempTags.length} {tempTags.length === 1 ? 'Tag' : 'Tags'}
+                            </Badge>
+                        )}
+                        {tempCompanies.length > 0 && (
+                            <Badge variant="secondary" className="flex items-center gap-1">
+                                <Building2 className="h-3 w-3" />
+                                {tempCompanies.length} {tempCompanies.length === 1 ? 'Company' : 'Companies'}
+                            </Badge>
+                        )}
                     </div>
                 </div>
 
                 {/* Footer buttons */}
-                <DialogFooter>
-                    <div className="flex justify-between px-6 space-x-4 py-4">
+                <DialogFooter className="px-6 py-4 border-t">
+                    <div className="flex justify-between w-full gap-4">
                         <Button
                             variant="outline"
-                            className="text-xs"
                             onClick={handleClearFilters}
+                            className="flex-1 sm:flex-none"
                         >
-                            Clear
+                            Clear All
                         </Button>
                         <Button
                             variant="default"
-                            className="bg-[#017a5b] text-white hover:bg-green-600 text-xs"
+                            className="flex-1 sm:flex-none flex items-center gap-2"
                             onClick={handleApplyFilters}
                         >
+                            <Check className="h-4 w-4" />
                             Apply Filters
+                            {totalFiltersApplied > 0 && (
+                                <Badge variant="secondary" className="ml-1">
+                                    {totalFiltersApplied}
+                                </Badge>
+                            )}
                         </Button>
                     </div>
                 </DialogFooter>

@@ -1,28 +1,25 @@
-
 'use client'
 
-import InfoBar from '@/components/infobar'
 import CRMSidebar from '@/components/sidebar/crmSidebar'
-import SettingsOptions from '@/components/sidebar/settingsSidebar'
-import { Button } from '@/components/ui/button'
-import axios from 'axios'
-import Link from 'next/link'
-import React, { useEffect, useState } from 'react'
+import React from 'react'
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable"
 
 type Props = { children: React.ReactNode }
 
 const Layout = (props: Props) => {
-
     return (
-        <div className='flex overflow-hidden mt-12 scrollbar-hide h-full '>
-            <div className="flex-shrink-0 w-[250px]">
-                <CRMSidebar />
-            </div>
-            {/* Main content area */}
-            <div className="flex-grow overflow-y-scroll scrollbar-hide">
-                {/* <InfoBar /> */}
-                {props.children}
-            </div>
+        <div className='h-[calc(100vh-3rem)] mt-12 overflow-hidden'>
+            <ResizablePanelGroup direction="horizontal">
+                <ResizablePanel defaultSize={25} minSize={20} maxSize={30}>
+                    <CRMSidebar />
+                </ResizablePanel>
+                <ResizableHandle withHandle />
+                <ResizablePanel defaultSize={75}>
+                    <div className="h-full overflow-auto">
+                        {props.children}
+                    </div>
+                </ResizablePanel>
+            </ResizablePanelGroup>
         </div>
     )
 }

@@ -66,7 +66,7 @@ export default function EditCompany({ isOpen, setIsOpen, company, onCompanyUpdat
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="max-w-lg p-6">
+      <DialogContent className="max-w-lg p-6 z-[100] ">
         <DialogHeader>
           <DialogTitle>Edit Company</DialogTitle>
         </DialogHeader>
@@ -75,17 +75,6 @@ export default function EditCompany({ isOpen, setIsOpen, company, onCompanyUpdat
         <Input label="Tax No" value={taxNo} onChange={(e) => setTaxNo(e.target.value)} />
         <Input label="Company Code" value={companyCode} onChange={(e) => setCompanyCode(e.target.value)} />
         <Input label="Website" value={website} onChange={(e) => setWebsite(e.target.value)} />
-
-        <Select onValueChange={setCountry} value={country}>
-          <SelectTrigger>
-            <SelectValue placeholder="Select Country" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="India">India</SelectItem>
-            <SelectItem value="USA">USA</SelectItem>
-            <SelectItem value="UK">UK</SelectItem>
-          </SelectContent>
-        </Select>
 
         <Input label="State" value={state} onChange={(e) => setState(e.target.value)} />
         <Input label="City" value={city} onChange={(e) => setCity(e.target.value)} />

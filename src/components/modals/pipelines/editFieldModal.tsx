@@ -2,6 +2,14 @@
 
 import { useState } from 'react';
 import axios from 'axios';
+import { Input } from '@/components/ui/input';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 
 interface EditFieldFormProps {
     pipelineId: string | undefined;
@@ -11,7 +19,7 @@ interface EditFieldFormProps {
         options?: string[];
     };
     onClose: () => void;
-    onUpdate: () => void; // Callback to refresh the pipeline list
+    onUpdate: () => void;
 }
 
 export default function EditFieldForm({ pipelineId, field, onClose, onUpdate }: EditFieldFormProps) {
@@ -36,10 +44,9 @@ export default function EditFieldForm({ pipelineId, field, onClose, onUpdate }: 
         if (!pipelineId) return alert("Please select a pipeline.");
 
         try {
-            // PATCH request to update pipeline custom fields
             const response = await axios.patch(`/api/pipelines/${pipelineId}`, {
                 customFields: [
-                    ...options, // Include the customFields data
+                    ...options,
                     { name, type, options: type === "MultiSelect" ? options : undefined },
                 ],
             });
@@ -56,29 +63,33 @@ export default function EditFieldForm({ pipelineId, field, onClose, onUpdate }: 
 
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
-            <h2 className="text-lg font-semibold text-white">Edit Custom Field</h2>
+            <h2 className="text-lg font-semibold dark:text-white">Edit Custom Field</h2>
             <div>
-                <label className="text-sm text-gray-400">Field Name</label>
-                <input
+                <Input
+                    label='Field Name'
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full p-2 rounded bg-transparent text-white  outline-none border  focus:ring-2 focus:ring-[#815bf5]"
+                    className="w-full p-2 rounded bg-transparent dark:text-white outline-none border "
                     required
                 />
             </div>
             <div>
-                <label className="text-sm text-gray-400">Field Type</label>
-                <select
+                {/* <label className="text-sm text-gray-400">Field Type</label> */}
+                <Select
                     value={type}
-                    onChange={(e) => setType(e.target.value as 'Text' | 'Date' | 'Number' | 'MultiSelect')}
-                    className="w-full p-2 rounded bg-[#0b0d29] text-white border outline-none focus:ring-2 focus:ring-[#815bf5]"
+                    onValueChange={(value) => setType(value as 'Text' | 'Date' | 'Number' | 'MultiSelect')}
                 >
-                    <option value="Text">Text</option>
-                    <option value="Date">Date</option>
-                    <option value="Number">Number</option>
-                    <option value="MultiSelect">MultiSelect</option>
-                </select>
+                    <SelectTrigger className="w-full  dark:text-white border ">
+                        <SelectValue placeholder="Select field type" />
+                    </SelectTrigger>
+                    <SelectContent className='z-[100]'>
+                        <SelectItem className='hover:bg-accent'  value="Text">Text</SelectItem>
+                        <SelectItem className='hover:bg-accent'  value="Date">Date</SelectItem>
+                        <SelectItem className='hover:bg-accent'  value="Number">Number</SelectItem>
+                        <SelectItem  className='hover:bg-accent' value="MultiSelect">MultiSelect</SelectItem>
+                    </SelectContent>
+                </Select>
             </div>
             {type === 'MultiSelect' && (
                 <div>
@@ -88,7 +99,7 @@ export default function EditFieldForm({ pipelineId, field, onClose, onUpdate }: 
                             type="text"
                             value={optionInput}
                             onChange={(e) => setOptionInput(e.target.value)}
-                            className="flex-grow p-2 rounded bg-transparent  text-white outline-none border  focus:ring-2 focus:ring-[#815bf5]"
+                            className="flex-grow p-2 rounded bg-transparent text-white outline-none border focus:ring-2 focus:ring-[#815bf5]"
                             placeholder="Add an option"
                         />
                         <button
@@ -116,16 +127,10 @@ export default function EditFieldForm({ pipelineId, field, onClose, onUpdate }: 
                 </div>
             )}
             <div className="flex justify-end">
-                <button
-                    type="button"
-                    onClick={onClose}
-                    className="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600"
-                >
-                    Cancel
-                </button>
+           
                 <button
                     type="submit"
-                    className="ml-2 px-4 py-2 bg-[#815bf5] text-white rounded hover:bg-[#5f31e9]"
+                    className="ml-2 px-4 py-2 text-sm w-full bg-[#815bf5] text-white rounded hover:bg-primary/80"
                 >
                     Save Changes
                 </button>

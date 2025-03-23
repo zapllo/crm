@@ -24,7 +24,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { leadId
 
         const timelineEntry = {
             stage: "Followup Closed",
-            action: "",
+            action: "Closed",
             remark,
             movedBy: userId,
             timestamp: new Date(),

@@ -4,23 +4,47 @@ import Lead from '@/models/leadModel';
 import Pipeline from '@/models/pipelineModel';
 import { User } from '@/models/userModel';
 import { NextResponse } from 'next/server';
-
-
+import mongoose from 'mongoose';
 
 export async function GET(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
+
+        // Basic parameters
         const pipelineId = searchParams.get("pipelineId");
         const stage = searchParams.get("stage");
         const startDate = searchParams.get("startDate");
         const endDate = searchParams.get("endDate");
 
+        // Filter parameters - log them to see what's being received
+        const assignedTo = searchParams.get("assignedTo");
+        const stages = searchParams.get("stages");
+        const tags = searchParams.get("tags");
+        const companies = searchParams.get("companies");
+
+        console.log("Received filter params:", {
+            assignedTo,
+            stages,
+            tags,
+            companies
+        });
+
         await connectDB();
 
-        let query: any = { pipeline: pipelineId };
-        if (stage) query.stage = stage;
+        // Build query object
+        let query: any = {};
 
-        // ✅ Apply the `createdAt` filter properly
+        // Always add pipeline filter if provided
+        if (pipelineId) {
+            query.pipeline = pipelineId;
+        }
+
+        // Add stage filter if provided (single stage)
+        if (stage) {
+            query.stage = stage;
+        }
+
+        // Add date range if provided
         if (startDate && endDate) {
             query.createdAt = {
                 $gte: new Date(startDate),
@@ -28,9 +52,65 @@ export async function GET(request: Request) {
             };
         }
 
-        console.log("Generated Query:", JSON.stringify(query, null, 2));
+        // Handle filters - Parse JSON for array filters
+        if (assignedTo) {
+            try {
+                const assignedToArray = JSON.parse(assignedTo);
+                if (Array.isArray(assignedToArray) && assignedToArray.length > 0) {
+                    // Convert strings to ObjectIds if needed
+                    query.assignedTo = {
+                        $in: assignedToArray.map(id =>
+                            mongoose.Types.ObjectId.isValid(id) ? new mongoose.Types.ObjectId(id) : id
+                        )
+                    };
+                }
+            } catch (e) {
+                console.error("Error parsing assignedTo:", e);
+            }
+        }
 
-        // ✅ Use `query` instead of hardcoded `{ pipeline, stage }`
+        if (stages) {
+            try {
+                const stagesArray = JSON.parse(stages);
+                if (Array.isArray(stagesArray) && stagesArray.length > 0) {
+                    query.stage = { $in: stagesArray };
+                }
+            } catch (e) {
+                console.error("Error parsing stages:", e);
+            }
+        }
+
+        if (tags) {
+            try {
+                const tagsArray = JSON.parse(tags);
+                if (Array.isArray(tagsArray) && tagsArray.length > 0) {
+                    query.tags = { $in: tagsArray };
+                }
+            } catch (e) {
+                console.error("Error parsing tags:", e);
+            }
+        }
+
+        if (companies) {
+            try {
+                const companiesArray = JSON.parse(companies);
+                if (Array.isArray(companiesArray) && companiesArray.length > 0) {
+                    // Adjust this based on your data model
+                    // Option 1: If company is stored directly in Lead
+                    query.company = { $in: companiesArray };
+
+                    // Option 2: If company is part of contact
+                    // This will need to be adjusted based on your schema
+                    // query['contact.company'] = { $in: companiesArray };
+                }
+            } catch (e) {
+                console.error("Error parsing companies:", e);
+            }
+        }
+
+        console.log("Final Query:", JSON.stringify(query, null, 2));
+
+        // Execute the query
         const leads = await Lead.find(query)
             .populate("contact")
             .populate({
@@ -39,7 +119,8 @@ export async function GET(request: Request) {
             })
             .exec();
 
-        console.log("Leads Fetched:", leads.length);
+        console.log(`Fetched ${leads.length} leads with the query`);
+
         return new Response(JSON.stringify(leads), { status: 200 });
     } catch (error) {
         console.error("Error fetching leads:", error);
@@ -47,17 +128,13 @@ export async function GET(request: Request) {
     }
 }
 
-
 // POST handler for creating a lead
 export async function POST(request: Request) {
+    // [unchanged code kept as is...]
     try {
         await connectDB();
 
-        const { pipeline, stage, title, description, product, contact, assignedTo, estimateAmount, closeDate } = await request.json();
-
-        // // Generate a unique leadId
-        // const totalLeads = await Lead.countDocuments();
-        // const leadId = `L-${totalLeads + 1}`;
+        const { pipeline, stage, title, description, product, contact, assignedTo, estimateAmount, closeDate, source } = await request.json();
 
         // 1. Get userId from token
         const userId = getDataFromToken(request);
@@ -112,6 +189,7 @@ export async function POST(request: Request) {
             amount: estimateAmount,
             organization: user.organization,
             closeDate,
+            source
         });
 
         const savedLead = await newLead.save();

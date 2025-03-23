@@ -39,6 +39,7 @@ export async function POST(request: Request) {
             address,
             dateOfBirth,
             dateOfAnniversary,
+            customFieldValues
         } = data;
 
         if (!companyId || !firstName || !lastName || !email || !whatsappNumber) {
@@ -66,6 +67,7 @@ export async function POST(request: Request) {
             address,
             dateOfBirth: dateOfBirth || null,
             dateOfAnniversary: dateOfAnniversary || null,
+            customFieldValues
         });
 
         await newContact.save();

@@ -1,13 +1,26 @@
 "use client";
 
-import React, { useEffect, useState, ChangeEvent, useRef } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import {
     ArrowLeft,
     ArrowRight,
+    CalendarDays,
+    CheckCircle,
     Eye,
     EyeOff,
-    User,
+    IndianRupee,
+    Loader2,
+    Plus,
+    Tag,
+    Calendar as CalendarIcon,
+    Filter,
+    Search,
+    Settings,
+    ChevronRight,
+    ChevronLeft,
+    ChevronsLeft,
+    ChevronsRight
 } from "lucide-react";
 
 import {
@@ -16,6 +29,8 @@ import {
     DialogContent,
     DialogHeader,
     DialogTitle,
+    DialogDescription,
+    DialogFooter,
 } from "@/components/ui/dialog";
 
 import {
@@ -47,39 +62,77 @@ import {
     SelectItem,
 } from "@/components/ui/select";
 
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { CrossCircledIcon, DotsVerticalIcon } from "@radix-ui/react-icons";
+import { DotsVerticalIcon, Cross2Icon, PlusIcon } from "@radix-ui/react-icons";
 import FilterModal from "@/components/modals/filters/filterLeads";
-import { Card } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { FaCalendar, FaMoneyBill, FaUser } from "react-icons/fa";
-import { endOfToday, format, formatDistanceToNow, startOfMonth, startOfToday, startOfWeek, startOfYesterday, subMonths } from "date-fns";
+import {
+    endOfToday,
+    format,
+    formatDistanceToNow,
+    startOfMonth,
+    startOfToday,
+    startOfWeek,
+    startOfYesterday,
+    subMonths,
+} from "date-fns";
 import { useUserContext } from "@/contexts/userContext";
+import { cn } from "@/lib/utils";
+import { toast, useToast } from "@/hooks/use-toast";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogFooter
+} from "@/components/ui/alert-dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Progress } from "@/components/ui/progress";
 
 /* ---------------- TYPES ---------------- */
 interface Lead {
-    assignedTo: string;
+    assignedTo: any;
     _id: string;
     leadId: string;
     title: string;
     description?: string;
     product?: string;
-    contact?: string;
+    contact?: any;
     amount?: number;
     closeDate?: string;
     stage?: string;
+    createdAt?: string;
+    updatedAt?: string;
+    tags?: string[];
+    company?: string;
 }
 
 interface Stage {
-    _id?: string;       // if you want the ObjectId as well
+    _id?: string;
     name: string;
-    color: string;      // add color here
+    color: string;
     leads: Lead[];
     type: "open" | "close";
 }
-
 
 interface Pipeline {
     _id: string;
@@ -88,11 +141,15 @@ interface Pipeline {
         _id: string;
         name: string;
         color: string;
+        won?: boolean;
+        lost?: boolean;
     }[];
     closeStages: {
         _id: string;
         name: string;
         color: string;
+        won?: boolean;
+        lost?: boolean;
     }[];
 }
 
@@ -107,13 +164,11 @@ interface Contact {
     lastName: string;
 }
 
-// For the user in the Sales Team
 interface TeamUser {
     _id: string;
     firstName: string;
     lastName: string;
 }
-
 
 interface Company {
     _id: string;
@@ -129,7 +184,6 @@ interface Company {
     pincode: string;
 }
 
-
 interface Tag {
     _id: string;
     name: string;
@@ -141,16 +195,17 @@ interface StageOption {
     name: string;
 }
 
+interface ISource {
+    _id: string;
+    name: string;
+    role: string;
+}
 
-/* 
-  For filter dialog:
-  We'll keep arrays for selected assignedTo, selectedStages, selectedTags, selectedCompanies
-*/
 interface FiltersState {
-    assignedTos: string[]; // array of userIds
-    stages: string[];      // array of stage names
-    tags: string[];        // e.g. ["Important", "FollowUp"]
-    companies: string[];   // e.g. ["Acme Inc", ...]
+    assignedTos: string[];
+    stages: string[];
+    tags: string[];
+    companies: string[];
 }
 
 /* ---------------- MAIN COMPONENT ---------------- */
@@ -159,11 +214,7 @@ export default function LeadsDashboard() {
     const [pipelines, setPipelines] = useState<Pipeline[]>([]);
     const [selectedPipeline, setSelectedPipeline] = useState<string | null>(null);
     const { user } = useUserContext();
-
-    console.log(user, 'check')
-    // Stages/Leads
     const [stages, setStages] = useState<Stage[]>([]);
-    const [isLoading, setIsLoading] = useState<boolean>(true);
 
     // Searching & Filtering
     const [searchTerm, setSearchTerm] = useState("");
@@ -174,7 +225,6 @@ export default function LeadsDashboard() {
         companies: [],
     });
     const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
-
 
     // Pagination
     const [currentPage, setCurrentPage] = useState<number>(0);
@@ -195,7 +245,7 @@ export default function LeadsDashboard() {
     const [leadTitle, setLeadTitle] = useState("");
     const [description, setDescription] = useState("");
     const [estimateAmount, setEstimateAmount] = useState<number | "">("");
-    const [closeDate, setCloseDate] = useState("");
+    const [closeDate, setCloseDate] = useState<Date | undefined>(undefined);
 
     // For the Add Lead modal: pipeline & stage selection
     const [modalPipeline, setModalPipeline] = useState<string>("");
@@ -222,43 +272,247 @@ export default function LeadsDashboard() {
     const [companies, setCompanies] = useState<Company[]>([]);
     const [tags, setTags] = useState<Tag[]>([]);
 
-    const [dateFilter, setDateFilter] = useState<string>("AllTime");
+    // Shadcn date filtering
+    const [dateFilter, setDateFilter] = useState<string>("Today");
     const [isCustomModalOpen, setIsCustomModalOpen] = useState(false);
-    const [customDateRange, setCustomDateRange] = useState<{ start: string | null; end: string | null }>({
-        start: null,
-        end: null,
-    });
+    const [isStartDateDialogOpen, setStartDateDialogOpen] = useState(false);
+    const [isEndDateDialogOpen, setEndDateDialogOpen] = useState(false);
 
+    // State for the current selected stage and pipeline
+    const [selectedStage, setSelectedStage] = useState<Stage | null>(null);
 
+    // States for the dialogs
+    const [isAddLeadModalOpen, setIsAddLeadModalOpen] = useState(false);
+    const [isEditStageDialogOpen, setIsEditStageDialogOpen] = useState(false);
+    const [isDeleteStageDialogOpen, setIsDeleteStageDialogOpen] = useState(false);
+    const [editedStageName, setEditedStageName] = useState("");
+
+    // Bulk delete
+    const [isBulkDeleteEnabled, setIsBulkDeleteEnabled] = useState(false);
+    const [selectedStages, setSelectedStages] = useState<string[]>([]);
+
+    // For the custom date range, store each as Date | undefined
+    const [customDateRange, setCustomDateRange] = useState<{
+        start?: Date;
+        end?: Date;
+    }>({});
+
+    // Source selection
+    const [sourceOpen, setSourceOpen] = useState(false);
+    const [source, setSource] = useState("");
+    const [sources, setSources] = useState<ISource[]>([]);
+    const [newSource, setNewSource] = useState("");
+    const [searchSourceQuery, setSearchSourceQuery] = useState("");
+    const [popoverSourceInputValue, setPopoverSourceInputValue] = useState("");
+
+    // Loading states
+    const [isLoading, setIsLoading] = useState<boolean>(true);
+    const [isFetchingLeads, setIsFetchingLeads] = useState(false);
+    const [isCreatingLead, setIsCreatingLead] = useState(false);
+    const [isUpdatingStage, setIsUpdatingStage] = useState(false);
+    const [loadingPipeline, setLoadingPipeline] = useState<string | null>(null);
+    const [dateDialogOpen, setDateDialogOpen] = useState(false);
+
+    // Refs
+    const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+    const router = useRouter();
+    const { toast } = useToast();
+
+    // Pointer sensors for drag and drop
     const pointerSensor = useSensor(PointerSensor, {
-        activationConstraint: {
-            distance: 5, // must move pointer 5px before drag starts
-        },
+        activationConstraint: { distance: 5 },
     });
-
-    // 2. Combine sensors if you have more than one
     const sensors = useSensors(pointerSensor);
 
+    /* -------------------- Functions -------------------- */
 
-    const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+    // Source popup handlers
+    function handleSourceOpen() {
+        setSourceOpen(true);
+    }
 
-    const router = useRouter();
+    function handleCloseSourcePopup() {
+        setSourceOpen(false);
+    }
+
+    function handleSourceClose(selectedName: string) {
+        setPopoverSourceInputValue(selectedName);
+        setSourceOpen(false);
+    }
+
+    // Handle opening of Add Lead dialog with preselected pipeline and stage
+    const handleAddLeadToStage = (stage: Stage) => {
+        setIsLeadModalOpen(true);
+        setModalPipeline(selectedPipeline || '');
+        setModalStage(stage.name);
+        toast({
+            title: "Adding new lead",
+            description: `Creating a lead in the ${stage.name} stage`,
+        });
+    };
+
+    // Edit Stage
+    const handleEditStage = (stage: Stage) => {
+        setSelectedStage(stage);
+        setEditedStageName(stage.name);
+        setIsEditStageDialogOpen(true);
+    };
+
+    // Delete Stage
+    const handleDeleteStage = (stage: Stage) => {
+        setSelectedStage(stage);
+        setIsDeleteStageDialogOpen(true);
+    };
+
+    // Bulk delete toggle handler
+    const handleBulkDeleteToggle = (stageName: string) => {
+        if (selectedStages.includes(stageName)) {
+            setSelectedStages(selectedStages.filter((name) => name !== stageName));
+        } else {
+            setSelectedStages([...selectedStages, stageName]);
+        }
+    };
+
+    // Fetch all the data needed for add lead modal
+    async function fetchAllDropdownData() {
+        try {
+            setIsLoading(true);
+            const sourcesRes = await axios.get("/api/sources");
+            setSources(sourcesRes.data);
+        } catch (error) {
+            console.error("Error fetching dropdown data:", error);
+            toast({
+                title: "Could not load sources",
+                description: "There was an error fetching the source options",
+                variant: "destructive",
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    }
+
+    // Edit Stage submission
+    const handleEditStageSubmit = async () => {
+        if (!selectedStage) return;
+        try {
+            setIsUpdatingStage(true);
+            await axios.patch(`/api/pipelines/${selectedPipeline}/stages/${selectedStage._id}`, {
+                name: editedStageName,
+            });
+
+            toast({
+                title: "Stage updated",
+                description: "The stage has been renamed successfully",
+            });
+
+            setIsEditStageDialogOpen(false);
+
+            // Refresh the board
+            if (selectedPipeline) {
+                const updated = await axios.get(`/api/pipelines/${selectedPipeline}`);
+                await prepareStages(updated.data);
+            }
+        } catch (error) {
+            console.error("Failed to update stage:", error);
+            toast({
+                title: "Update failed",
+                description: "There was a problem updating the stage",
+                variant: "destructive",
+            });
+        } finally {
+            setIsUpdatingStage(false);
+        }
+    };
+
+    // Delete Stage confirmation
+    const handleDeleteStageSubmit = async () => {
+        if (!selectedStage) return;
+        try {
+            setIsUpdatingStage(true);
+            await axios.delete(`/api/pipelines/${selectedPipeline}/stages/${selectedStage._id}`);
+
+            toast({
+                title: "Stage deleted",
+                description: "The stage has been removed successfully",
+            });
+
+            setIsDeleteStageDialogOpen(false);
+
+            // Refresh the board
+            if (selectedPipeline) {
+                const updated = await axios.get(`/api/pipelines/${selectedPipeline}`);
+                await prepareStages(updated.data);
+            }
+        } catch (error) {
+            console.error("Failed to delete stage:", error);
+            toast({
+                title: "Delete failed",
+                description: "There was a problem deleting the stage",
+                variant: "destructive",
+            });
+        } finally {
+            setIsUpdatingStage(false);
+        }
+    };
+
+
+
+    // Bulk Delete stages
+    const handleBulkDeleteSubmit = async () => {
+        if (!selectedStages.length) return;
+        try {
+            setIsUpdatingStage(true);
+            await axios.post(`/api/pipelines/${selectedPipeline}/stages/bulk-delete`, {
+                stageNames: selectedStages
+            });
+
+            toast({
+                title: "Stages deleted",
+                description: `Successfully deleted ${selectedStages.length} stages`,
+            });
+
+            setIsBulkDeleteEnabled(false);
+            setSelectedStages([]);
+
+            // Refresh the board
+            if (selectedPipeline) {
+                const updated = await axios.get(`/api/pipelines/${selectedPipeline}`);
+                await prepareStages(updated.data);
+            }
+        } catch (error) {
+            console.error("Failed to delete stages:", error);
+            toast({
+                title: "Delete failed",
+                description: "There was a problem deleting the stages",
+                variant: "destructive",
+            });
+        } finally {
+            setIsUpdatingStage(false);
+        }
+    };
 
     /* ---------------- Effects ---------------- */
+
     // 1) Load pipeline board on mount
     useEffect(() => {
         const fetchPipelines = async () => {
             try {
+                setIsLoading(true);
                 const response = await axios.get<Pipeline[]>("/api/pipelines");
                 setPipelines(response.data);
 
-                if (response.data.length > 0) {
+                if (response.data?.length > 0) {
                     const first = response.data[0];
                     setSelectedPipeline(first._id);
-                    prepareStages(first);
+                    await prepareStages(first);
                 }
             } catch (error) {
                 console.error("Failed to fetch pipelines:", error);
+                toast({
+                    title: "Error loading pipelines",
+                    description: "There was a problem loading your sales pipelines",
+                    variant: "destructive",
+                });
             } finally {
                 setIsLoading(false);
             }
@@ -266,10 +520,8 @@ export default function LeadsDashboard() {
         fetchPipelines();
     }, []);
 
-
-
+    // 2) Filter by date range whenever dateFilter or custom range changes
     useEffect(() => {
-
         let startDate: Date | null = null;
         let endDate: Date | null = endOfToday();
 
@@ -293,43 +545,24 @@ export default function LeadsDashboard() {
                 break;
             case "Custom":
                 if (customDateRange.start && customDateRange.end) {
-                    startDate = new Date(customDateRange.start);
-                    endDate = new Date(customDateRange.end);
+                    startDate = customDateRange.start;
+                    endDate = customDateRange.end;
                 }
                 break;
+            case "AllTime":
+                startDate = null;
+                endDate = endOfToday();
+                break;
             default:
+                // AllTime => no filter
                 startDate = null;
         }
 
-
         fetchLeadsWithDateRange(startDate, endDate);
-    }, [dateFilter, customDateRange]);
+        setDraggedLead(null);
+    }, [dateFilter, selectedPipeline, customDateRange]);
 
-    console.log(selectedPipeline, 'okay')
-    const fetchLeadsWithDateRange = async (startDate: Date, endDate: Date) => {
-        try {
-            // Convert to UTC
-            const startUTC = new Date(startDate.setUTCHours(0, 0, 0, 0));
-            const endUTC = new Date(endDate.setUTCHours(23, 59, 59, 999));
-
-            console.log("Requesting Leads from:", startUTC.toISOString(), "to", endUTC.toISOString());
-
-            const response = await axios.get("/api/leads", {
-                params: {
-                    startDate: startUTC.toISOString(),
-                    endDate: endUTC.toISOString(),
-                    pipelineId: selectedPipeline
-                },
-            });
-            console.log("Leads Received:", response.data);
-            setStages(response.data);
-        } catch (error) {
-            console.error("Error fetching leads:", error);
-        }
-    };
-
-
-
+    // 3) Fetch tags
     useEffect(() => {
         const fetchTags = async () => {
             try {
@@ -337,10 +570,17 @@ export default function LeadsDashboard() {
                 setTags(response.data);
             } catch (error) {
                 console.error("Failed to fetch tags:", error);
+                toast({
+                    title: "Error loading tags",
+                    description: "There was a problem loading your tags",
+                    variant: "destructive",
+                });
             }
         };
-    });
+        fetchTags();
+    }, []);
 
+    // 4) Fetch companies
     useEffect(() => {
         const fetchCompanies = async () => {
             try {
@@ -348,36 +588,39 @@ export default function LeadsDashboard() {
                 setCompanies(response.data);
             } catch (error) {
                 console.error("Error fetching companies:", error);
+                toast({
+                    title: "Error loading companies",
+                    description: "There was a problem loading your companies",
+                    variant: "destructive",
+                });
             }
         };
         fetchCompanies();
     }, []);
 
-    // 2) When user opens the Add Lead modal, load products & contacts
-    // 2) When user opens the Add Lead modal, load products & contacts, plus the Sales Team
+    // 5) When user opens the Add Lead modal, load products, contacts, sales team
     useEffect(() => {
         if (isLeadModalOpen) {
             const fetchDropdownData = async () => {
                 try {
-                    const [productsRes, contactsRes, salesTeamRes] = await Promise.all([
+                    setIsLoading(true);
+                    const [productsRes, contactsRes, salesTeamRes, sourcesRes] = await Promise.all([
                         axios.get("/api/products"),
                         axios.get("/api/contacts"),
-                        axios.get("/api/team-sales"), // fetch the single Sales Team
+                        axios.get("/api/team-sales"),
+                        axios.get("/api/sources"),
                     ]);
 
-                    setProducts(
-                        productsRes.data.map((p: any) => ({ _id: p._id, name: p.productName }))
-                    );
+                    setProducts(productsRes.data?.map((p: any) => ({ _id: p._id, name: p.productName })));
                     setContacts(
-                        contactsRes.data.map((c: any) => ({
+                        contactsRes.data?.map((c: any) => ({
                             _id: c._id,
                             name: `${c.firstName} ${c.lastName}`,
                         }))
                     );
 
-                    // SalesTeam doc may have 'members': array of user docs
                     if (salesTeamRes.data && salesTeamRes.data.members) {
-                        const members = salesTeamRes.data.members.map((u: any) => ({
+                        const members = salesTeamRes.data.members?.map((u: any) => ({
                             _id: u._id,
                             firstName: u.firstName,
                             lastName: u.lastName,
@@ -386,94 +629,254 @@ export default function LeadsDashboard() {
                     } else {
                         setTeamMembers([]);
                     }
+
+                    setSources(sourcesRes.data);
                 } catch (error) {
                     console.error("Error fetching dropdown data:", error);
+                    toast({
+                        title: "Error loading data",
+                        description: "Could not load all required form data",
+                        variant: "destructive",
+                    });
+                } finally {
+                    setIsLoading(false);
                 }
             };
             fetchDropdownData();
         }
     }, [isLeadModalOpen]);
 
-
+    // 6) Whenever modalPipeline changes, build the stage list
     useEffect(() => {
         if (!modalPipeline) {
             setModalStages([]);
             setModalStage("");
             return;
         }
-
         const pipelineDoc = pipelines.find((p) => p._id === modalPipeline);
         if (pipelineDoc) {
-            // Each stage in openStages and closeStages looks like { _id, name, color }
             const combined = [
-                ...pipelineDoc.openStages.map((st) => ({ _id: st._id, name: st.name })),
-                ...pipelineDoc.closeStages.map((st) => ({ _id: st._id, name: st.name })),
+                ...pipelineDoc.openStages?.map((st) => ({ _id: st._id, name: st.name })),
+                ...pipelineDoc.closeStages?.map((st) => ({ _id: st._id, name: st.name })),
             ];
             setModalStages(combined);
-
-            // Default the <select> value to the first stage’s .name if you wish
-            setModalStage(combined.length > 0 ? combined[0].name : "");
+            setModalStage(combined?.length > 0 ? combined[0].name : "");
         }
     }, [modalPipeline, pipelines]);
 
+    // Function to fetch leads based on date range
+    const fetchLeadsWithDateRange = async (startDate: Date | null, endDate: Date | null) => {
+        if (!selectedPipeline) return;
 
-    /* ---------------- Functions ---------------- */
-    // Prepare board for a given pipeline
-    // Prepare board for a given pipeline
-    const prepareStages = async (pipeline: Pipeline) => {
         try {
-            // Build openStages array
-            const openStages = await Promise.all(
-                pipeline.openStages.map(async (stObj: { name: string; color: string; _id: string }): Promise<Stage> => {
-                    // stObj = { name, color, _id }
-                    const res = await axios.get(`/api/leads?pipelineId=${pipeline._id}&stage=${stObj.name}`);
+            setIsFetchingLeads(true);
+            let startUTC = "";
+            let endUTC = "";
+
+            if (startDate) {
+                const s = new Date(startDate);
+                s.setUTCHours(0, 0, 0, 0);
+                startUTC = s.toISOString();
+            }
+
+            if (endDate) {
+                const e = new Date(endDate);
+                e.setUTCHours(23, 59, 59, 999);
+                endUTC = e.toISOString();
+            }
+
+            // Fetch the pipeline data first (to get stages)
+            const pipelineResponse = await axios.get(`/api/pipelines/${selectedPipeline}`);
+            const pipeline = pipelineResponse.data;
+
+            // Fetch the filtered leads based on the date range for each stage
+            const openStagesData = await Promise.all(
+                pipeline.openStages.map(async (stage: Stage) => {
+                    const response = await axios.get("/api/leads", {
+                        params: {
+                            startDate: startUTC,
+                            endDate: endUTC,
+                            pipelineId: selectedPipeline,
+                            stage: stage.name, // Ensure we're getting leads for this stage
+                        },
+                    });
                     return {
-                        name: stObj.name,
-                        color: stObj.color,  // pass color
-                        leads: res.data,
-                        type: "open"
+                        ...stage,
+                        leads: response.data.filter((lead: Lead) => {
+                            const leadDate = new Date(lead.createdAt || lead.closeDate || Date.now());
+                            return (
+                                (!startDate || leadDate >= new Date(startUTC)) &&
+                                (!endDate || leadDate <= new Date(endUTC))
+                            );
+                        }), // Filter leads within the date range
                     };
                 })
             );
 
-            // Build closeStages array
-            const closeStages = await Promise.all(
-                pipeline.closeStages.map(async (stObj: { name: string; color: string; _id: string }): Promise<Stage> => {
-                    const res = await axios.get(`/api/leads?pipelineId=${pipeline._id}&stage=${stObj.name}`);
+            const closeStagesData = await Promise.all(
+                pipeline.closeStages.map(async (stage: Stage) => {
+                    const response = await axios.get("/api/leads", {
+                        params: {
+                            startDate: startUTC,
+                            endDate: endUTC,
+                            pipelineId: selectedPipeline,
+                            stage: stage.name, // Ensure we're getting leads for this stage
+                        },
+                    });
                     return {
-                        name: stObj.name,
-                        color: stObj.color,
-                        leads: res.data,
-                        type: "close"
+                        ...stage,
+                        leads: response.data.filter((lead: Lead) => {
+                            const leadDate = new Date(lead.createdAt || lead.closeDate || Date.now());
+                            return (
+                                (!startDate || leadDate >= new Date(startUTC)) &&
+                                (!endDate || leadDate <= new Date(endUTC))
+                            );
+                        }), // Filter leads within the date range
                     };
                 })
             );
 
-            setStages([...openStages, ...closeStages]);
-            setCurrentPage(0);
+            // Combine the open and close stages with their filtered leads
+            const allStages = [...openStagesData, ...closeStagesData];
+            setStages(allStages); // Now set stages with the filtered leads
+
+            toast({
+                title: "Leads updated",
+                description: `Showing leads from ${dateFilter === "Custom" ? "custom range" : dateFilter.toLowerCase()}`,
+            });
         } catch (error) {
-            console.error("Failed to prepare stages:", error);
+            console.error("Error fetching leads:", error);
+            toast({
+                title: "Error fetching leads",
+                description: "There was a problem loading your leads",
+                variant: "destructive",
+            });
+        } finally {
+            setIsFetchingLeads(false);
         }
     };
 
+    // Prepare board for a given pipeline
+    const prepareStages = async (pipeline: Pipeline) => {
+        try {
+            setIsFetchingLeads(true);
 
-    // Called when user picks a pipeline in the board
+            // Fetch open stages concurrently
+            const openStages = Array.isArray(pipeline.openStages)
+                ? await Promise.all(
+                    pipeline.openStages.map(async (stObj) => {
+                        // Check if the stage name exists
+                        if (!stObj.name) {
+                            console.error("Stage name is undefined in openStages:", stObj);
+                            return null;
+                        }
+
+                        // Fetch leads for the stage
+                        const res = await axios.get(`/api/leads?pipelineId=${pipeline._id}&stage=${stObj.name}`);
+                        return res.data ? {
+                            _id: stObj._id,
+                            name: stObj.name,
+                            color: stObj.color,
+                            leads: res.data,
+                            type: "open",
+                        } : null;
+                    })
+                )
+                : [];
+
+            // Fetch close stages concurrently
+            const closeStages = Array.isArray(pipeline.closeStages)
+                ? await Promise.all(
+                    pipeline.closeStages.map(async (stObj) => {
+                        // Check if the stage name exists
+                        if (!stObj.name) {
+                            console.error("Stage name is undefined in closeStages:", stObj);
+                            return null;
+                        }
+
+                        // Fetch leads for the stage
+                        const res = await axios.get(`/api/leads?pipelineId=${pipeline._id}&stage=${stObj.name}`);
+                        return res.data ? {
+                            _id: stObj._id,
+                            name: stObj.name,
+                            color: stObj.color,
+                            leads: res.data,
+                            type: "close",
+                        } : null;
+                    })
+                )
+                : [];
+
+            // Filter out null stages (if any stage was missing) and properly type cast
+            const validStages = [...openStages.filter(Boolean), ...closeStages.filter(Boolean)] as Stage[];
+            setStages(validStages);
+            setCurrentPage(0);
+
+            toast({
+                title: "Pipeline loaded",
+                description: `${pipeline.name} pipeline loaded successfully`,
+            });
+        } catch (error) {
+            console.error("Failed to prepare stages:", error);
+            toast({
+                title: "Error loading stages",
+                description: "Failed to prepare the pipeline stages",
+                variant: "destructive",
+            });
+        } finally {
+            setIsFetchingLeads(false);
+        }
+    };
+
+    // When user picks a pipeline in the board
     const handlePipelineChange = async (val: string) => {
         setSelectedPipeline(val);
+        setLoadingPipeline(val);
+
         try {
             const response = await axios.get<Pipeline>(`/api/pipelines/${val}`);
-            prepareStages(response.data);
+            await prepareStages(response.data);
+
+            toast({
+                title: "Pipeline changed",
+                description: `Switched to ${response.data.name} pipeline`,
+            });
         } catch (error) {
             console.error("Failed to fetch pipeline stages:", error);
+            toast({
+                title: "Error changing pipeline",
+                description: "Failed to load the selected pipeline",
+                variant: "destructive",
+            });
+        } finally {
+            setLoadingPipeline(null);
         }
     };
 
     // Add new lead from the modal
     const handleAddLead = async () => {
-        if (!modalPipeline || !modalStage) {
-            console.error("No pipeline or stage selected in modal!");
+        if (!leadTitle.trim()) {
+            toast({
+                title: "Missing information",
+                description: "Lead title is required",
+                variant: "destructive",
+            });
             return;
         }
+
+        if (!modalPipeline || !modalStage) {
+            toast({
+                title: "Missing information",
+                description: "Pipeline and stage are required",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        setIsCreatingLead(true);
+        // Convert closeDate to string if needed
+        const closeDateStr = closeDate ? format(closeDate, "yyyy-MM-dd") : "";
+
         try {
             await axios.post("/api/leads", {
                 pipeline: modalPipeline,
@@ -484,7 +887,8 @@ export default function LeadsDashboard() {
                 contact: selectedContact,
                 assignedTo: assignedTo,
                 estimateAmount,
-                closeDate,
+                closeDate: closeDateStr,
+                source: source,
             });
 
             // refresh board if current pipeline == modalPipeline
@@ -493,94 +897,162 @@ export default function LeadsDashboard() {
                 await prepareStages(updated.data);
             }
 
+            toast({
+                title: "Lead created",
+                description: "New lead has been created successfully",
+            });
+
             // reset fields
-            setIsLeadModalOpen(false);
-            setLeadTitle("");
-            setDescription("");
-            setEstimateAmount("");
-            setCloseDate("");
-            setSelectedProduct(null);
-            setSelectedContact(null);
-            setModalPipeline("");
-            setModalStage("");
-            setModalStages([]);
+            resetAddLeadForm();
         } catch (error) {
             console.error("Failed to create lead:", error);
+            toast({
+                title: "Failed to create lead",
+                description: "There was an error creating your lead",
+                variant: "destructive",
+            });
+        } finally {
+            setIsCreatingLead(false);
+            setIsLeadModalOpen(false);
         }
+    };
+
+    // Reset form fields
+    function resetAddLeadForm() {
+        setLeadTitle("");
+        setDescription("");
+        setEstimateAmount("");
+        setCloseDate(undefined);
+        setSelectedProduct(null);
+        setSelectedContact(null);
+        setModalPipeline("");
+        setModalStage("");
+        setModalStages([]);
+        setAssignedTo("");
+        setSource("");
+        setNewSource("");
+        setCustomDateRange({});
+        setPopoverSourceInputValue("");
+    }
+
+    const handleDragStart = (event: any) => {
+        const { active } = event;
+        const { lead } = active.data.current;
+        setDraggedLead(lead);
     };
 
     // -------------- Drag + Drop ---------------
     const handleDragEnd = (event: DragEndEvent) => {
-        const { over } = event;
-        if (draggedLead && over) {
-            const newStage = over.id as string;
-            // find current stage
-            const currentStage = stages.find((st) =>
-                st.leads.some((ld) => ld._id === draggedLead._id)
-            );
-            // if same stage, do nothing
-            if (currentStage?.name === newStage) {
-                setDraggedLead(null);
-                return;
-            }
-            // otherwise set target & show remark dialog
-            setTargetStage(newStage);
-            setRemarkDialogOpen(true);
+        const { over, active } = event;
+
+        if (!over || !active.id) return;
+
+        const newStage = over.id as string;
+        const leadId = active.id as string;
+
+        // Find the dragged lead using its ID
+        const draggedLeadItem = allLeads.find(lead => lead._id === leadId);
+
+        if (!draggedLeadItem) return;
+
+        // Find current stage of the lead
+        const currentStage = stages.find(st =>
+            st.leads.some(ld => ld._id === leadId)
+        );
+
+        // If we're dropping to the same stage, do nothing
+        if (currentStage?.name === newStage) {
+            setDraggedLead(null);
+            return;
         }
+
+        // Set the dragged lead and target stage to trigger the dialog
+        setDraggedLead(draggedLeadItem);
+        setTargetStage(newStage);
+
+        // Important: Make sure to open the dialog
+        setRemarkDialogOpen(true);
+
+        toast({
+            title: "Moving lead",
+            description: `Please add a note about moving to ${newStage}`,
+        });
     };
 
     const handleUpdateStage = async () => {
-        if (draggedLead && targetStage && remark) {
-            try {
-                await axios.post("/api/leads/update-stage", {
-                    leadId: draggedLead._id,
-                    newStage: targetStage,
-                    movedBy: user?.userId,
-                    remark,
-                });
-                setRemarkDialogOpen(false);
-                setRemark("");
+        if (!draggedLead || !targetStage) {
+            toast({
+                title: "Missing information",
+                description: "Lead or target stage is missing",
+                variant: "destructive",
+            });
+            return;
+        }
 
-                if (selectedPipeline) {
-                    const pipelineDoc = pipelines.find((p) => p._id === selectedPipeline);
-                    if (pipelineDoc) {
-                        prepareStages(pipelineDoc);
-                    }
+        if (!remark.trim()) {
+            toast({
+                title: "Remark required",
+                description: "Please add a note about this stage change",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        try {
+            setIsUpdatingStage(true);
+            await axios.post("/api/leads/update-stage", {
+                leadId: draggedLead._id,
+                newStage: targetStage,
+                movedBy: user?.userId,
+                remark,
+            });
+
+            toast({
+                title: "Stage updated",
+                description: `Lead moved to ${targetStage} successfully`,
+            });
+
+            setRemarkDialogOpen(false);
+            setRemark("");
+
+            if (selectedPipeline) {
+                const pipelineDoc = pipelines.find((p) => p._id === selectedPipeline);
+                if (pipelineDoc) {
+                    prepareStages(pipelineDoc);
                 }
-            } catch (error) {
-                console.error("Failed to update lead stage:", error);
-            } finally {
-                setDraggedLead(null);
             }
+        } catch (error) {
+            console.error("Failed to update lead stage:", error);
+            toast({
+                title: "Update failed",
+                description: "There was a problem updating the lead stage",
+                variant: "destructive",
+            });
+        } finally {
+            setIsUpdatingStage(false);
+            setDraggedLead(null);
         }
     };
 
-    // stage card actions
-    function handleDeleteStage(stageName: string) {
-        console.log("Delete stage: ", stageName);
-    }
-    function handleEditStage(stage: Stage) {
-        console.log("Edit stage:", stage);
-    }
-    function handleAddLeadToStage(stageName: string) {
-        console.log("Add lead to stage: ", stageName);
-    }
-    function handleSelectToggle(stageName: string) {
-        console.log("Select/Unselect stage: ", stageName);
-    }
-
-    // pagination
-    const totalPages = Math.ceil(stages.length / itemsPerPage);
-    const handleNextPage = () => {
-        if (currentPage < totalPages - 1) setCurrentPage((prev) => prev + 1);
-    };
-    const handlePreviousPage = () => {
-        if (currentPage > 0) setCurrentPage((prev) => prev - 1);
+    const handleScrollLeft = () => {
+        if (scrollContainerRef.current) {
+            scrollContainerRef.current.scrollBy({
+                left: -500,
+                behavior: "smooth",
+            });
+        }
     };
 
+    const handleScrollRight = () => {
+        if (scrollContainerRef.current) {
+            scrollContainerRef.current.scrollBy({
+                left: 500,
+                behavior: "smooth",
+            });
+        }
+    };
 
-
-
+    // Filter modal handlers
     const openFilterModal = () => {
         setFilterModalOpen(true);
     };
@@ -599,6 +1071,11 @@ export default function LeadsDashboard() {
         setStageFilters(filters.stages);
         setTagFilters(filters.tags);
         setCompanyFilters(filters.companies);
+
+        toast({
+            title: "Filters applied",
+            description: "Your lead view has been filtered",
+        });
     };
 
     const clearFilters = () => {
@@ -606,653 +1083,1007 @@ export default function LeadsDashboard() {
         setStageFilters([]);
         setTagFilters([]);
         setCompanyFilters([]);
+
+        toast({
+            title: "Filters cleared",
+            description: "All filters have been removed",
+        });
     };
 
-    // For each stage, we apply searchTerm & filters
-    function getFilteredLeads(leads: Lead[]) {
-        let filtered = leads;
-
-        // Filter by assignedTo
-        if (assignedToFilters.length > 0) {
-            filtered = filtered.filter((ld) => ld.assignedTo && assignedToFilters.includes(ld.assignedTo));
-        }
-
-        // Filter by stage
-        if (stageFilters.length > 0) {
-            filtered = filtered.filter((ld) => ld.stage && stageFilters.includes(ld.stage));
-        }
-
-        // Filter by tags, if you store lead.tags as an array
-        if (tagFilters.length > 0) {
-            filtered = filtered.filter((ld) =>
-                ld.tags?.some((t) => tagFilters.includes(t))
-            );
-        }
-
-        // Filter by companies if you store lead.company or lead.companies
-        if (companyFilters.length > 0) {
-            filtered = filtered.filter((ld) =>
-                ld.company && companyFilters.includes(ld.company)
-            );
-        }
-
-        return filtered;
-    }
-
-
-
-    // Summaries
-    // We'll gather all leads from all stages, then compute open/closed
+    // Calculate lead stats for dashboard
     const allLeads = stages.flatMap((st) => st.leads);
-    const filteredAllLeads = allLeads.map((ld) => ld); // no search/filters here if you want total always?
+    const filteredAllLeads = allLeads; // currently no search/filters applied to the summary
 
-    // If you want the summary to also reflect search/filters, do:
-    // const filteredAllLeads = stages.flatMap(st => getFilteredLeads(st.leads));
+    const selectedPipelineDoc = pipelines.find((p) => p._id === selectedPipeline);
+    const closedStageNames = selectedPipelineDoc?.closeStages?.map((s) => s.name) || [];
+    const openStageNames = selectedPipelineDoc?.openStages?.map((s) => s.name) || [];
 
     const openLeads = filteredAllLeads.filter((ld) =>
-        // if the pipeline stage is "open" or ld.stage is in pipeline openStages
-        // we can guess if ld.stage is in pipelineDoc.openStages
-        // for simplicity, let's assume any stage in pipeline.openStages => "open"
-        // We'll just do a naive check:
-        ld.stage && pipelines.find((p) => p._id === selectedPipeline)?.openStages.includes(ld.stage)
+        ld && ld.stage && openStageNames.includes(ld.stage)
     );
-    // Fetch the selected pipeline
-    const selectedPipelineDoc = pipelines.find(p => p._id === selectedPipeline);
-
-    const closedLeads = filteredAllLeads.filter((lead) =>
-        selectedPipelineDoc?.closeStages.some(stage => stage.name === lead.stage)
+    const closedLeads = filteredAllLeads.filter((ld) =>
+        ld && ld.stage && closedStageNames.includes(ld.stage)
     );
 
-    // Won Leads and Amount (filtered from closed leads)
-    const wonLeads = closedLeads.filter(lead =>
-        selectedPipelineDoc?.closeStages.some(stage => stage.name === lead.stage && stage.won)
-    );
-    const wonCount = wonLeads.length;
-    const wonAmount = wonLeads.reduce((sum, lead) => sum + (lead.amount || 0), 0);
+    // For "won" or "lost," see which closeStages are won/lost
+    const wonStageNames =
+        selectedPipelineDoc?.closeStages.filter((s) => s.won)?.map((s) => s.name) || [];
+    const lostStageNames =
+        selectedPipelineDoc?.closeStages.filter((s) => s.lost)?.map((s) => s.name) || [];
 
-    // Lost Leads and Amount (filtered from closed leads)
-    const lostLeads = closedLeads.filter(lead =>
-        selectedPipelineDoc?.closeStages.some(stage => stage.name === lead.stage && stage.lost)
-    );
-    const lostCount = lostLeads.length;
-    const lostAmount = lostLeads.reduce((sum, lead) => sum + (lead.amount || 0), 0);
+    const wonLeads = closedLeads.filter((ld) => ld && ld.stage && wonStageNames.includes(ld.stage));
+    const lostLeads = closedLeads.filter((ld) => ld && ld.stage && lostStageNames.includes(ld.stage));
 
-    // Total Leads and Amount
-    const totalCount = allLeads.length;
-    const totalAmount = allLeads.reduce((sum, lead) => sum + (lead.amount || 0), 0);
+    // Count & sum amounts
+    const totalCount = allLeads?.length || 0;
+    const totalAmount = allLeads?.reduce((sum, ld) => sum + (ld?.amount && !isNaN(ld.amount) ? ld.amount : 0), 0) || 0;
 
-    // Open Leads and Amount
-    const openCount = openLeads.length;
-    const openAmount = openLeads.reduce((sum, lead) => sum + (lead.amount || 0), 0);
+    const openCount = openLeads?.length || 0;
+    const openAmount = openLeads?.reduce((sum, ld) => sum + (ld?.amount && !isNaN(ld.amount) ? ld.amount : 0), 0) || 0;
 
-    // Closed Leads and Amount
-    const closedCount = closedLeads.length;
-    const closedAmount = closedLeads.reduce((sum, lead) => sum + (lead.amount || 0), 0);
+    const closedCount = closedLeads?.length || 0;
+    const closedAmount = closedLeads?.reduce((sum, ld) => sum + (ld?.amount && !isNaN(ld.amount) ? ld.amount : 0), 0) || 0;
 
+    const wonCount = wonLeads?.length || 0;
+    const wonAmount = wonLeads?.reduce((sum, ld) => sum + (ld?.amount && !isNaN(ld.amount) ? ld.amount : 0), 0) || 0;
 
+    const lostCount = lostLeads?.length || 0;
+    const lostAmount = lostLeads?.reduce((sum, ld) => sum + (ld?.amount && !isNaN(ld.amount) ? ld.amount : 0), 0) || 0;
+
+    // For stage changes
+    const oldStageObj =
+        selectedPipelineDoc && draggedLead && draggedLead.stage
+            ? [...selectedPipelineDoc.openStages, ...selectedPipelineDoc.closeStages].find(
+                (st) => st.name === draggedLead.stage
+            )
+            : null;
+
+    const newStageObj =
+        selectedPipelineDoc && targetStage
+            ? [...selectedPipelineDoc.openStages, ...selectedPipelineDoc.closeStages].find(
+                (st) => st.name === targetStage
+            )
+            : null;
 
     /* ---------------- RENDER ---------------- */
     if (isLoading) {
         return (
-            <div className="p-4 text-center">
-                <p>Loading pipelines...</p>
+            <div className="flex flex-col h-screen items-center justify-center space-y-4 bg-background/40 backdrop-blur-sm">
+                <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                <p className="text-lg font-medium text-muted-foreground">Loading your sales dashboard...</p>
             </div>
         );
     }
 
-    function handleScrollLeft() {
-        if (scrollContainerRef.current) {
-            scrollContainerRef.current.scrollBy({
-                left: -500, // Adjust the scroll distance as needed
-                behavior: 'smooth',
-            });
-        }
-    }
-
-    function handleScrollRight() {
-        if (scrollContainerRef.current) {
-            scrollContainerRef.current.scrollBy({
-                left: 500,
-                behavior: 'smooth',
-            });
-        }
-    }
-
     return (
-        <div className="p-4  h-screen ">
-            <div className="flex justify-center gap-4 mb-6">
-                {["Today", "Yesterday", "ThisWeek", "ThisMonth", "LastMonth", "AllTime"].map((filter) => (
-                    <button
-                        key={filter}
-                        onClick={() => setDateFilter(filter)}
-                        className={`px-4 text-xs h-8 rounded ${dateFilter === filter ? "bg-[#815BF5] text-white" : "border text-white"
-                            }`}
-                    >
-                        {filter.replace(/([A-Z])/g, " $1").trim()} {/* Converts "ThisWeek" to "This Week" */}
-                    </button>
-                ))}
-                <button
-                    onClick={() => setIsCustomModalOpen(true)}
-                    className={`px-4 text-xs h-8 rounded ${dateFilter === "Custom" ? "bg-[#815BF5] text-white" : "border text-white"}`}
-                >
-                    Custom
-                </button>
-            </div>
+        <div className="p-4 mt-4 h-screen bg-background">
+            <div className="max-w-[1600px] mx-auto">
+                {/* Header with title */}
+                {/* <div className="mb-6">
+                    <h1 className="text-2xl font-bold tracking-tight">Sales Pipeline</h1>
+                    <p className="text-muted-foreground">Manage your leads through the sales process</p>
+                </div> */}
 
-            {/* Header Section */}
-            <div className="flex justify-center">
-                <div className="flex gap-4 items-center mb-6">
-                    {/* Board Pipeline Filter */}
-                    <Select
-                        value={selectedPipeline ?? ""}
-                        onValueChange={(val) => handlePipelineChange(val)}
-                    >
-                        <SelectTrigger className=" bg-[#04061e] text-sm border border-gray-600 focus:border-[#815bf5] rounded">
-                            <SelectValue placeholder="Select a Pipeline" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {pipelines.map((pipeline) => (
-                                <SelectItem key={pipeline._id} value={pipeline._id}>
-                                    {pipeline.name}
-                                </SelectItem>
+                {/* Date Range Quick Buttons */}
+                <Card className="mb-6 border-none">
+                    <CardContent className="p-2">
+                        <div className="grid grid-cols-7 gap-2">
+                            {[
+                                { label: "Today", value: "Today" },
+                                { label: "Yesterday", value: "Yesterday" },
+                                { label: "This Week", value: "ThisWeek" },
+                                { label: "This Month", value: "ThisMonth" },
+                                { label: "Last Month", value: "LastMonth" },
+                                { label: "All Time", value: "AllTime" },
+                                { label: "Custom", value: "Custom" }
+                            ].map((filter) => (
+                                <Button
+                                    key={filter.value}
+                                    onClick={() => {
+                                        setDateFilter(filter.value);
+                                        if (filter.value === "Custom") {
+                                            setIsCustomModalOpen(true);
+                                        }
+                                    }}
+                                    variant={dateFilter === filter.value ? "default" : "outline"}
+                                    className="h-9 text-xs"
+                                    disabled={isFetchingLeads}
+                                >
+                                    {isFetchingLeads && dateFilter === filter.value ? (
+                                        <Loader2 className="h-3 w-3 mr-2 animate-spin" />
+                                    ) : (
+                                        <CalendarIcon className="h-3 w-3 mr-2" />
+                                    )}
+                                    {filter.label}
+                                </Button>
                             ))}
-                        </SelectContent>
-                    </Select>
-
-                    {/* + Lead button */}
-                    <Button
-                        variant="default"
-                        onClick={() => {
-                            setIsLeadModalOpen(true);
-                            // If you want to default the modal's pipeline to the board pipeline:
-                            setModalPipeline(selectedPipeline ?? "");
-                        }}
-                        className="bg-[#815bf5] text-white hover:bg-[#5f31e9] text-sm"
-                    >
-                        + Lead
-                    </Button>
-
-                    {/* Search Leads input */}
-                    <Input
-                        type="text"
-                        label='Search Leads'
-                        placeholder="Search Leads"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="bg-transparent text-sm border border-gray-600 focus:border-[#815bf5] rounded"
-                    />
-
-
-                    {/* Filter button */}
-                    <Button
-                        variant="default"
-                        onClick={openFilterModal}
-                        className="flex items-center gap-2 text-sm bg-[#017a5b] hover:bg-green-800"
-                    >
-                        <img src="/icons/crm.png" className="h-4" alt="CRM" />
-                        Filter
-                    </Button>
-                </div>
-            </div>
-
-            {/* ----- STATS ROW ----- */}
-            <div className="flex justify-center">
-                <div className="flex gap-4">
-                    {/* Total Leads */}
-                    <div className="border flex items-center border-l-2 w-32 border-l-yellow-300 rounded p-2 text-center text-xs text-white">
-                        <div>
-                            <h1>Total: <span>{totalCount}</span></h1>
-                            <h1>Amount: <span>₹{totalAmount}</span></h1>
                         </div>
-                    </div>
-
-                    {/* Open Leads */}
-                    <div className="border flex items-center border-l-2 w-32 border-l-green-300 rounded p-2 text-center text-xs text-white">
-                        <div>
-                            <h1>Open: <span>{openCount}</span></h1>
-                            <h1>Amount: <span>₹{openAmount}</span></h1>
-                        </div>
-                    </div>
-
-                    {/* Closed Leads */}
-                    <div className="border flex items-center border-l-2 w-32 border-l-red-800 rounded p-2 text-center text-xs text-white">
-                        <div>
-                            <h1>Closed: <span>{closedCount}</span></h1>
-                            <h1>Amount: <span>₹{closedAmount}</span></h1>
-                        </div>
-                    </div>
-
-                    {/* Won Leads */}
-                    <div className="border flex items-center border-l-2 w-32 border-l-blue-500 rounded p-2 text-center text-xs text-white">
-                        <div>
-                            <h1>Won: <span>{wonCount}</span></h1>
-                            <h1>Amount: <span>₹{wonAmount}</span></h1>
-                        </div>
-                    </div>
-
-                    {/* Lost Leads */}
-                    <div className="border flex items-center border-l-2 w-32 border-l-red-500 rounded p-2 text-center text-xs text-white">
-                        <div>
-                            <h1>Lost: <span>{lostCount}</span></h1>
-                            <h1>Amount: <span>₹{lostAmount}</span></h1>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-
-
-            <FilterModal
-                isOpen={filterModalOpen}
-                onClose={closeFilterModal}
-                // Data
-                teamMembers={teamMembers}   // e.g. fetched from your salesTeam doc
-                stages={[...(pipelines.find((p) => p._id === selectedPipeline)?.openStages || []),
-                ...(pipelines.find((p) => p._id === selectedPipeline)?.closeStages || []),
-                ]}
-                tags={tags}
-                companies={companies}
-                // Already selected
-                selectedAssignedTo={assignedToFilters}
-                selectedStages={stageFilters}
-                selectedTags={tagFilters}
-                selectedCompanies={companyFilters}
-                // Callbacks
-                onApply={applyFilters}
-                onClear={clearFilters}
-            />
-
-            <Dialog open={isLeadModalOpen} onOpenChange={setIsLeadModalOpen}>
-                <DialogContent className="z-[100] h-screen p-6 max-w-md w-full  text-white">
-                    <div className="flex justify-between items-center ">
-                        <DialogHeader>
-                            <DialogTitle className="text-lg font-bold">Add Lead</DialogTitle>
-                        </DialogHeader>
-
-                    </div>
-
-                    {/* Form */}
-                    <form onSubmit={(e) => e.preventDefault()} className="space-y-4 text-white">
-                        {/* Pipeline */}
-                        <div className="flex flex-col space-y-1">
-                            <label className="text-xs font-medium leading-none text-muted-foreground">
-                                Pipeline
-                            </label>
-                            <select
-                                value={modalPipeline}
-                                onChange={(e) => setModalPipeline(e.target.value)}
-                                className="
-            block w-full rounded-md border border-gray-600 
-            px-3 py-2 text-sm placeholder:text-gray-400
-            focus:outline-none 
-          "
-                            >
-                                <option value="">Select pipeline</option>
-                                {pipelines.map((pl) => (
-                                    <option key={pl._id} value={pl._id}>
-                                        {pl.name}
-                                    </option>
+                    </CardContent>
+                </Card>
+                {/* Header Section (Pipeline select, +Lead, Search, Filter) */}
+                <div className="flex items-center justify-between mb-6 gap-4">
+                    <div className="flex items-center gap-2 flex-grow">
+                        {/* Pipeline Select (Shadcn) */}
+                        <Select
+                            value={selectedPipeline ?? "NONE"}
+                            onValueChange={(val) => handlePipelineChange(val)}
+                            disabled={isFetchingLeads || loadingPipeline !== null}
+                        >
+                            <SelectTrigger className="w-[220px]">
+                                {loadingPipeline ? (
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                ) : null}
+                                <SelectValue placeholder="Select a Pipeline" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {pipelines?.map((pipeline) => (
+                                    <SelectItem key={pipeline._id} value={pipeline._id}>
+                                        {pipeline.name}
+                                    </SelectItem>
                                 ))}
-                            </select>
-                        </div>
+                            </SelectContent>
+                        </Select>
 
-                        {/* Stage dropdown */}
-                        <div className="flex flex-col space-y-1">
-                            <label className="text-xs font-medium leading-none text-muted-foreground -400">
-                                Stage
-                            </label>
-                            <select
-                                value={modalStage}
-                                onChange={(e) => setModalStage(e.target.value)}
-                                className="
-            block w-full rounded-md border border-gray-600 
-            px-3 py-2 text-sm placeholder:text-gray-400
-            focus:outline-none
-          "
-                            >
-                                <option value="">Select stage</option>
-                                {modalStages.map((st) => (
-                                    <option key={st._id} value={st.name}>
-                                        {st.name}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-
-                        {/* Lead Title */}
-                        <div className="flex flex-col space-y-1">
-                            {/* <label className="text-sm font-medium leading-none text-gray-400">
-                                Lead Title
-                            </label> */}
+                        {/* Search input */}
+                        <div className="relative flex-grow max-w-md">
+                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                             <Input
                                 type="text"
-                                label="Lead Title"
-                                value={leadTitle}
-                                onChange={(e) => setLeadTitle(e.target.value)}
-                                required
-                                className="
-            block w-full rounded-md   bg-transparent
-            px-3 py-2 text-sm 
-            focus:outline-none 
-          "
+                                placeholder="Search leads..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="pl-8"
                             />
                         </div>
-
-                        {/* Description */}
-                        <div className="flex flex-col space-y-1">
-                            {/* <label className="text-sm font-medium leading-none text-gray-400">
-                                Description
-                            </label> */}
-                            <Textarea
-                                value={description}
-                                label="Description"
-                                onChange={(e) => setDescription(e.target.value)}
-                                className="
-            block w-full rounded-md bg-transparent
-            px-3 py-2 text-sm -gray-400
-            focus:outline-none
-          "
-                            />
-                        </div>
-
-                        {/* Select Product */}
-                        <div className="flex flex-col space-y-1">
-                            <label className="text-xs font-medium leading-none text-gray-400">
-                                Product
-                            </label>
-                            <select
-                                value={selectedProduct ?? ""}
-                                onChange={(e) => setSelectedProduct(e.target.value)}
-                                className="
-            block w-full rounded-md border border-gray-600 
-            px-3 py-2 text-sm 
-            focus:outline-none 
-          "
-                            >
-                                <option value="">Choose product</option>
-                                {products.length > 0 ? (
-                                    products.map((prod) => (
-                                        <option key={prod._id} value={prod._id}>
-                                            {prod.name}
-                                        </option>
-                                    ))
-                                ) : (
-                                    <option value="" disabled>
-                                        No products available
-                                    </option>
-                                )}
-                            </select>
-                        </div>
-
-                        {/* Select Contact */}
-                        <div className="flex flex-col space-y-1">
-                            <label className="text-xs font-medium leading-none text-gray-400">
-                                Contact
-                            </label>
-                            <select
-                                value={selectedContact ?? ""}
-                                onChange={(e) => setSelectedContact(e.target.value)}
-                                className="
-            block w-full rounded-md border border-gray-600 
-            px-3 py-2 text-sm 
-            focus:outline-none 
-          "
-                            >
-                                <option value="">Choose contact</option>
-                                {contacts.length > 0 ? (
-                                    contacts.map((contact) => (
-                                        <option key={contact._id} value={contact._id}>
-                                            {contact.name}
-                                        </option>
-                                    ))
-                                ) : (
-                                    <option value="" disabled>
-                                        No contacts available
-                                    </option>
-                                )}
-                            </select>
-                        </div>
-
-                        {/* Estimate Amount */}
-                        <div className="flex flex-col space-y-1">
-                            {/* <label className="text-xs font-medium leading-none text-gray-400">
-                                Estimate Amount
-                            </label> */}
-                            <Input
-                                label="Estimate Amount"
-                                type="number"
-                                value={estimateAmount}
-                                onChange={(e) => setEstimateAmount(Number(e.target.value))}
-                                className="
-            block w-full rounded-md border border-gray-600 bg-transparent
-            px-3 py-2 text-sm 
-            focus:outline-none 
-          "
-                            />
-                        </div>
-                        {/* Assigned To (Sales Team) */}
-                        <div className="flex flex-col space-y-1">
-                            <label className="text-xs font-medium leading-none text-gray-400">
-                                Assigned To (Team Member)
-                            </label>
-                            <select
-                                value={assignedTo}
-                                onChange={(e) => setAssignedTo(e.target.value)}
-                                className="block w-full rounded-md border border-gray-600  px-3 py-2 text-sm focus:outline-none"
-                            >
-                                <option value="">-- None --</option>
-                                {teamMembers.map((tm) => (
-                                    <option key={tm._id} value={tm._id}>
-                                        {tm.firstName} {tm.lastName}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                        {/* Lead Close Date */}
-                        <div className="flex flex-col space-y-1">
-                            <label className="text-xs font-medium leading-none text-gray-400">
-                                Lead Close Date
-                            </label>
-                            <input
-                                type="date"
-                                value={closeDate}
-                                onChange={(e) => setCloseDate(e.target.value)}
-                                className="
-            block w-full rounded-md border border-gray-600 bg-transparent
-            px-3 py-2 text-sm placeholder:text-gray-400
-            focus:outline-none focus:ring-2 focus:ring-[#815bf5]
-          "
-                            />
-                        </div>
-
-                        {/* Submit Button */}
-                        <button
-                            type="button"
-                            onClick={handleAddLead}
-                            className="
-          w-full mt-4 inline-flex items-center justify-center
-          rounded-md bg-[#815bf5] px-4 py-2 text-sm font-medium
-          text-white hover:bg-[#5f31e9] focus:outline-none focus:ring-2
-          focus:ring-[#5f31e9] focus:ring-offset-2
-        "
-                        >
-                            + Assign Lead
-                        </button>
-                    </form>
-                </DialogContent>
-            </Dialog>
-
-
-
-
-            {/* Drag-and-Drop Context */}
-            <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-                {/* Horizontal scroll controls */}
-                <div className="flex justify-end mt-4 gap-2 mb-2">
-                    <Button variant="outline" onClick={handleScrollLeft}>
-                        <ArrowLeft className="h-5 w-5" />
-                    </Button>
-                    <Button variant="outline" onClick={handleScrollRight}>
-                        <ArrowRight className="h-5 w-5" />
-                    </Button>
-                </div>
-
-                <div
-                    ref={scrollContainerRef}
-                    className="
-      flex 
-      flex-nowrap
-      gap-4 
-      overflow-x-auto 
-      w-full 
-      mt-2
-      py-2 
-      scrollbar-hide
-    "
-                >
-                    {stages.map((stage, index) => (
-                        <DroppableStage
-                            key={stage.name}
-                            stage={stage}
-                            onDelete={handleDeleteStage}
-                            onEdit={handleEditStage}
-                            onAddLead={handleAddLeadToStage}
-                            onSelectToggle={handleSelectToggle}
-                        >
-                            {stage.leads.map((lead) => (
-                                <DraggableLead
-                                    key={lead._id}
-                                    lead={lead}
-                                    index={index}
-                                    setDraggedLead={setDraggedLead}
-                                />
-                            ))}
-                        </DroppableStage>
-                    ))}
-                </div>
-
-                <DragOverlay>
-                    {draggedLead ? (
-                        <Card className="p-2 border rounded shadow-lg">
-                            <h3 className="font-bold text-sm">{draggedLead.title}</h3>
-                            <p className="text-sm text-gray-400 mt-2">ID: {draggedLead.leadId}</p>
-                            <p className="text-sm text-gray-400">Amount: ₹{draggedLead.amount || 0}</p>
-                        </Card>
-                    ) : null}
-                </DragOverlay>
-            </DndContext>
-            <Dialog open={isCustomModalOpen} onOpenChange={setIsCustomModalOpen}>
-                <DialogContent className="w-96 z-[100] p-6 bg-[#0B0D29]">
-                    <div className="flex justify-between">
-                        <DialogTitle className="text-md font-medium text-white">
-                            Select Custom Date Range
-                        </DialogTitle>
-                        <DialogClose onClick={() => setIsCustomModalOpen(false)}>
-                            <CrossCircledIcon className="scale-150 hover:bg-white rounded-full hover:text-[#815BF5]" />
-                        </DialogClose>
                     </div>
 
-                    <form
-                        onSubmit={(e) => {
-                            e.preventDefault();
-                            setIsCustomModalOpen(false);
-                            setDateFilter("Custom");
-                        }}
-                        className="space-y-4"
-                    >
-                        {/* Start Date Picker */}
-                        <div className="w-full">
-                            <button
-                                type="button"
-                                className="text-start text-xs text-gray-400 mt-2 w-full border p-2 rounded"
-                            // onClick={() => setIsStartPickerOpen(true)}
-                            >
-                                {customDateRange.start ? (
-                                    <div className="flex items-center gap-1">
-                                        <FaCalendar className="h-4" />
-                                        {format(new Date(customDateRange.start), "dd-MM-yyyy")}
-                                    </div>
-                                ) : (
-                                    <div className="flex gap-1">
-                                        <FaCalendar className="h-4" />
-                                        <h1 className="text-xs">Start Date</h1>
-                                    </div>
-                                )}
-                            </button>
-                        </div>
-
-                        {/* End Date Picker */}
-                        <div className="w-full">
-                            <button
-                                type="button"
-                                className="text-start text-xs text-gray-400 mt-2 w-full border p-2 rounded"
-                            // onClick={() => setIsEndPickerOpen(true)}
-                            >
-                                {customDateRange.end ? (
-                                    <div className="flex items-center gap-1">
-                                        <FaCalendar className="h-4" />
-                                        {format(new Date(customDateRange.end), "dd-MM-yyyy")}
-                                    </div>
-                                ) : (
-                                    <div className="flex gap-1">
-                                        <FaCalendar className="h-4" />
-                                        <h1 className="text-xs">End Date</h1>
-                                    </div>
-                                )}
-                            </button>
-                        </div>
-
-                        {/* Apply Button */}
-                        <button
-                            type="submit"
-                            className="bg-[#815BF5] text-white py-2 px-4 rounded w-full text-xs"
+                    <div className="flex items-center gap-2">
+                        {/* + Lead button */}
+                        <Button
+                            variant="default"
+                            onClick={() => {
+                                setIsLeadModalOpen(true);
+                            }}
+                            className="gap-1"
+                            disabled={isCreatingLead}
                         >
-                            Apply
-                        </button>
-                    </form>
-                </DialogContent>
-            </Dialog>
+                            {isCreatingLead ? (
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            ) : (
+                                <Plus className="h-4 w-4 mr-2" />
+                            )}
+                            Add Lead
+                        </Button>
 
-            {/* Remark Dialog */}
-            <Dialog open={remarkDialogOpen} onOpenChange={setRemarkDialogOpen}>
-                <DialogContent className="p-6 bg-[#0b0d29] text-white">
-                    <DialogHeader>
-                        <DialogTitle>Add Remark</DialogTitle>
-                    </DialogHeader>
-                    <Textarea
-                        value={remark}
-                        onChange={(e) => setRemark(e.target.value)}
-                        className="w-full p-2 border border-gray-600 rounded bg-transparent"
-                        placeholder={`Add a remark for moving the lead to ${targetStage}`}
-                    />
-                    <Button variant="default" className="mt-4" onClick={handleUpdateStage}>
-                        Submit
-                    </Button>
-                </DialogContent>
-            </Dialog>
-        </div >
+                        {/* Filter button */}
+                        <Button
+                            variant="outline"
+                            onClick={openFilterModal}
+                            className="gap-1"
+                        >
+                            <Filter className="h-4 w-4 mr-2" />
+                            Filter
+                            {(assignedToFilters.length > 0 || stageFilters.length > 0 ||
+                                tagFilters.length > 0 || companyFilters.length > 0) && (
+                                    <Badge variant="secondary" className="ml-2 h-5 px-1.5">
+                                        {assignedToFilters.length + stageFilters.length +
+                                            tagFilters.length + companyFilters.length}
+                                    </Badge>
+                                )}
+                        </Button>
+                    </div>
+                </div>
+
+                {/* ----- STATS CARDS - REDESIGNED: SLEEKER & MORE ENGAGING ----- */}
+                <div className="grid grid-cols-5 gap-3 mb-6">
+                    {/* Total */}
+                    <Card className="overflow-hidden group hover:shadow-md transition-all duration-300">
+                        {/* <div className="absolute inset-0 bg-gradient-to-r from-orange-100 to-orange-50 dark:from-orange-900/20 dark:to-orange-800/5 opacity-50" /> */}
+                        <CardContent className="p-3 relative">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-xs font-medium uppercase tracking-wider text-orange-600 dark:text-orange-400">Total Leads</p>
+                                    <h3 className="text-2xl font-bold mt-1">{totalCount}</h3>
+                                </div>
+                                <div className="h-9 w-9 flex items-center justify-center rounded-full bg-orange-100 dark:bg-orange-900/30 group-hover:scale-110 transition-transform duration-200">
+                                    <FaUser className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+                                </div>
+                            </div>
+                            <div className="mt-1.5 text-xs font-medium text-muted-foreground flex items-center">
+                                <span>₹{totalAmount.toLocaleString()}</span>
+                                <span className="inline-block h-1 w-1 rounded-full bg-muted-foreground mx-1"></span>
+                                <span>Total Value</span>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Open */}
+                    <Card className="overflow-hidden group hover:shadow-md transition-all duration-300">
+                        {/* <div className="absolute inset-0 bg-gradient-to-r from-green-100 to-green-50 dark:from-green-900/20 dark:to-green-800/5 opacity-50" /> */}
+                        <CardContent className="p-3 relative">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-xs font-medium uppercase tracking-wider text-green-600 dark:text-green-400">Open Leads</p>
+                                    <h3 className="text-2xl font-bold mt-1">{openCount}</h3>
+                                </div>
+                                <div className="h-9 w-9 flex items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30 group-hover:scale-110 transition-transform duration-200">
+                                    <Eye className="h-4 w-4 text-green-600 dark:text-green-400" />
+                                </div>
+                            </div>
+                            <div className="mt-1.5 text-xs font-medium text-muted-foreground flex items-center">
+                                <span>₹{openAmount.toLocaleString()}</span>
+                                {totalCount > 0 && (
+                                    <>
+                                        <span className="inline-block h-1 w-1 rounded-full bg-muted-foreground mx-1"></span>
+                                        <span>{Math.round((openCount / totalCount) * 100)}% of total</span>
+                                    </>
+                                )}
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Closed */}
+                    <Card className="overflow-hidden group hover:shadow-md transition-all duration-300">
+                        {/* <div className="absolute inset-0 bg-gradient-to-r from-purple-100 to-purple-50 dark:from-purple-900/20 dark:to-purple-800/5 opacity-50" /> */}
+                        <CardContent className="p-3 relative">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-xs font-medium uppercase tracking-wider text-purple-600 dark:text-purple-400">Closed Leads</p>
+                                    <h3 className="text-2xl font-bold mt-1">{closedCount}</h3>
+                                </div>
+                                <div className="h-9 w-9 flex items-center justify-center rounded-full bg-purple-100 dark:bg-purple-900/30 group-hover:scale-110 transition-transform duration-200">
+                                    <EyeOff className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                                </div>
+                            </div>
+                            <div className="mt-1.5 text-xs font-medium text-muted-foreground flex items-center">
+                                <span>₹{closedAmount.toLocaleString()}</span>
+                                {totalCount > 0 && (
+                                    <>
+                                        <span className="inline-block h-1 w-1 rounded-full bg-muted-foreground mx-1"></span>
+                                        <span>{Math.round((closedCount / totalCount) * 100)}% of total</span>
+                                    </>
+                                )}
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Won */}
+                    <Card className="overflow-hidden group hover:shadow-md transition-all duration-300">
+                        {/* <div className="absolute inset-0 bg-gradient-to-r from-blue-100 to-blue-50 dark:from-blue-900/20 dark:to-blue-800/5 opacity-50" /> */}
+                        <CardContent className="p-3 relative">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-xs font-medium uppercase tracking-wider text-blue-600 dark:text-blue-400">Won Leads</p>
+                                    <h3 className="text-2xl font-bold mt-1">{wonCount}</h3>
+                                </div>
+                                <div className="h-9 w-9 flex items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30 group-hover:scale-110 transition-transform duration-200">
+                                    <CheckCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                </div>
+                            </div>
+                            <div className="mt-1.5 text-xs font-medium text-muted-foreground flex items-center">
+                                <span>₹{wonAmount.toLocaleString()}</span>
+                                {closedCount > 0 && (
+                                    <>
+                                        <span className="inline-block h-1 w-1 rounded-full bg-muted-foreground mx-1"></span>
+                                        <span>{Math.round((wonCount / closedCount) * 100)}% win rate</span>
+                                    </>
+                                )}
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Lost */}
+                    <Card className="overflow-hidden group hover:shadow-md transition-all duration-300">
+                        {/* <div className="absolute inset-0 bg-gradient-to-r from-red-100 to-red-50 dark:from-red-900/20 dark:to-red-800/5 opacity-50" /> */}
+                        <CardContent className="p-3 relative">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-xs font-medium uppercase tracking-wider text-red-600 dark:text-red-400">Lost Leads</p>
+                                    <h3 className="text-2xl font-bold mt-1">{lostCount}</h3>
+                                </div>
+                                <div className="h-9 w-9 flex items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30 group-hover:scale-110 transition-transform duration-200">
+                                    <Cross2Icon className="h-4 w-4 text-red-600 dark:text-red-400" />
+                                </div>
+                            </div>
+                            <div className="mt-1.5 text-xs font-medium text-muted-foreground flex items-center">
+                                <span>₹{lostAmount.toLocaleString()}</span>
+                                {closedCount > 0 && (
+                                    <>
+                                        <span className="inline-block h-1 w-1 rounded-full bg-muted-foreground mx-1"></span>
+                                        <span>{Math.round((lostCount / closedCount) * 100)}% loss rate</span>
+                                    </>
+                                )}
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+
+
+                <FilterModal
+                    isOpen={filterModalOpen}
+                    onClose={closeFilterModal}
+                    // Data
+                    teamMembers={teamMembers}
+                    stages={[
+                        ...(pipelines.find(p => p._id === selectedPipeline)?.openStages.map(s => s.name) || []),
+                        ...(pipelines.find(p => p._id === selectedPipeline)?.closeStages.map(s => s.name) || []),
+                    ]}
+                    tags={tags.map(t => t.name)}
+                    companies={companies.map(c => c.companyName)}
+                    // Already selected
+                    selectedAssignedTo={assignedToFilters}
+                    selectedStages={stageFilters}
+                    selectedTags={tagFilters}
+                    selectedCompanies={companyFilters}
+                    // Callbacks
+                    onApply={applyFilters}
+                    onClear={clearFilters}
+                />
+
+                {/* Horizontal scroll controls for pipeline */}
+                <div className="flex justify-between items-center mb-3">
+                    <div>
+                        <h2 className="text-xl font-semibold">Pipeline Stages</h2>
+                        {isFetchingLeads && (
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                                <span>Updating leads...</span>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="flex gap-2">
+                        <Button variant="outline" size="icon" onClick={handleScrollLeft}>
+                            <ArrowLeft className="h-4 w-4" />
+                        </Button>
+                        <Button variant="outline" size="icon" onClick={handleScrollRight}>
+                            <ArrowRight className="h-4 w-4" />
+                        </Button>
+                    </div>
+                </div>
+
+                {/* Drag-and-Drop Context */}
+                <DndContext
+                    sensors={sensors}
+                    onDragEnd={handleDragEnd}
+                    onDragStart={handleDragStart}
+                >
+                    <div
+                        ref={scrollContainerRef}
+                        className="w-full overflow-x-auto scrollbar-hide h-[calc(100vh-380px)]" // Adjusted height for sleeker cards
+                    >
+                        <div className="flex gap-4 p-2 mb-12 min-w-max">
+                            {stages?.map((stage) => (
+                                <DroppableStage
+                                    key={stage._id || stage.name}
+                                    stage={stage}
+                                    onAddLead={handleAddLeadToStage}
+                                    onEditStage={handleEditStage}
+                                    onDeleteStage={handleDeleteStage}
+                                    onBulkDeleteToggle={handleBulkDeleteToggle}
+                                    isBulkDeleteEnabled={isBulkDeleteEnabled}
+                                >
+                                    {stage.leads?.map((lead) => (
+                                        <DraggableLead
+                                            key={lead._id}
+                                            lead={lead}
+                                            setDraggedLead={setDraggedLead}
+                                        />
+                                    ))}
+                                </DroppableStage>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Improved drag overlay with animation and highlights */}
+                    <DragOverlay>
+                        {draggedLead ? (
+                            <Card className="w-[280px] shadow-xl border-2 border-primary bg-background/80 backdrop-blur-sm animate-pulse">
+                                <CardContent className="p-3">
+                                    <div className="flex items-center gap-2">
+                                        <div className="h-2 w-2 rounded-full bg-primary animate-ping" />
+                                        <h3 className="font-medium text-sm">{draggedLead.title}</h3>
+                                    </div>
+                                    <div className="flex items-center justify-between mt-2">
+                                        <Badge variant="outline" className="text-xs">
+                                            {draggedLead.leadId}
+                                        </Badge>
+                                        <p className="text-xs font-medium">
+                                            ₹{draggedLead.amount?.toLocaleString() || 0}
+                                        </p>
+                                    </div>
+                                    {draggedLead.contact && (
+                                        <p className="text-xs text-muted-foreground mt-1 truncate">
+                                            {draggedLead.contact.firstName} {draggedLead.contact.lastName}
+                                        </p>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        ) : null}
+                    </DragOverlay>
+                </DndContext>
+
+                {/* Add Lead Dialog */}
+                <Dialog
+                    open={isLeadModalOpen}
+                    onOpenChange={(open) => {
+                        if (!open) {
+                            resetAddLeadForm();
+                        }
+                        setIsLeadModalOpen(open);
+                    }}
+                >
+                    <DialogContent className="sm:max-w-[500px] h-screen m-auto overflow-y-scroll scrollbar-hide z-[100]">
+                        <DialogHeader>
+                            <DialogTitle className="text-xl font-semibold">Add New Lead</DialogTitle>
+                            <DialogDescription>
+                                Fill in the details to create a new sales lead.
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        <div className="grid gap-4 py-4">
+                            {/* Pipeline & Stage Row */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Pipeline</label>
+                                    <Select
+                                        value={modalPipeline}
+                                        onValueChange={(val) => setModalPipeline(val)}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select pipeline" />
+                                        </SelectTrigger>
+                                        <SelectContent className="z-[100]">
+                                            {pipelines?.map((pl) => (
+                                                <SelectItem className="hover:bg-accent" key={pl._id} value={pl._id}>
+                                                    {pl.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Stage</label>
+                                    <Select
+                                        value={modalStage}
+                                        onValueChange={(val) => setModalStage(val)}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select stage" />
+                                        </SelectTrigger>
+                                        <SelectContent className="z-[100]">
+                                            {modalStages?.map((st) => (
+                                                <SelectItem className="hover:bg-accent" key={st._id} value={st.name}>
+                                                    {st.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+
+                            {/* Lead Title */}
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">Lead Title *</label>
+                                <Input
+                                    type="text"
+                                    placeholder="e.g. Enterprise Software Deal"
+                                    value={leadTitle}
+                                    onChange={(e) => setLeadTitle(e.target.value)}
+                                    required
+                                />
+                            </div>
+
+                            {/* Description */}
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">Description</label>
+                                <Textarea
+                                    placeholder="Lead details..."
+                                    value={description}
+                                    onChange={(e) => setDescription(e.target.value)}
+                                />
+                            </div>
+
+                            {/* Product & Contact Row */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Product</label>
+                                    <Select
+                                        value={selectedProduct ?? "NONE"}
+                                        onValueChange={(val) => setSelectedProduct(val)}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Choose product" />
+                                        </SelectTrigger>
+                                        <SelectContent className="z-[100]">
+                                            <SelectItem value="NONE">Select product</SelectItem>
+                                            {products?.map((prod) => (
+                                                <SelectItem className='hover:bg-accent' key={prod._id} value={prod._id}>
+                                                    {prod.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Contact</label>
+                                    <Select
+                                        value={selectedContact ?? "NONE"}
+                                        onValueChange={(val) => setSelectedContact(val)}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Choose contact" />
+                                        </SelectTrigger>
+                                        <SelectContent className="z-[100]">
+                                            <SelectItem value="NONE">Select contact</SelectItem>
+                                            {contacts?.map((contact) => (
+                                                <SelectItem className="hover:bg-accent" key={contact._id} value={contact._id}>
+                                                    {contact.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+
+                            {/* Estimate Amount & Close Date Row */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Estimate Amount</label>
+                                    <div className="flex items-center border rounded-md overflow-hidden focus-within:ring-1 focus-within:ring-primary">
+                                        <div className="px-3 py-2 bg-muted">
+                                            <IndianRupee className="h-4 w-4 text-muted-foreground" />
+                                        </div>
+                                        <input
+                                            type="number"
+                                            placeholder="0.00"
+                                            value={estimateAmount}
+                                            onChange={(e) => setEstimateAmount(Number(e.target.value))}
+                                            className="flex-1 px-3 py-2 text-sm border-0 focus:outline-none bg-transparent"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Close Date</label>
+                                    <Button
+                                        variant="outline"
+                                        className="w-full justify-start text-left font-normal"
+                                        onClick={() => setDateDialogOpen(true)}
+                                    >
+                                        <CalendarDays className="mr-2 h-4 w-4" />
+                                        {closeDate ? format(closeDate, "PPP") : "Select date"}
+                                    </Button>
+                                </div>
+                            </div>
+
+                            {/* Assigned To & Source Row */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Assigned To</label>
+                                    <Select
+                                        value={assignedTo}
+                                        onValueChange={(val) => setAssignedTo(val)}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Assigned To" />
+                                        </SelectTrigger>
+                                        <SelectContent className="z-[100]">
+                                            <SelectItem value="NONE">Select User</SelectItem>
+                                            {teamMembers?.map((tm) => (
+                                                <SelectItem className="hover:bg-accent" key={tm._id} value={tm._id}>
+                                                    {tm.firstName} {tm.lastName}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Source</label>
+                                    <Popover open={sourceOpen} onOpenChange={setSourceOpen}>
+                                        <PopoverTrigger asChild>
+                                            <Button
+                                                variant="outline"
+                                                className="w-full justify-start text-left font-normal"
+                                            >
+                                                <Tag className="mr-2 h-4 w-4" />
+                                                {popoverSourceInputValue || "Select source"}
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-[300px] p-0" align="start">
+                                            <SourceSelectPopup
+                                                sources={sources}
+                                                source={source}
+                                                setSource={setSource}
+                                                newSource={newSource}
+                                                setSources={setSources}
+                                                setNewSource={setNewSource}
+                                                searchSourceQuery={searchSourceQuery}
+                                                setSearchSourceQuery={setSearchSourceQuery}
+                                                onClose={handleCloseSourcePopup}
+                                                closeOnSelect={handleSourceClose}
+                                            />
+                                        </PopoverContent>
+                                    </Popover>
+                                </div>
+                            </div>
+                        </div>
+
+                        <DialogFooter>
+                            <Button
+                                variant="outline"
+                                onClick={() => {
+                                    resetAddLeadForm();
+                                    setIsLeadModalOpen(false);
+                                }}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                type="button"
+                                onClick={handleAddLead}
+                                disabled={isCreatingLead}
+                            >
+                                {isCreatingLead ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Creating...
+                                    </>
+                                ) : (
+                                    <>Create Lead</>
+                                )}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Calendar Dialog for Lead Close Date */}
+                <Dialog open={dateDialogOpen} onOpenChange={setDateDialogOpen}>
+                    <DialogContent className="w-fit z-[100] p-0">
+                        <DialogHeader className="p-4 pb-0">
+                            <DialogTitle>Select Close Date</DialogTitle>
+                            <DialogDescription>
+                                Choose the expected date to close this lead.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="p-4 pt-0">
+                            <Calendar
+                                mode="single"
+                                selected={closeDate}
+                                onSelect={(day) => setCloseDate(day)}
+                                initialFocus
+                                className="rounded-md border"
+                            />
+                        </div>
+                        <DialogFooter className="p-4 pt-0">
+                            <Button
+                                onClick={() => setDateDialogOpen(false)}
+                            >
+                                Done
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Custom Date Range Dialog */}
+                <Dialog
+                    open={isCustomModalOpen}
+                    onOpenChange={(open) => {
+                        if (!open) {
+                            // Only apply the current custom range if both dates are selected
+                            if (!customDateRange.start || !customDateRange.end) {
+                                toast({
+                                    title: "Incomplete date range",
+                                    description: "Both start and end dates are required",
+                                    variant: "destructive",
+                                });
+                            }
+                        }
+                        setIsCustomModalOpen(open);
+                    }}
+                >
+                    <DialogContent className="sm:max-w-[500px] z-[100]">
+                        <DialogHeader>
+                            <DialogTitle>Custom Date Range</DialogTitle>
+                            <DialogDescription>
+                                Select specific start and end dates to filter your leads.
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        <div className="grid grid-cols-2 gap-4 py-4">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">Start Date</label>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            variant="outline"
+                                            className="w-full justify-start text-left font-normal"
+                                        >
+                                            {customDateRange.start ? (
+                                                format(customDateRange.start, "PPP")
+                                            ) : (
+                                                <span className="text-muted-foreground">Pick a date</span>
+                                            )}
+                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0" align="start">
+                                        <Calendar
+                                            mode="single"
+                                            selected={customDateRange.start}
+                                            onSelect={(date) =>
+                                                setCustomDateRange((prev) => ({ ...prev, start: date || undefined }))
+                                            }
+                                            initialFocus
+                                        />
+                                    </PopoverContent>
+                                </Popover>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">End Date</label>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            variant="outline"
+                                            className="w-full justify-start text-left font-normal"
+                                        >
+                                            {customDateRange.end ? (
+                                                format(customDateRange.end, "PPP")
+                                            ) : (
+                                                <span className="text-muted-foreground">Pick a date</span>
+                                            )}
+                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0" align="start">
+                                        <Calendar
+                                            mode="single"
+                                            selected={customDateRange.end}
+                                            onSelect={(date) =>
+                                                setCustomDateRange((prev) => ({ ...prev, end: date || undefined }))
+                                            }
+                                            initialFocus
+                                        />
+                                    </PopoverContent>
+                                </Popover>
+                            </div>
+                        </div>
+
+                        <DialogFooter>
+                            <Button
+                                variant="outline"
+                                onClick={() => setIsCustomModalOpen(false)}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                onClick={() => {
+                                    if (!customDateRange.start || !customDateRange.end) {
+                                        toast({
+                                            title: "Incomplete selection",
+                                            description: "Please select both start and end dates",
+                                            variant: "destructive",
+                                        });
+                                        return;
+                                    }
+
+                                    if (customDateRange.start > customDateRange.end) {
+                                        toast({
+                                            title: "Invalid date range",
+                                            description: "End date must be after start date",
+                                            variant: "destructive",
+                                        });
+                                        return;
+                                    }
+
+                                    setDateFilter("Custom");
+                                    setIsCustomModalOpen(false);
+                                }}
+                            >
+                                Apply Range
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Edit Stage Dialog */}
+                <Dialog open={isEditStageDialogOpen} onOpenChange={setIsEditStageDialogOpen}>
+                    <DialogContent className="sm:max-w-[425px] z-[100]">
+                        <DialogHeader>
+                            <DialogTitle>Edit Stage</DialogTitle>
+                            <DialogDescription>
+                                Update the name of this pipeline stage.
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        <div className="space-y-4 py-4">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">Stage Name</label>
+                                <Input
+                                    value={editedStageName}
+                                    onChange={(e) => setEditedStageName(e.target.value)}
+                                    placeholder="Enter stage name"
+                                />
+                            </div>
+                        </div>
+
+                        <DialogFooter>
+                            <Button
+                                variant="outline"
+                                onClick={() => setIsEditStageDialogOpen(false)}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                onClick={handleEditStageSubmit}
+                                disabled={isUpdatingStage || !editedStageName.trim()}
+                            >
+                                {isUpdatingStage ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Saving...
+                                    </>
+                                ) : (
+                                    <>Save Changes</>
+                                )}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Delete Stage Alert Dialog */}
+                <AlertDialog open={isDeleteStageDialogOpen} onOpenChange={setIsDeleteStageDialogOpen}>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                Are you sure you want to delete the stage "{selectedStage?.name}"? This action cannot be undone.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                onClick={handleDeleteStageSubmit}
+                                disabled={isUpdatingStage}
+                            >
+                                {isUpdatingStage ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Deleting...
+                                    </>
+                                ) : (
+                                    <>Delete Stage</>
+                                )}
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+
+                {/* Remark Dialog */}
+                <Dialog open={remarkDialogOpen} onOpenChange={setRemarkDialogOpen}>
+                    <DialogContent className="sm:max-w-[500px] z-[100]">
+                        <DialogHeader>
+                            <DialogTitle>Stage Change</DialogTitle>
+                            <DialogDescription>
+                                Please provide a note about this stage change.
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        <div className="py-4">
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center gap-2">
+                                    <Badge
+                                        className="px-3 py-1"
+                                        style={{
+                                            backgroundColor: oldStageObj?.color || "#999",
+                                            color: isDarkColor(oldStageObj?.color) ? 'white' : 'black'
+                                        }}
+                                    >
+                                        {oldStageObj?.name || draggedLead?.stage}
+                                    </Badge>
+                                    <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                                    <Badge
+                                        className="px-3 py-1"
+                                        style={{
+                                            backgroundColor: newStageObj?.color || "#999",
+                                            color: isDarkColor(newStageObj?.color) ? 'white' : 'black'
+                                        }}
+                                    >
+                                        {newStageObj?.name || targetStage}
+                                    </Badge>
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <label className="text-sm font-medium">Lead</label>
+                                    <Badge variant="outline">{draggedLead?.leadId}</Badge>
+                                </div>
+                                <p className="text-sm font-semibold">{draggedLead?.title}</p>
+                            </div>
+
+                            <div className="space-y-2 mt-4">
+                                <label className="text-sm font-medium">Note about this change*</label>
+                                <Textarea
+                                    value={remark}
+                                    onChange={(e) => setRemark(e.target.value)}
+                                    placeholder="Why is this lead changing stages?"
+                                    className="min-h-[100px]"
+                                />
+                            </div>
+                        </div>
+
+                        <DialogFooter>
+                            <Button
+                                variant="outline"
+                                onClick={() => {
+                                    setRemarkDialogOpen(false);
+                                    setDraggedLead(null);
+                                    setTargetStage(null);
+                                    setRemark("");
+                                }}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                onClick={handleUpdateStage}
+                                disabled={isUpdatingStage || !remark.trim()}
+                            >
+                                {isUpdatingStage ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Updating...
+                                    </>
+                                ) : (
+                                    <>Move Lead</>
+                                )}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+            </div>
+        </div>
     );
 }
 
-/* ---------------- Draggable Lead ---------------- */
+/* Helper function to determine if a color is dark (for text contrast) */
+function isDarkColor(hexColor?: string): boolean {
+    if (!hexColor) return false;
+
+    // Remove # if present
+    const hex = hexColor.replace('#', '');
+
+    // Convert hex to RGB
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+
+    // Calculate brightness (ITU-R BT.709)
+    const brightness = (r * 0.299 + g * 0.587 + b * 0.114) / 255;
+
+    // Return true if color is dark
+    return brightness < 0.5;
+}
+
+/* ---------------- Draggable Lead Component ---------------- */
 function DraggableLead({
     lead,
     setDraggedLead,
-    index,
 }: {
     lead: Lead;
     setDraggedLead: React.Dispatch<React.SetStateAction<Lead | null>>;
-    index: number;
 }) {
     const router = useRouter();
-
     const { attributes, listeners, setNodeRef } = useDraggable({
         id: lead._id,
-        onDragStart: () => {
-            setDraggedLead(lead);
-        },
-        onDragEnd: () => {
-            setDraggedLead(null);
+        data: {
+            lead,
         },
     });
 
@@ -1262,91 +2093,113 @@ function DraggableLead({
     };
 
     return (
-        <Card onMouseDown={(e) => e.stopPropagation()}
-            onClick={handleNavigate} className=" mt-2  border bg-[#121212] hover:border-primary   rounded-none shadow-sm relative cursor-pointer">
-
-
-            {/* Drag Handle */}
+        <Card
+            className="mt-3 border hover:border-primary hover:shadow-md transition-all duration-200 cursor-pointer"
+        >
             <div
                 ref={setNodeRef}
                 {...attributes}
                 {...listeners}
-                className="rounded p-2  "
-                onMouseDown={() => setDraggedLead(lead)}
+                className="p-3"
+                onClick={handleNavigate}
             >
-                <div className="flex justify-between">
-                    <h3 className="text-sm text-neutral-300">{lead.title}</h3>
-
+                <div className="flex justify-between items-start">
+                    <h3 className="font-medium text-sm line-clamp-2">{lead.title}</h3>
+                    <Badge variant="outline" className="text-xs h-5">
+                        {lead.leadId}
+                    </Badge>
                 </div>
-                {/* Lead Info */}
-                <div className="flex items-center gap-1">
-                    <div>
-                        <Badge className="text-xs">{lead.leadId}</Badge>
-                    </div>
-                    <div>
-                        {/* Time ago (e.g., "5 hours ago") */}
-                        <h1 className="text-[10px] text-muted-foreground">
-                            {formatDistanceToNow(new Date(lead.createdAt), { addSuffix: true })}
-                        </h1>
 
-                        {/* If you also want updatedAt timestamp */}
-                        {lead.updatedAt && (
-                            <h1 className="text-[10px] text-muted-foreground">
-                                (Updated {formatDistanceToNow(new Date(lead.updatedAt), { addSuffix: true })})
-                            </h1>
-                        )}
-                    </div>
-                    {/* TIme stamps here */}
-                </div>
-                <div className="p-1 text-xs">
-                    <div className="flex items-center gap-1">
-                        <FaUser className="h-3 text-muted-foreground " />
-                        <h1>{lead.contact?.firstName} {lead.contact?.lastName}</h1>
-                    </div>
-                    <div className="flex text-xs items-center gap-1">
-                        <FaMoneyBill className="h-3 text-muted-foreground    " />
-                        <h1 className="text-xs text-muted-foreground">Amount: <span className=" text-white">₹{lead.amount}</span></h1>
-                    </div>
-                    <div className="flex items-center text-xs gap-1">
-                        <FaCalendar className="h-3 text-muted-foreground    " />
-                        <h1 className="text-xs text-muted-foreground">Close Date: <span className=" text-white">{lead.closeDate ? format(new Date(lead.closeDate), "dd-MM-yyyy") : "N/A"}</span>
-                        </h1>
-                    </div>
-                    <div className="flex items-center gap-1">
-                        <FaCalendar className="h-3 text-muted-foreground    " />
-                        <h1 className="text-xs text-muted-foreground">Assigned To: <span className=" text-blue-400">{lead.assignedTo?.firstName}{' '}
-                            {lead.assignedTo?.lastName}
+                <Separator className="my-2" />
+
+                <div className="space-y-2 text-xs">
+                    <div className="flex items-center gap-2">
+                        <Avatar className="h-6 w-6">
+                            <AvatarFallback className="text-[10px] bg-primary/10">
+                                {lead.contact?.firstName?.[0]}{lead.contact?.lastName?.[0]}
+                            </AvatarFallback>
+                        </Avatar>
+                        <span className="text-muted-foreground line-clamp-1">
+                            {lead.contact?.firstName} {lead.contact?.lastName}
                         </span>
-                        </h1>
                     </div>
+
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                            <IndianRupee className="h-3 w-3 text-muted-foreground" />
+                            <span className="font-medium">{lead.amount?.toLocaleString() || 0}</span>
+                        </div>
+
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger>
+                                    <div className="flex items-center gap-1.5">
+                                        <CalendarIcon className="h-3 w-3 text-muted-foreground" />
+                                        <span className="text-muted-foreground">
+                                            {lead.closeDate
+                                                ? format(new Date(lead.closeDate), "dd MMM")
+                                                : "N/A"}
+                                        </span>
+                                    </div>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Close Date: {lead.closeDate
+                                        ? format(new Date(lead.closeDate), "PPP")
+                                        : "Not set"}</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    </div>
+
+                    {lead.assignedTo && (
+                        <div className="flex items-center gap-1.5 mt-2">
+                            <Avatar className="h-5 w-5">
+                                <AvatarFallback className="bg-blue-500/10 text-blue-500 text-[8px]">
+                                    {lead.assignedTo?.firstName?.[0]}{lead.assignedTo?.lastName?.[0]}
+                                </AvatarFallback>
+                            </Avatar>
+                            <span className="text-xs text-blue-500">
+                                {lead.assignedTo?.firstName} {lead.assignedTo?.lastName}
+                            </span>
+                        </div>
+                    )}
+
+                    {lead.createdAt && (
+                        <p className="text-[10px] text-muted-foreground mt-2">
+                            Created {formatDistanceToNow(new Date(lead.createdAt), { addSuffix: true })}
+                        </p>
+                    )}
                 </div>
             </div>
         </Card>
     );
 }
 
-/* ---------------- Droppable Stage ---------------- */
+/* ---------------- Droppable Stage Component ---------------- */
 function DroppableStage({
     stage,
     children,
-    onDelete,
-    onEdit,
     onAddLead,
-    onSelectToggle,
+    onEditStage,
+    onDeleteStage,
+    onBulkDeleteToggle,
+    isBulkDeleteEnabled,
 }: {
     stage: Stage;
     children: React.ReactNode;
-    onDelete: (stageName: string) => void;
-    onEdit: (stage: Stage) => void;
-    onAddLead: (stageName: string) => void;
-    onSelectToggle: (stageName: string) => void;
+    onAddLead: (stage: Stage) => void;
+    onEditStage: (stage: Stage) => void;
+    onDeleteStage: (stage: Stage) => void;
+    onBulkDeleteToggle: (stageName: string) => void;
+    isBulkDeleteEnabled: boolean;
 }) {
     const { setNodeRef, isOver } = useDroppable({
         id: stage.name,
     });
 
-    const totalAmount = stage.leads.reduce((sum, ld) => sum + (ld.amount || 0), 0);
+    const totalAmount = stage?.leads?.reduce((sum, ld) => sum + (ld.amount || 0), 0) || 0;
     const [selectedStages, setSelectedStages] = useState<string[]>([]);
+    const [isCollapsed, setIsCollapsed] = useState(false);
 
     function handleSelectToggle(stageName: string) {
         setSelectedStages((prev) =>
@@ -1354,63 +2207,260 @@ function DroppableStage({
         );
     }
 
+    const handleBulkDeleteToggle = (stageName: string) => {
+        onBulkDeleteToggle(stageName);
+    };
+
     return (
-        <Card className=" min-w-[300px] bg-background  sm:min-w-[350px] md:min-w-[280px]">
-            <div
-                ref={setNodeRef}
-                // We'll keep `border-t-4` (or 2) as the thickness, but override color via inline style
-                className={` rounded-lg min-h-screen       border-t-2 
-                       ${isOver ? "" : ""}`}
-                style={{ borderTopColor: stage.color }}
-            >
+        <Card
+            className={cn(
+                "min-w-[300px] border bg-card transition-all duration-150",
+                isOver && "ring-2 ring-primary ring-offset-2"
+            )}
+            style={{
+                borderTopWidth: '3px',
+                borderTopColor: stage.color,
+                boxShadow: isOver ? `0 0 0 1px ${stage.color}` : undefined
+            }}
+        >
+            <CardHeader className="p-3 pb-1 space-y-0">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <h3 className="font-medium text-sm">
+                            {stage.name}
+                        </h3>
+                        <Badge variant="secondary" className="text-xs">
+                            {stage?.leads?.length || 0}
+                        </Badge>
+                    </div>
 
-                <div className=" bg-[#121212]   rounded-t-lg  items-center">
-                    <div className="flex justify-between  items-center">
-                        <h3 className="font-medium text-sm px-4  flex justify-between items-center">
+                    <div className="flex items-center">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => setIsCollapsed(!isCollapsed)}
+                        >
+                            {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+                        </Button>
 
-                            {stage.name}</h3>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="text-gray-500">
-                                    <DotsVerticalIcon />
+                                <Button variant="ghost" size="icon" className="h-7 w-7">
+                                    <DotsVerticalIcon className="h-4 w-4" />
                                 </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent>
+                            <DropdownMenuContent align="end">
                                 <DropdownMenuLabel>Stage Actions</DropdownMenuLabel>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => onDelete(stage.name)}>
-                                    Delete Stage
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => onEdit(stage)}>
-                                    Edit Stage
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => onAddLead(stage.name)}>
+                                <DropdownMenuItem onClick={() => onAddLead(stage)}>
+                                    <Plus className="h-4 w-4 mr-2" />
                                     Add Lead
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => onSelectToggle(stage.name)}>
-                                    Select/Unselect
+                                <DropdownMenuItem onClick={() => onEditStage(stage)}>
+                                    <Settings className="h-4 w-4 mr-2" />
+                                    Edit Stage
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => onDeleteStage(stage)} className="text-destructive">
+                                    <Cross2Icon className="h-4 w-4 mr-2" />
+                                    Delete Stage
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </div>
-                    <div className=" px-4 text-sm flex border-b pb-2 gap-2 text-gray-400">
-                        <p className="text-xs">{`${stage.leads.length} leads`}</p>
-                        <p className="text-green-500 text-xs">
-                            ₹<span className="text-white ml-1">{totalAmount}/-</span>
-                        </p>
-                    </div>
                 </div>
 
+                <div className="flex items-center justify-between py-2 text-sm">
+                    <p className="text-muted-foreground text-xs">Total:</p>
+                    <p className="font-medium text-xs">₹{totalAmount.toLocaleString()}</p>
+                </div>
+            </CardHeader>
 
-
-                {/* Optional checkbox if "selectedStages" includes this stage */}
-                {selectedStages.includes(stage.name) && (
-                    <input type="checkbox" className="mt-2" />
+            <div
+                ref={setNodeRef}
+                className={cn(
+                    "p-2 min-h-[calc(100vh-460px)] transition-all duration-300",
+                    isCollapsed && "opacity-50"
+                )}
+            >
+                {isBulkDeleteEnabled && (
+                    <div className="mb-2 p-2 bg-destructive/10 border border-destructive/20 rounded-md">
+                        <label className="flex items-center space-x-2 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                onChange={() => handleBulkDeleteToggle(stage.name)}
+                                className="rounded text-primary focus:ring-primary"
+                            />
+                            <span className="text-xs font-medium">Select for bulk delete</span>
+                        </label>
+                    </div>
                 )}
 
-
                 {children}
+
+                {stage.leads?.length === 0 && (
+                    <div className="flex flex-col items-center justify-center h-40 text-center border border-dashed rounded-md p-4">
+                        <p className="text-sm text-muted-foreground mb-2">No leads in this stage</p>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="mt-2"
+                            onClick={() => onAddLead(stage)}
+                        >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add Lead
+                        </Button>
+                    </div>
+                )}
             </div>
-        </Card >
+        </Card>
     );
 }
+
+/* ---------------- Source Select Popup Component ---------------- */
+const SourceSelectPopup: React.FC<{
+    sources: ISource[];
+    source: string;
+    setSource: (val: string) => void;
+    newSource: string;
+    setNewSource: React.Dispatch<React.SetStateAction<string>>;
+    setSources: React.Dispatch<React.SetStateAction<ISource[]>>;
+    searchSourceQuery: string;
+    setSearchSourceQuery: React.Dispatch<React.SetStateAction<string>>;
+    onClose: () => void;
+    closeOnSelect: (sourceName: string) => void;
+    role?: string;
+}> = ({
+    sources,
+    source,
+    setSource,
+    newSource,
+    setNewSource,
+    setSources,
+    searchSourceQuery,
+    setSearchSourceQuery,
+    onClose,
+    closeOnSelect,
+    role,
+}) => {
+        const { toast } = useToast();
+        const [isCreatingSource, setIsCreatingSource] = useState(false);
+
+        // Filter the sources by the search query
+        const filteredSources = sources.filter((src) =>
+            src.name.toLowerCase().includes(searchSourceQuery.toLowerCase())
+        );
+
+        // When user selects a source from the list
+        const handleSelectSource = (selectedSourceId: string) => {
+            const selected = sources.find((src) => src._id === selectedSourceId);
+            if (selected) {
+                setSource(selected._id);          // store the chosen source's _id
+                closeOnSelect(selected.name);     // to show in the button label, e.g.
+            }
+        };
+
+        // Create new source
+        const handleCreateSource = async () => {
+            if (!newSource.trim()) {
+                toast({
+                    title: "Source name required",
+                    description: "Please enter a name for the new source",
+                    variant: "destructive",
+                });
+                return;
+            }
+
+            try {
+                setIsCreatingSource(true);
+                // API endpoint for new source creation
+                const response = await axios.post("/api/sources", {
+                    name: newSource.trim(),
+                });
+
+                if (response.status === 201) {
+                    // Add the new source to the local list
+                    setSources((prev) => [...prev, response.data]);
+                    setNewSource("");
+                    toast({
+                        title: "Source created",
+                        description: "New lead source has been created successfully",
+                    });
+                }
+            } catch (error) {
+                console.error("Error creating source:", error);
+                toast({
+                    title: "Failed to create source",
+                    description: "There was an error creating the lead source",
+                    variant: "destructive",
+                });
+            } finally {
+                setIsCreatingSource(false);
+            }
+        };
+
+        return (
+            <div className="p-2">
+                <div className="relative mb-3">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        placeholder="Search sources..."
+                        className="pl-8"
+                        value={searchSourceQuery}
+                        onChange={(e) => setSearchSourceQuery(e.target.value)}
+                    />
+                </div>
+
+                <ScrollArea className="h-60 border rounded-md p-1">
+                    {filteredSources.length === 0 ? (
+                        <div className="p-4 text-center text-sm text-muted-foreground">
+                            No sources found
+                        </div>
+                    ) : (
+                        <div className="space-y-1 p-1">
+                            {filteredSources.map((src) => (
+                                <div
+                                    key={src._id}
+                                    className={cn(
+                                        "flex items-center justify-between p-2 rounded-md cursor-pointer hover:bg-accent",
+                                        source === src._id && "bg-accent"
+                                    )}
+                                    onClick={() => handleSelectSource(src._id)}
+                                >
+                                    <span className="text-sm">{src.name}</span>
+                                    {source === src._id && (
+                                        <CheckCircle className="h-4 w-4 text-primary" />
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </ScrollArea>
+
+                <Separator className="my-3" />
+
+                <div className="space-y-2">
+                    <p className="text-sm font-medium">Create New Source</p>
+                    <div className="flex gap-2">
+                        <Input
+                            placeholder="Enter source name"
+                            value={newSource}
+                            onChange={(e) => setNewSource(e.target.value)}
+                        />
+                        <Button
+                            size="icon"
+                            onClick={handleCreateSource}
+                            disabled={isCreatingSource || !newSource.trim()}
+                        >
+                            {isCreatingSource ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                                <Plus className="h-4 w-4" />
+                            )}
+                        </Button>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+

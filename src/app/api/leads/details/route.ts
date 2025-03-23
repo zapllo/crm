@@ -18,7 +18,7 @@ export async function GET(req: Request) {
                     path: 'company', // Fetch company details related to contact
                     select: 'companyName country state city shippingAddress pincode', // Only necessary fields
                 },
-            })
+            }).populate('source')
             .populate('assignedTo', 'firstName lastName email whatsappNumber')
             .populate('product', 'productName')
             .exec();

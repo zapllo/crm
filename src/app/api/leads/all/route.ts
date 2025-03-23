@@ -1,13 +1,26 @@
 import connectDB from '@/lib/db';
+import { getDataFromToken } from '@/lib/getDataFromToken';
 import Lead from '@/models/leadModel';
-import { NextResponse } from 'next/server';
+import { User } from '@/models/userModel';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
     try {
         await connectDB();
+        const userData = getDataFromToken(request);
+        if (!userData) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+        }
 
-        // Fetch all leads without any filter
-        const leads = await Lead.find();
+        // Find the user in the database
+        const user = await User.findById(userData).select("organization");
+        if (!user?.organization) {
+            return NextResponse.json({ error: "User organization not found" }, { status: 403 });
+        }
+
+        const leads = await Lead.find({ organization: user.organization })
+            .populate('contact')
+            .sort({ createdAt: -1 });
 
         return NextResponse.json(leads, { status: 200 });
     } catch (error) {

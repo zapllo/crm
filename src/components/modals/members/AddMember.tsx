@@ -1,15 +1,22 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { DialogClose } from "@radix-ui/react-dialog";
-import { CrossCircledIcon } from "@radix-ui/react-icons";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import axios from "axios";
 
 interface AddMemberProps {
@@ -17,6 +24,11 @@ interface AddMemberProps {
   setIsOpen: (val: boolean) => void;
   onAdded: () => void;
   orgId: string;
+}
+
+interface Role {
+  _id: string;
+  name: string;
 }
 
 export default function AddMember({
@@ -30,6 +42,22 @@ export default function AddMember({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [roleId, setRoleId] = useState("");
+  const [roles, setRoles] = useState<Role[]>([]);
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchRoles();
+    }
+  }, [isOpen]);
+
+  const fetchRoles = async () => {
+    try {
+      const response = await axios.get<Role[]>('/api/roles');
+      setRoles(response.data);
+    } catch (error) {
+      console.error("Failed to fetch roles:", error);
+    }
+  };
 
   const handleSubmit = async () => {
     try {
@@ -37,95 +65,110 @@ export default function AddMember({
         firstName,
         lastName,
         email,
-        password, // <--- REQUIRED
+        password,
         orgId,
-        roleId,
+        roleId: roleId || null,
       });
       onAdded();
       setIsOpen(false);
-      // reset fields
-      setFirstName("");
-      setLastName("");
-      setEmail("");
-      setPassword("");
-      setRoleId("");
+      resetForm();
     } catch (error) {
       console.error("Failed to add member:", error);
     }
   };
 
+  const resetForm = () => {
+    setFirstName("");
+    setLastName("");
+    setEmail("");
+    setPassword("");
+    setRoleId("");
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="p-6 max-w-md w-full text-xs bg-[#0b0d29] text-white">
-        <div className="flex justify-between items-center mb-4">
-          <DialogHeader>
-            <DialogTitle className="text-sm font-bold">Add Member</DialogTitle>
-          </DialogHeader>
-          <DialogClose className="cursor-pointer">
-            <CrossCircledIcon className="h-5 w-5 text-gray-200 hover:text-white" />
-          </DialogClose>
-        </div>
+      <DialogContent className="p-6 h-fit z-[100] overflow-y-scroll scrollbar-hide">
+        <DialogHeader>
+          <DialogTitle>Add Team Member</DialogTitle>
+        </DialogHeader>
 
-        <form onSubmit={(e) => e.preventDefault()} className="space-y-2 text-xs">
-          <div className="flex flex-col space-y-1">
-            <label>First Name</label>
-            <input
-              className="border border-gray-600 bg-transparent rounded px-2 py-1"
+        <div className="space-y-4 mt-4">
+          {/* First Name */}
+          <div className="space-y-2">
+            {/* <Label>First Name</Label> */}
+            <Input
+              label="First Name"
+              placeholder="Enter first name"
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
+              className="text-sm"
             />
           </div>
 
-          <div className="flex flex-col space-y-1">
-            <label>Last Name</label>
-            <input
-              className="border border-gray-600 bg-transparent rounded px-2 py-1"
+          {/* Last Name */}
+          <div className="space-y-2">
+            {/* <Label>Last Name</Label> */}
+            <Input
+              label="Last Name"
+              placeholder="Enter last name"
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
+              className="text-sm"
             />
           </div>
 
-          <div className="flex flex-col space-y-1">
-            <label>Email</label>
-            <input
+          {/* Email */}
+          <div className="space-y-2">
+            {/* <Label>Email Address</Label> */}
+            <Input
+              label="Email"
               type="email"
-              className="border border-gray-600 bg-transparent rounded px-2 py-1"
+              placeholder="Enter email address"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              className="text-sm"
             />
           </div>
 
-          <div className="flex flex-col space-y-1">
-            <label>Password</label>
-            <input
+          {/* Password */}
+          <div className="space-y-2">
+            {/* <Label>Password</Label> */}
+            <Input
+              label="Password"
               type="password"
-              className="border border-gray-600 bg-transparent rounded px-2 py-1"
+              placeholder="Enter password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              className="text-sm"
             />
           </div>
 
-          {/* If you want a role selection */}
-          {/* <div className="flex flex-col space-y-1">
-            <label>Role</label>
-            <select
-              className="border border-gray-600 bg-transparent rounded px-2 py-1"
-              value={roleId}
-              onChange={(e) => setRoleId(e.target.value)}
-            >
-              <option value="">No Role</option>
-              // map roles if you want
-            </select>
-          </div> */}
+          {/* Role Selection */}
+          <div className="space-y-2">
+            {/* <Label>Role</Label> */}
+            <Select value={roleId} onValueChange={setRoleId}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select a role" />
+              </SelectTrigger>
+              <SelectContent className="z-[100]">
+                <SelectItem className="hover:bg-accent" value="No Role">No Role</SelectItem>
+                {roles.map((role) => (
+                  <SelectItem className="hover:bg-accent" key={role._id} value={role._id}>
+                    {role.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
+          {/* Submit Button */}
           <Button
-            variant="default"
-            className="mt-2 bg-green-500 text-white hover:bg-green-600"
             onClick={handleSubmit}
+            className="w-full bg-[#815bf5] hover:bg-[#815bf5]/90 mt-6"
           >
-            + Add Member
+            Add Member
           </Button>
-        </form>
+        </div>
       </DialogContent>
     </Dialog>
   );

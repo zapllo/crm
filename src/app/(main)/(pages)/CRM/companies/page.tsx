@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { Plus, Pencil, Trash, Download } from "lucide-react";
+import { Plus, Pencil, Trash, Download, Loader2, Search, MoreHorizontal, ArrowUpDown, Building } from "lucide-react";
 import AddCompany from "@/components/modals/companies/AddCompany";
 import EditCompany from "@/components/modals/companies/EditCompany";
 import {
@@ -21,10 +21,35 @@ import {
     AlertDialogCancel,
     AlertDialogAction,
     AlertDialogTrigger,
+    AlertDialogDescription,
+    AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import {
+    Select,
+    SelectTrigger,
+    SelectValue,
+    SelectContent,
+    SelectItem
+} from "@/components/ui/select";
+import { useRouter } from "next/navigation";
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from "@/components/ui/card";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface Company {
     _id: string;
@@ -44,10 +69,14 @@ export default function CompaniesPage() {
     const [companies, setCompanies] = useState<Company[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [sortField, setSortField] = useState("companyName");
+    const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
     const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
     const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
     const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState<boolean>(true);
+    const [viewMode, setViewMode] = useState<"table" | "grid">("table");
+    const router = useRouter();
 
     useEffect(() => {
         fetchCompanies();
@@ -59,6 +88,8 @@ export default function CompaniesPage() {
             setCompanies(response.data);
         } catch (error) {
             console.error("Error fetching companies:", error);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -96,99 +127,412 @@ export default function CompaniesPage() {
         document.body.removeChild(link);
     };
 
+    const toggleSortDirection = () => {
+        setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    };
+
+    const handleRowClick = (companyId: string, e: React.MouseEvent) => {
+        // Prevent navigation if clicking action buttons
+        if ((e.target as HTMLElement).closest('.action-button')) return;
+        router.push(`/CRM/companies/${companyId}`);
+    };
+
     const sortedFilteredCompanies = companies
-        .filter(({ companyName, country }) =>
-            [companyName, country].some((field) =>
-                field.toLowerCase().includes(searchTerm.toLowerCase())
+        .filter(({ companyName, country, taxNo, companyCode }) =>
+            [companyName, country, taxNo, companyCode].some((field) =>
+                field?.toLowerCase().includes(searchTerm.toLowerCase())
             )
         )
-        .sort((a, b) => (a[sortField as keyof Company] > b[sortField as keyof Company] ? 1 : -1));
+        .sort((a, b) => {
+            const aValue = a[sortField as keyof Company] || '';
+            const bValue = b[sortField as keyof Company] || '';
 
-    return (
-        <div className="p-6">
-            <div className="flex gap-4 mt-4 mb-4 justify-center w-full">
-                <div className="flex justify-center gap-4">
-                    <Input className="w-48" label="Search Companies" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-                    <Button onClick={() => setIsModalOpen(true)} className="text-white flex gap-2">
-                        <Plus size={16} /> Add Company
-                    </Button>
-                    <Button onClick={handleExportCSV} className="hover:bg-[#017a5b] text-white flex gap-2">
-                        <Download size={16} /> Export
-                    </Button>
-                    <Select onValueChange={setSortField}>
-                        <SelectTrigger className="bg-primary">
-                            <SelectValue placeholder="Sort By - Created Sequence" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="companyName">Company Name</SelectItem>
-                            <SelectItem value="country">Country</SelectItem>
-                            <SelectItem value="taxNo">Tax No</SelectItem>
-                        </SelectContent>
-                    </Select>
+            if (sortDirection === "asc") {
+                return aValue > bValue ? 1 : -1;
+            } else {
+                return aValue < bValue ? 1 : -1;
+            }
+        });
+
+    if (isLoading) {
+        return (
+            <div className="flex h-[calc(100vh-200px)] items-center justify-center">
+                <div className="flex flex-col items-center gap-3 p-8 text-center">
+                    <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                    <h3 className="text-lg font-medium">Loading companies...</h3>
+                    <p className="text-muted-foreground">Please wait while we fetch your company data</p>
                 </div>
             </div>
+        );
+    }
 
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead>Company</TableHead>
-                        <TableHead>Tax No</TableHead>
-                        <TableHead>Code</TableHead>
-                        <TableHead>Actions</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {sortedFilteredCompanies.map((company) => (
-                        <TableRow key={company._id}>
-                            <TableCell>
-                                {company.companyName}
-                                <br />
-                                <span className="text-gray-400">{company.country}, {company.state}</span>
-                            </TableCell>
-                            <TableCell>{company.taxNo}</TableCell>
-                            <TableCell>{company.companyCode}</TableCell>
-                            <TableCell className="flex items-center mt-2 gap-2">
-                                {/* Edit Company */}
-                                <Pencil
-                                    className="text-blue-500 h-5 cursor-pointer"
-                                    onClick={() => {
-                                        setSelectedCompany(company);
-                                        setIsEditModalOpen(true);
-                                    }}
+    return (
+        <div className="container mx-auto px-4 mt-4 py-6 max-w-7xl">
+            <div className="flex flex-col space-y-6">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-2xl font-bold tracking-tight">Companies</h1>
+                        <p className="text-muted-foreground mt-1">
+                            Manage your business relationships and company profiles.
+                        </p>
+                    </div>
+                    <div className="flex gap-3">
+                        <Button
+                            onClick={() => setIsModalOpen(true)}
+                            className="bg-primary hover:bg-primary/90"
+                        >
+                            <Plus className="mr-2 h-4 w-4" /> Add Company
+                        </Button>
+                    </div>
+                </div>
+
+                <Card>
+                    <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                            <div className="space-y-1">
+                                <CardTitle>Company Directory</CardTitle>
+                                <CardDescription>
+                                    {sortedFilteredCompanies.length} {sortedFilteredCompanies.length === 1 ? 'company' : 'companies'} in your database
+                                </CardDescription>
+                            </div>
+                            <div className="flex gap-3">
+                                <Button
+                                    onClick={handleExportCSV}
+                                    variant="outline"
+                                    className="flex items-center gap-2"
+                                >
+                                    <Download className="h-4 w-4" /> Export
+                                </Button>
+                                <Tabs defaultValue="table" className="w-[200px]">
+                                    <TabsList className="grid w-full bg-accent grid-cols-2">
+                                        <TabsTrigger value="table" className="border-none" onClick={() => setViewMode("table")}>Table</TabsTrigger>
+                                        <TabsTrigger value="grid" className="border-none" onClick={() => setViewMode("grid")}>Grid</TabsTrigger>
+                                    </TabsList>
+                                </Tabs>
+                            </div>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="flex items-center justify-between mb-6 gap-4">
+                            <div className="relative flex-1 max-w-sm">
+                                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                                <Input
+                                    placeholder="Search companies..."
+                                    className="pl-10"
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
                                 />
+                            </div>
+                            <Select value={sortField} onValueChange={setSortField}>
+                                <SelectTrigger className="w-[180px]">
+                                    <SelectValue placeholder="Sort by" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="companyName">Company Name</SelectItem>
+                                    <SelectItem value="country">Country</SelectItem>
+                                    <SelectItem value="taxNo">Tax ID</SelectItem>
+                                    <SelectItem value="companyCode">Company Code</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={toggleSortDirection}
+                                className="flex items-center"
+                            >
+                                <ArrowUpDown className={`h-4 w-4 ${sortDirection === "desc" ? "rotate-180 transition-transform" : "transition-transform"}`} />
+                            </Button>
+                        </div>
 
-                                {/* Delete Company - Triggers Alert Dialog */}
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <Trash
-                                            className="text-red-500 h-5 cursor-pointer"
-                                            onClick={() => setConfirmDelete(company._id)}
-                                        />
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                            <h3 className="text-lg font-bold">Delete Company</h3>
-                                            <p>Are you sure you want to delete this company? This action cannot be undone.</p>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                            <AlertDialogCancel onClick={() => setConfirmDelete(null)}>Cancel</AlertDialogCancel>
-                                            <AlertDialogAction onClick={handleDelete} className="bg-red-500 text-white">
-                                                Delete
-                                            </AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
-                            </TableCell>
-                        </TableRow>
-                    ))}
-                </TableBody>
-            </Table>
+                        {sortedFilteredCompanies.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center py-12 text-center">
+                                <Building className="h-12 w-12 text-muted-foreground/60 mb-4" />
+                                <h3 className="text-lg font-medium">No companies found</h3>
+                                <p className="text-muted-foreground mt-1 max-w-md">
+                                    {searchTerm ?
+                                        "Try adjusting your search term or filters." :
+                                        "Get started by adding your first company."}
+                                </p>
+                                {!searchTerm && (
+                                    <Button
+                                        onClick={() => setIsModalOpen(true)}
+                                        className="mt-6"
+                                        variant="default"
+                                    >
+                                        <Plus className="mr-2 h-4 w-4" /> Add Company
+                                    </Button>
+                                )}
+                            </div>
+                        ) : viewMode === "table" ? (
+                            <div className="rounded-md border">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead className="w-[40%]">Company</TableHead>
+                                            <TableHead>Tax ID</TableHead>
+                                            <TableHead>Code</TableHead>
+                                            <TableHead className="text-right">Actions</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {sortedFilteredCompanies.map((company) => (
+                                            <TableRow
+                                                key={company._id}
+                                                className="cursor-pointer hover:bg-muted/50"
+                                                onClick={(e) => handleRowClick(company._id, e)}
+                                            >
+                                                <TableCell className="font-medium">
+                                                    <div>
+                                                        <div className="font-medium">{company.companyName}</div>
+                                                        <div className="text-sm text-muted-foreground mt-1">
+                                                            {company.country}{company.state ? `, ${company.state}` : ""}
+                                                        </div>
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell>{company.taxNo || "—"}</TableCell>
+                                                <TableCell>
+                                                    {company.companyCode ? (
+                                                        <Badge variant="outline">{company.companyCode}</Badge>
+                                                    ) : "—"}
+                                                </TableCell>
+                                                <TableCell className="text-right">
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="action-button h-8 w-8"
+                                                                onClick={(e) => e.stopPropagation()}
+                                                            >
+                                                                <MoreHorizontal className="h-4 w-4" />
+                                                                <span className="sr-only">Open menu</span>
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="end">
+                                                            <DropdownMenuItem
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    router.push(`/CRM/companies/${company._id}`);
+                                                                }}
+                                                            >
+                                                                View details
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setSelectedCompany(company);
+                                                                    setIsEditModalOpen(true);
+                                                                }}
+                                                            >
+                                                                Edit
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuSeparator />
+                                                            <AlertDialog>
+                                                                <AlertDialogTrigger asChild>
+                                                                    <DropdownMenuItem
+                                                                        className="text-destructive focus:text-destructive"
+                                                                        onSelect={(e) => e.preventDefault()}
+                                                                    >
+                                                                        Delete
+                                                                    </DropdownMenuItem>
+                                                                </AlertDialogTrigger>
+                                                                <AlertDialogContent>
+                                                                    <AlertDialogHeader>
+                                                                        <AlertDialogTitle>Delete Company</AlertDialogTitle>
+                                                                        <AlertDialogDescription>
+                                                                            Are you sure you want to delete <span className="font-medium">{company.companyName}</span>?
+                                                                            This action cannot be undone.
+                                                                        </AlertDialogDescription>
+                                                                    </AlertDialogHeader>
+                                                                    <AlertDialogFooter>
+                                                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                                        <AlertDialogAction
+                                                                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                                                            onClick={() => {
+                                                                                setConfirmDelete(company._id);
+                                                                                handleDelete();
+                                                                            }}
+                                                                        >
+                                                                            Delete
+                                                                        </AlertDialogAction>
+                                                                    </AlertDialogFooter>
+                                                                </AlertDialogContent>
+                                                            </AlertDialog>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                        ) : (
+                            // Grid view
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {sortedFilteredCompanies.map((company) => (
+                                    <Card
+                                        key={company._id}
+                                        className="cursor-pointer hover:shadow-md transition-shadow"
+                                        onClick={() => router.push(`/CRM/companies/${company._id}`)}
+                                    >
+                                        <CardHeader className="pb-2">
+                                            <div className="flex justify-between items-start">
+                                                <div>
+                                                    <CardTitle className="mb-1">{company.companyName}</CardTitle>
+                                                    <CardDescription>
+                                                        {company.country}{company.state ? `, ${company.state}` : ""}
+                                                    </CardDescription>
+                                                </div>
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="action-button h-8 w-8"
+                                                            onClick={(e) => e.stopPropagation()}
+                                                        >
+                                                            <MoreHorizontal className="h-4 w-4" />
+                                                            <span className="sr-only">Open menu</span>
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end">
+                                                        <DropdownMenuItem
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                router.push(`/CRM/companies/${company._id}`);
+                                                            }}
+                                                        >
+                                                            View details
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setSelectedCompany(company);
+                                                                setIsEditModalOpen(true);
+                                                            }}
+                                                        >
+                                                            Edit
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuSeparator />
+                                                        <AlertDialog>
+                                                            <AlertDialogTrigger asChild>
+                                                                <DropdownMenuItem
+                                                                    className="text-destructive focus:text-destructive"
+                                                                    onSelect={(e) => e.preventDefault()}
+                                                                >
+                                                                    Delete
+                                                                </DropdownMenuItem>
+                                                            </AlertDialogTrigger>
+                                                            <AlertDialogContent>
+                                                                <AlertDialogHeader>
+                                                                    <AlertDialogTitle>Delete Company</AlertDialogTitle>
+                                                                    <AlertDialogDescription>
+                                                                        Are you sure you want to delete <span className="font-medium">{company.companyName}</span>?
+                                                                        This action cannot be undone.
+                                                                    </AlertDialogDescription>
+                                                                </AlertDialogHeader>
+                                                                <AlertDialogFooter>
+                                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                                    <AlertDialogAction
+                                                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                                                        onClick={() => {
+                                                                            setConfirmDelete(company._id);
+                                                                            handleDelete();
+                                                                        }}
+                                                                    >
+                                                                        Delete
+                                                                    </AlertDialogAction>
+                                                                </AlertDialogFooter>
+                                                            </AlertDialogContent>
+                                                        </AlertDialog>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </div>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <div className="space-y-3">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="text-sm text-muted-foreground">Tax ID</div>
+                                                    <div className="font-medium">{company.taxNo || "—"}</div>
+                                                </div>
+                                                <div className="flex items-center justify-between">
+                                                    <div className="text-sm text-muted-foreground">Code</div>
+                                                    <div>
+                                                        {company.companyCode ? (
+                                                            <Badge variant="outline">{company.companyCode}</Badge>
+                                                        ) : "—"}
+                                                    </div>
+                                                </div>
+                                                {company.website && (
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="text-sm text-muted-foreground">Website</div>
+                                                        <div className="font-medium text-sm truncate max-w-[150px]">
+                                                            {company.website}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Pagination placeholder - implement actual pagination as needed */}
+                        {sortedFilteredCompanies.length > 0 && (
+                            <div className="flex items-center justify-end space-x-2 py-4">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    disabled
+                                >
+                                    Previous
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="bg-primary text-primary-foreground"
+                                >
+                                    1
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                >
+                                    2
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                >
+                                    3
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                >
+                                    Next
+                                </Button>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            </div>
 
             {/* Add Company Dialog */}
-            <AddCompany isOpen={isModalOpen} setIsOpen={setIsModalOpen} onCompanyCreated={fetchCompanies} />
+            <AddCompany
+                isOpen={isModalOpen}
+                setIsOpen={setIsModalOpen}
+                onCompanyCreated={fetchCompanies}
+            />
 
             {/* Edit Company Dialog */}
-            <EditCompany onCompanyUpdated={fetchCompanies} isOpen={isEditModalOpen} setIsOpen={setIsEditModalOpen} company={selectedCompany} />
+            <EditCompany
+                isOpen={isEditModalOpen}
+                setIsOpen={setIsEditModalOpen}
+                company={selectedCompany}
+                onCompanyUpdated={fetchCompanies}
+            />
         </div>
     );
 }

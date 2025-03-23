@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
 import Product from '@/models/productModel';
+import categoryModel from '@/models/categoryModel';
 
 // POST: Create Product
 export async function POST(request: Request) {
@@ -17,17 +18,27 @@ export async function POST(request: Request) {
     }
 }
 
+
 // GET: Fetch all products
 export async function GET() {
     try {
         await connectDB();
-        const products = await Product.find();
+        const products = await Product.find()
+            .populate({
+                path: "category",   // Corrected from "Category"
+                model: "Category",  // Model name should be a string
+            })
+            .populate({
+                path: "unit",       // Populate the unit as well
+                model: "Unit",
+            });
         return NextResponse.json(products, { status: 200 });
     } catch (error) {
         console.error('Error fetching products:', error);
         return NextResponse.json({ error: 'Failed to fetch products' }, { status: 500 });
     }
 }
+
 
 
 export async function DELETE(request: Request) {

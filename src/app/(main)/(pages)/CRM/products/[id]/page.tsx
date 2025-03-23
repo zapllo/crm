@@ -3,27 +3,119 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import axios from "axios";
-import { Pencil, Trash, DollarSign, Tag, List, Barcode, Layers, AlignLeft, Search, ArrowLeft, Loader2 } from "lucide-react";
+import {
+    Pencil,
+    Trash,
+    Tag,
+    Barcode,
+    Layers,
+    Search,
+    ArrowLeft,
+    Loader2,
+    Calendar,
+    ChevronRight,
+    Eye,
+    Package,
+    ShoppingCart,
+    Banknote,
+    Info,
+    Percent,
+    RefreshCw,
+    ZoomIn
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
-import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, AlertDialogAction, AlertDialogCancel } from "@/components/ui/alert-dialog";
+import {
+    AlertDialog,
+    AlertDialogTrigger,
+    AlertDialogContent,
+    AlertDialogHeader,
+    AlertDialogFooter,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogDescription,
+    AlertDialogTitle
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import EditProduct from "@/components/modals/products/editProduct";
-import { FaRupeeSign } from "react-icons/fa";
-import { IconCategory, IconCategory2, IconTrashFilled } from "@tabler/icons-react";
 import { Badge } from "@/components/ui/badge";
-import { DotsVerticalIcon } from "@radix-ui/react-icons";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Separator } from "@/components/ui/separator";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+    HoverCard,
+    HoverCardContent,
+    HoverCardTrigger
+} from "@/components/ui/hover-card";
+
+interface Category {
+    _id: string;
+    name: string;
+    organization: string;
+    createdAt: string;
+    updatedAt: string;
+    __v: number;
+}
+
+interface Unit {
+    _id: string;
+    name: string;
+    createdAt: string;
+    updatedAt: string;
+    __v: number;
+}
+
+interface IProduct {
+    _id: string;
+    productName: string;
+    description: string;
+    hsnCode: string;
+    category: Category;
+    unit: Unit;
+    rate: number;
+    maxDiscount: number;
+    imageUrl?: string;
+}
+
+interface ILead {
+    _id: string;
+    title: string;
+    contact: {
+        _id: string;
+        firstName: string;
+        lastName: string;
+        email?: string;
+        avatar?: string;
+    };
+    amount: number;
+    stage: string;
+    createdAt: string;
+    updatedAt: string;
+    closeDate: string;
+}
 
 export default function ProductDetails() {
     const { id } = useParams();
     const router = useRouter();
-    const [product, setProduct] = useState(null);
-    const [leads, setLeads] = useState([]);
-    const [filteredLeads, setFilteredLeads] = useState([]);
+    const [product, setProduct] = useState<IProduct | null>(null);
+    const [leads, setLeads] = useState<ILead[]>([]);
+    const [filteredLeads, setFilteredLeads] = useState<ILead[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [confirmDelete, setConfirmDelete] = useState(false);
+    const [activeTab, setActiveTab] = useState("details");
+    const [isImageDialogOpen, setIsImageDialogOpen] = useState(false);
 
     useEffect(() => {
         if (id) {
@@ -45,7 +137,7 @@ export default function ProductDetails() {
         try {
             const response = await axios.get(`/api/leads/products?productId=${id}`);
             setLeads(response.data);
-            setFilteredLeads(response.data); // Initialize search data
+            setFilteredLeads(response.data);
         } catch (error) {
             console.error("Error fetching leads:", error);
         }
@@ -54,7 +146,7 @@ export default function ProductDetails() {
     const handleDelete = async () => {
         try {
             await axios.delete(`/api/products/${id}`);
-            router.push("/products"); // Redirect after delete
+            router.push("/CRM/products");
         } catch (error) {
             console.error("Error deleting product:", error);
         }
@@ -63,53 +155,106 @@ export default function ProductDetails() {
     // Filter leads based on search term
     useEffect(() => {
         const results = leads.filter((lead) =>
-            lead.title.toLowerCase().includes(searchTerm.toLowerCase())
+            lead.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (lead.contact?.firstName + ' ' + lead.contact?.lastName).toLowerCase().includes(searchTerm.toLowerCase())
         );
         setFilteredLeads(results);
     }, [searchTerm, leads]);
 
-    if (!product) return (
-        <div className="flex items-center  justify-center h-full">
-            <Loader2 className="w-6 text-primary h-6 animate-spin" />
-        </div>);
+    if (!product) {
+        return (
+            <div className="flex flex-col space-y-6 p-8 max-w-7xl mx-auto">
+                <div className="flex justify-between items-center">
+                    <div className="flex items-center space-x-4">
+                        <Skeleton className="h-10 w-10 rounded-full" />
+                        <Skeleton className="h-6 w-40" />
+                    </div>
+                    <Skeleton className="h-10 w-32" />
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <div className="lg:col-span-5 space-y-6">
+                        <Skeleton className="h-64 w-full rounded-md" />
+                        <div className="space-y-2">
+                            <Skeleton className="h-4 w-full" />
+                            <Skeleton className="h-4 w-3/4" />
+                            <Skeleton className="h-4 w-5/6" />
+                        </div>
+                    </div>
+
+                    <div className="lg:col-span-7">
+                        <Skeleton className="h-96 w-full rounded-md" />
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // Determine badge color based on stage
+    const getStageBadgeVariant = (stage: string) => {
+        switch (stage.toLowerCase()) {
+            case 'qualified':
+                return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400";
+            case 'proposal':
+                return "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400";
+            case 'won':
+                return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400";
+            case 'lost':
+                return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400";
+            case 'negotiation':
+                return "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400";
+            default:
+                return "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400";
+        }
+    };
 
     return (
-        <div className="p-6 overflow-y-scroll h-screen">
-            <div className="flex justify-between">
-                {/* <h2 className="text-2xl font-bold">Product Details</h2> */}
-                <div onClick={() => router.push('/CRM/products')} className="flex items-center cursor-pointer gap-2">
-                    <div className='rounded-full h-8 w-8 items-center flex  justify-center border cursor-pointer hover:bg-white hover:text-black'>
-                        <ArrowLeft />
-                    </div>
-                    Back to Products
-                </div>
-                <div className="flex items-center gap-2">
-                    <div className="relative 4 items-center flex">
-                        <Search className="absolute left-3 top-2.5 text-gray-400" size={16} />
-                        <input
-                            className="pl-10 p-2 text-sm focus:border-primary rounded-lg outline-none bg-transparent border flex items-center"
-                            placeholder="Search Leads..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                    </div>
-                    <Button className="gap-2" variant="outline" onClick={() => setIsEditModalOpen(true)}>
-                        <Pencil className="text-blue-400" size={16} /> Edit Product
+        <div className="p-6 lg:p-8 max-w-7xl mx-auto">
+            {/* Back button and actions */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+                <div className="flex items-center space-x-4">
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => router.push('/CRM/products')}
+                        className="rounded-full h-10 w-10"
+                    >
+                        <ArrowLeft size={18} />
                     </Button>
+                    <div>
+                        <h1 className="text-2xl font-bold tracking-tight">{product.productName}</h1>
+                        <p className="text-muted-foreground">Product Details and Related Information</p>
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <Button
+                        variant="outline"
+                        className="flex items-center gap-2"
+                        onClick={() => setIsEditModalOpen(true)}
+                    >
+                        <Pencil size={16} /> Edit
+                    </Button>
+
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
-                            <Button className="gap-2" variant="outline">
-                                <IconTrashFilled className="text-red-500" size={16} /> Delete Product
+                            <Button variant="destructive" className="flex items-center gap-2">
+                                <Trash size={16} /> Delete
                             </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                             <AlertDialogHeader>
-                                <h3 className="text-lg font-bold">Delete Product</h3>
-                                <p>Are you sure you want to delete this product? This action cannot be undone.</p>
+                                <AlertDialogTitle>Delete Product</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    Are you sure you want to delete "{product.productName}"? This action cannot be undone.
+                                </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleDelete} className="bg-red-500 text-white">
+                                <AlertDialogAction
+                                    onClick={handleDelete}
+                                    className="bg-red-500 hover:bg-red-600 text-white"
+                                >
                                     Delete
                                 </AlertDialogAction>
                             </AlertDialogFooter>
@@ -118,77 +263,362 @@ export default function ProductDetails() {
                 </div>
             </div>
 
-            <div className="flex  mb-12 gap-6 mt-6">
-                {/* Product Details */}
-                <Card className=" ">
-                    <div className="flex justify-center">
-                        <CardHeader className="h-48  items-center  w-48 flex justify-center">
-                            <img src={product.imageUrl || "/icons/noimage.png"} alt={product.productName} className=" invert-[100] object-contain h-12  rounded-lg" />
-                        </CardHeader>
-                    </div>
-                    <CardContent className="space-y-3 text-sm">
-                        <h3 className="text-sm font-bold">{product.productName}</h3>
-                        <p className="flex items-center gap-2"><FaRupeeSign className="text-primary" size={18} /> <strong>Price:</strong> ₹{product.rate}</p>
-                        <p className="flex items-center gap-2"><Barcode className="text-primary" size={18} /> <strong>HSN Code:</strong> {product.hsnCode}</p>
-                        <p className="flex items-center gap-2"><Layers className="text-primary" size={18} /> <strong>Unit:</strong> {product.unit}</p>
-                        <p className="flex items-center gap-2"><AlignLeft className="text-primary" size={18} /> <strong>Description:</strong> {product.description}</p>
-                        <p className="flex items-center gap-2"><Tag className="text-primary" size={18} /> <strong>Max Discount:</strong> {product.maxDiscount}</p>
-                        <p className="flex items-center gap-2"><IconCategory2 className="text-primary" size={18} /> <strong>Category:</strong> {product.category}</p>
-                    </CardContent>
-                </Card>
+            <Tabs defaultValue="details" className="space-y-6" onValueChange={setActiveTab}>
+                <TabsList className="bg-accent gap-4 p-1">
+                    <TabsTrigger value="details" className="border-none data-[state=active]:bg-background">
+                        <Info className="h-4 w-4 mr-2" />
+                        Product Details
+                    </TabsTrigger>
+                    <TabsTrigger value="leads" className="border-none data-[state=active]:bg-background">
+                        <ShoppingCart className="h-4 w-4 mr-2" />
+                        Related Leads
+                    </TabsTrigger>
+                </TabsList>
 
-                <div className="border p-6 w-full rounded-lg shadow-md">
-                    {/* Header with Total Leads Count */}
-                    <div className="flex flex-col items-center justify-center mb-4">
-                        <h3 className="text-lg font-bold text-gray-200">Leads Related to this Product</h3>
-                        <p className="text-gray-400 italic text-sm">Total leads - {filteredLeads.length}</p>
-                    </div>
+                <TabsContent value="details" className="space-y-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                        {/* Product Image */}
+                        <Card className="lg:col-span-5">
+                            <CardHeader className="pb-0">
+                                <CardTitle className="text-lg">Product Image</CardTitle>
+                            </CardHeader>
+                            <CardContent className="pt-4 flex justify-center">
+                                <div
+                                    className="relative w-full aspect-square rounded-md overflow-hidden border bg-muted/20 cursor-pointer group"
+                                    onClick={() => setIsImageDialogOpen(true)}
+                                >
+                                    <img
+                                        src={product.imageUrl || "/icons/noimage.png"}
+                                        alt={product.productName}
+                                        className="object-contain h-full w-full transition-all duration-200 group-hover:scale-105"
+                                    />
+                                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/30 transition-opacity">
+                                        <Button variant="secondary" size="sm" className="gap-2">
+                                            <ZoomIn size={16} /> View Image
+                                        </Button>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
 
-                    {filteredLeads.length === 0 ? (
-                        <p className="text-gray-400 text-center">No leads found for this product.</p>
-                    ) : (
-                        <div className="  rounded-lg overflow-hidden">
-                            <Table>
-                                <TableHeader className="">
-                                    <TableRow className="w-full">
-                                        <TableHead className="text-gray-300">Title</TableHead>
-                                        <TableHead className="text-gray-300">Contact</TableHead>
-                                        <TableHead className="text-gray-300">Amount</TableHead>
-                                        <TableHead className="text-gray-300">Details</TableHead>
-                                        <TableHead className="text-gray-300">Stage</TableHead>
-                                        {/* <TableHead className="text-gray-300">Actions</TableHead> */}
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {filteredLeads.map((lead) => (
-                                        <TableRow key={lead._id} className="border-b border-gray-700 hover:bg-gray-800">
-                                            <TableCell className="font-semibold text-white">{lead.title}</TableCell>
-                                            <TableCell className="text-gray-300">{lead.contact.firstName}</TableCell>
-                                            <TableCell className="text-gray-300">₹{lead.amount.toLocaleString()}</TableCell>
-                                            <TableCell className="text-gray-300 text-xs">
-                                                <p>Created At: {new Date(lead.createdAt).toLocaleDateString()}</p>
-                                                <p>Updated At: {new Date(lead.updatedAt).toLocaleDateString()}</p>
-                                                <p>Close Date: {new Date(lead.closeDate).toLocaleDateString()}</p>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Badge
+                        {/* Product Info */}
+                        <div className="lg:col-span-7 space-y-6">
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="text-lg">Product Information</CardTitle>
+                                    <CardDescription>
+                                        Basic details about the product
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <div className="text-sm text-muted-foreground">Product Name</div>
+                                            <div className="font-medium">{product.productName}</div>
+                                        </div>
 
-                                                >
-                                                    {lead.stage}
+                                        <div className="space-y-2">
+                                            <div className="text-sm text-muted-foreground">Price</div>
+                                            <div className="font-medium text-lg">₹{product.rate.toLocaleString()}</div>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <div className="text-sm flex items-center gap-1 text-muted-foreground">
+                                                <Barcode className="h-3.5 w-3.5" /> HSN Code
+                                            </div>
+                                            <div className="font-medium">{product.hsnCode}</div>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <div className="text-sm flex items-center gap-1 text-muted-foreground">
+                                                <Layers className="h-3.5 w-3.5" /> Unit
+                                            </div>
+                                            <div className="font-medium">{product.unit?.name || "N/A"}</div>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <div className="text-sm flex items-center gap-1 text-muted-foreground">
+                                                <Percent className="h-3.5 w-3.5" /> Max Discount
+                                            </div>
+                                            <div className="font-medium">{product.maxDiscount}%</div>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <div className="text-sm flex items-center gap-1 text-muted-foreground">
+                                                <Tag className="h-3.5 w-3.5" /> Category
+                                            </div>
+                                            <div>
+                                                <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+                                                    {product.category?.name || "N/A"}
                                                 </Badge>
-                                            </TableCell>
+                                            </div>
+                                        </div>
+                                    </div>
 
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
+                                    <Separator />
+
+                                    <div className="space-y-2">
+                                        <div className="text-sm text-muted-foreground">Description</div>
+                                        <div className="text-sm leading-relaxed">
+                                            {product.description ? (
+                                                product.description
+                                            ) : (
+                                                <span className="text-muted-foreground italic">No description available</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="text-lg">Lead Summary</CardTitle>
+                                    <CardDescription>
+                                        Quick overview of leads associated with this product
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
+                                        <div className="bg-muted/50 p-4 rounded-lg text-center">
+                                            <div className="text-3xl font-bold">{leads.length}</div>
+                                            <div className="text-sm text-muted-foreground">Total Leads</div>
+                                        </div>
+
+                                        <div className="bg-muted/50 p-4 rounded-lg text-center">
+                                            <div className="text-3xl font-bold">{leads.filter(lead => lead.stage === 'won').length}</div>
+                                            <div className="text-sm text-muted-foreground">Won Leads</div>
+                                        </div>
+
+                                        <div className="bg-muted/50 p-4 rounded-lg text-center">
+                                            <div className="text-3xl font-bold">
+                                                ₹{leads.reduce((sum, lead) => sum + lead.amount, 0).toLocaleString()}
+                                            </div>
+                                            <div className="text-sm text-muted-foreground">Total Amount</div>
+                                        </div>
+
+                                        <div className="bg-muted/50 p-4 rounded-lg text-center">
+                                            <div className="text-3xl font-bold">
+                                                {leads.length > 0 ?
+                                                    new Date(Math.max(...leads.map(l => new Date(l.updatedAt).getTime()))).toLocaleDateString() :
+                                                    'N/A'}
+                                            </div>
+                                            <div className="text-sm text-muted-foreground">Last Updated</div>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                                <CardFooter>
+                                    <Button
+                                        variant="outline"
+                                        className="w-full"
+                                        onClick={() => setActiveTab("leads")}
+                                    >
+                                        <Eye className="h-4 w-4 mr-2" />View All Leads
+                                    </Button>
+                                </CardFooter>
+                            </Card>
                         </div>
-                    )}
-                </div>
-            </div>
+                    </div>
+                </TabsContent>
 
-            {/* Edit Product Dialog */}
-            {isEditModalOpen && <EditProduct isOpen={isEditModalOpen} setIsOpen={setIsEditModalOpen} product={product} />}
+                <TabsContent value="leads" className="space-y-6">
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <div>
+                                <CardTitle className="text-lg">Related Leads</CardTitle>
+                                <CardDescription>
+                                    Leads that include this product in their proposals
+                                </CardDescription>
+                            </div>
+                            <div className="flex gap-2">
+                                <div className="relative">
+                                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                    <Input
+                                        placeholder="Search leads..."
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        className="pl-9 w-full md:w-[200px] lg:w-[300px]"
+                                    />
+                                </div>
+                                <Button variant="outline" size="icon" onClick={fetchLeads}>
+                                    <RefreshCw className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            {filteredLeads.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center p-8 text-center">
+                                    <div className="rounded-full bg-muted p-4 mb-4">
+                                        <ShoppingCart className="h-8 w-8 text-muted-foreground" />
+                                    </div>
+                                    <h3 className="text-lg font-semibold mb-2">No leads found</h3>
+                                    <p className="text-muted-foreground max-w-md mb-4">
+                                        {searchTerm ?
+                                            `We couldn't find any leads matching "${searchTerm}". Try adjusting your search.` :
+                                            "This product hasn't been added to any leads yet."}
+                                    </p>
+                                    {searchTerm && (
+                                        <Button variant="outline" onClick={() => setSearchTerm("")}>
+                                            Clear search
+                                        </Button>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="border rounded-md">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Lead</TableHead>
+                                                <TableHead>Contact</TableHead>
+                                                <TableHead>Stage</TableHead>
+                                                <TableHead className="text-right">Amount</TableHead>
+                                                <TableHead>Timeline</TableHead>
+                                                <TableHead className="text-right">Actions</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {filteredLeads.map((lead) => (
+                                                <TableRow key={lead._id} className="cursor-pointer hover:bg-muted/50">
+                                                    <TableCell className="font-medium">{lead.title}</TableCell>
+                                                    <TableCell>
+                                                        <div className="flex items-center gap-2">
+                                                            <HoverCard>
+                                                                <HoverCardTrigger>
+                                                                    <Avatar className="h-8 w-8">
+                                                                        <AvatarImage
+                                                                            src={lead.contact.avatar || ''}
+                                                                            alt={`${lead.contact.firstName} ${lead.contact.lastName}`}
+                                                                        />
+                                                                        <AvatarFallback className="bg-primary/10 text-primary">
+                                                                            {lead.contact.firstName?.[0]}{lead.contact.lastName?.[0]}
+                                                                        </AvatarFallback>
+                                                                    </Avatar>
+                                                                </HoverCardTrigger>
+                                                                <HoverCardContent className="w-80">
+                                                                    <div className="flex justify-between space-x-4">
+                                                                        <Avatar className="h-12 w-12">
+                                                                            <AvatarImage
+                                                                                src={lead.contact.avatar || ''}
+                                                                                alt={`${lead.contact.firstName} ${lead.contact.lastName}`}
+                                                                            />
+                                                                            <AvatarFallback className="bg-primary/10 text-primary">
+                                                                                {lead.contact.firstName?.[0]}{lead.contact.lastName?.[0]}
+                                                                            </AvatarFallback>
+                                                                        </Avatar>
+                                                                        <div className="space-y-1">
+                                                                            <h4 className="text-sm font-semibold">
+                                                                                {lead.contact.firstName} {lead.contact.lastName}
+                                                                            </h4>
+                                                                            {lead.contact.email && (
+                                                                                <p className="text-sm text-muted-foreground">{lead.contact.email}</p>
+                                                                            )}
+                                                                            <div className="flex items-center pt-2">
+                                                                                <Button variant="outline" size="sm" className="h-7">
+                                                                                    View Profile
+                                                                                </Button>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </HoverCardContent>
+                                                            </HoverCard>
+                                                            <span>
+                                                                {lead.contact.firstName} {lead.contact.lastName}
+                                                            </span>
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Badge variant="outline" className={getStageBadgeVariant(lead.stage)}>
+                                                            {lead.stage}
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell className="text-right font-medium">
+                                                        ₹{lead.amount.toLocaleString()}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <div className="flex flex-col gap-1 text-xs">
+                                                            <div className="flex items-center gap-1">
+                                                                <Calendar className="h-3 w-3 text-muted-foreground" />
+                                                                <span>Created: {new Date(lead.createdAt).toLocaleDateString()}</span>
+                                                            </div>
+                                                            <div className="flex items-center gap-1">
+                                                                <Calendar className="h-3 w-3 text-muted-foreground" />
+                                                                <span>Close Date: {new Date(lead.closeDate).toLocaleDateString()}</span>
+                                                            </div>
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        <DropdownMenu>
+                                                            <DropdownMenuTrigger asChild>
+                                                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                                    <svg
+                                                                        xmlns="http://www.w3.org/2000/svg"
+                                                                        viewBox="0 0 24 24"
+                                                                        fill="none"
+                                                                        stroke="currentColor"
+                                                                        strokeWidth="2"
+                                                                        strokeLinecap="round"
+                                                                        strokeLinejoin="round"
+                                                                        className="h-4 w-4"
+                                                                    >
+                                                                        <circle cx="12" cy="12" r="1" />
+                                                                        <circle cx="12" cy="5" r="1" />
+                                                                        <circle cx="12" cy="19" r="1" />
+                                                                    </svg>
+                                                                </Button>
+                                                            </DropdownMenuTrigger>
+                                                            <DropdownMenuContent align="end">
+                                                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                                <DropdownMenuItem
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        // Navigate to lead details
+                                                                        router.push(`/CRM/leads/${lead._id}`);
+                                                                    }}
+                                                                >
+                                                                    <Eye className="h-4 w-4 mr-2" />
+                                                                    View Lead
+                                                                </DropdownMenuItem>
+                                                            </DropdownMenuContent>
+                                                        </DropdownMenu>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+            </Tabs>
+
+            {/* Image View Dialog */}
+            <Dialog open={isImageDialogOpen} onOpenChange={setIsImageDialogOpen}>
+                <DialogContent className="max-w-4xl p-0 overflow-hidden">
+                    <DialogHeader className="p-6 pb-0">
+                        <DialogTitle>Product Image: {product.productName}</DialogTitle>
+                    </DialogHeader>
+                    <div className="p-6 flex items-center justify-center">
+                        <img
+                            src={product.imageUrl || "/icons/noimage.png"}
+                            alt={product.productName}
+                            className="max-h-[70vh] max-w-full object-contain rounded-md"
+                        />
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Edit Product Modal */}
+            {isEditModalOpen && (
+                <EditProduct
+                    isOpen={isEditModalOpen}
+                    onProductUpdated={() => {
+                        fetchProductDetails();
+                        fetchLeads();
+                    }}
+                    setIsOpen={setIsEditModalOpen}
+                    product={product as any}
+                />
+            )}
         </div>
     );
 }

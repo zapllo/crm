@@ -33,7 +33,7 @@ export function middleware(request: NextRequest) {
     jwt.verify(token, process.env.JWT_SECRET_KEY)
   } catch (err) {
     // If token verification fails, redirect to /login
-    return NextResponse.redirect(new URL('/login', request.url))
+    return NextResponse.redirect(new URL('/', request.url))
   }
 
   // If everything is good, continue to the requested route

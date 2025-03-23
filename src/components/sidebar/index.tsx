@@ -1,8 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import React from 'react';
 import {
   Tooltip,
   TooltipContent,
@@ -12,99 +11,106 @@ import {
 import { menuOptions } from '@/lib/constants';
 import clsx from 'clsx';
 import { Separator } from '@/components/ui/separator';
-import { Database, GitBranch, LucideMousePointerClick, LogOut } from 'lucide-react';
-import axios from 'axios';
-import { IconLogout2 } from '@tabler/icons-react';
+import { LogOut } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-type Props = {};
-
-const MenuOptions = (props: Props) => {
+const MenuOptions = () => {
   const pathName = usePathname();
-  const [role, setRole] = useState("");
-  const router = useRouter();
 
-    // Helper function to determine if a menu item is active
-    const isActive = (menuItem: any, currentPath: any) => {
-      // Handle "Help" menu item
-      if (menuItem.name === "Help") {
-        return currentPath.startsWith("/help") || currentPath.endsWith("/checklist");
-      }
-  
-      // Handle "Leaves & Attendance" menu item
-      if (menuItem.href === "/CRM") {
-        return currentPath.startsWith("/CRM");
-      }
-  
-      
-      // Add more conditions for other menu items with subpaths if needed
-  
-      // Default exact match
-      return currentPath === menuItem.href;
-    };
+  // Helper function to determine if a menu item is active
+  const isActive = (menuItem: any, currentPath: any) => {
+    if (menuItem.name === "Help") {
+      return currentPath.startsWith("/help") || currentPath.endsWith("/checklist");
+    }
+    if (menuItem.href === "/CRM") {
+      return currentPath.startsWith("/CRM");
+    }
+    return currentPath === menuItem.href;
+  };
 
   return (
-    <nav className=" z-[50] h-screen fixed border-r border-[#37384B] overflow-hidden scrollbar-hide justify-between flex items-center flex-col gap-10 py-4 px-2 w-14">
+    <nav className="z-[50] h-screen fixed border-r bg-[#04061E] border-[#37384B]/60 overflow-hidden scrollbar-hide justify-between flex items-center flex-col gap-6 py-5 px-2 w-16">
+      {/* Logo */}
       <div className="flex items-center justify-center flex-col gap-8">
-        <Link href="/dashboard">
-          <img src='/icons/zapllo.png' className='h-full w-full scale-75' alt="Zapllo Logo" />
+        <Link href="/dashboard" className="hover:opacity-80 transition-opacity">
+          <img src='/icons/zapllo.png' className='h-10 w-auto scale-90' alt="Zapllo Logo" />
         </Link>
 
+        <Separator className="w-10 bg-[#37384B]/60" />
+
+        {/* Menu Items */}
         <TooltipProvider>
-          {menuOptions.map((menuItem) => (
-            <React.Fragment key={menuItem.name}>
-              <ul>
-                <Tooltip delayDuration={0}>
-                  <TooltipTrigger>
-                    <li className="cursor-pointer">
-                      <Link
-                        href={menuItem.href}
-                        className={clsx(
-                          'group h-6 w-6 flex items-center justify-center scale-[1.5] rounded-lg p-[3px] cursor-pointer',
-                          {
-                            'bg-[#FC8929]': isActive(menuItem, pathName),
-                          }
-                        )}
-                      >
-                        <menuItem.Component
-                          selected={isActive(menuItem, pathName)}
-                        />
-                      </Link>
-                    </li>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className="bg-black/10 text-white backdrop-blur-xl"
+          <div className="flex flex-col items-center space-y-4">
+            {menuOptions.map((menuItem) => (
+              <Tooltip key={menuItem.name} delayDuration={300}>
+                <TooltipTrigger asChild>
+                  <Link
+                    href={menuItem.href}
+                    className={clsx(
+                      'group relative flex items-center justify-center rounded-lg w-10 h-10 transition-all duration-200',
+                      isActive(menuItem, pathName)
+                        ? 'bg-[#FC8929] text-white shadow-[0_0_10px_rgba(252,137,41,0.5)]'
+                        : 'text-gray-400 hover:text-white hover:bg-[#1E2144]'
+                    )}
                   >
-                    <p>{menuItem.name}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </ul>
-              {/* Optional: Add separators or other UI elements here */}
-            </React.Fragment>
-          ))}
+                    {isActive(menuItem, pathName) && (
+                      <div className="absolute left-0 w-1 h-5 rounded-r-full bg-white" />
+                    )}
+                    <menuItem.Component size={20} />
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="flex flex-col bg-[#0F1133]/90 text-white border-[#37384B] backdrop-blur-lg"
+                >
+                  <p className="font-medium">{menuItem.name}</p>
+                  {menuItem.description && (
+                    <p className="text-xs text-gray-400">{menuItem.description}</p>
+                  )}
+                </TooltipContent>
+              </Tooltip>
+            ))}
+          </div>
         </TooltipProvider>
       </div>
 
-      {/* Uncomment and adjust the logout section as needed */}
-      {/* <div className="flex items-center justify-center flex-col mt-8">
+      {/* User Avatar and Logout */}
+      <div className="mt-auto mb-4 flex flex-col items-center gap-4">
+        <Separator className="w-10 bg-[#37384B]/60" />
+        
         <TooltipProvider>
-          <ul>
-            <Tooltip delayDuration={0}>
-              <TooltipTrigger>
-                <li className="cursor-pointer h-8 w-8" onClick={logout}>
-                  <IconLogout2 className='text-[#FD8829] text-3xl' />
-                </li>
-              </TooltipTrigger>
-              <TooltipContent
-                side="right"
-                className="bg-black/10 backdrop-blur-xl"
-              >
-                <p>Logout</p>
-              </TooltipContent>
-            </Tooltip>
-          </ul>
+          <Tooltip delayDuration={300}>
+            <TooltipTrigger asChild>
+              <Avatar className="h-9 w-9 border-2 border-[#FC8929]/30 cursor-pointer hover:border-[#FC8929]/70 transition-all">
+                <AvatarImage src="https://github.com/shadcn.png" />
+                <AvatarFallback className="bg-[#FC8929]/20 text-[#FC8929]">CN</AvatarFallback>
+              </Avatar>
+            </TooltipTrigger>
+            <TooltipContent
+              side="right"
+              className="bg-[#0F1133]/90 text-white border-[#37384B] backdrop-blur-lg"
+            >
+              <p className="font-medium">Your Profile</p>
+            </TooltipContent>
+          </Tooltip>
         </TooltipProvider>
-      </div> */}
+
+        <TooltipProvider>
+          <Tooltip delayDuration={300}>
+            <TooltipTrigger asChild>
+              <button className="flex items-center justify-center h-9 w-9 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-colors">
+                <LogOut size={18} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent
+              side="right"
+              className="bg-[#0F1133]/90 text-white border-[#37384B] backdrop-blur-lg"
+            >
+              <p>Logout</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
     </nav>
   );
 };

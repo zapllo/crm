@@ -8,6 +8,7 @@ interface IUser {
   isOrgAdmin: boolean;
   firstName?: string;
   organization?: string;
+  role: string;
   lastName?: string;
 }
 

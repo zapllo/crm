@@ -71,7 +71,7 @@ const AddCompany: React.FC<AddCompanyProps> = ({
 
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogContent className="p-6 h-screen overflow-y-scroll m-auto">
+            <DialogContent className="p-6 h-screen overflow-y-scroll scrollbar-hide z-[100] m-auto">
                 <DialogHeader>
                     <DialogTitle>Add Company</DialogTitle>
                 </DialogHeader>

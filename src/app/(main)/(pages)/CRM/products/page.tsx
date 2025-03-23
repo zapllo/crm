@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { Plus, Pencil, Trash, Download, LayoutGrid, List } from "lucide-react";
+import { Plus, Pencil, Trash, Download, LayoutGrid, List, Loader2, Tag, Barcode, Weight, Search, SlidersHorizontal } from "lucide-react";
 import AddProduct from "@/components/modals/products/addProduct";
 import EditProduct from "@/components/modals/products/editProduct";
 import {
@@ -27,16 +27,45 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
+import { Badge } from "@/components/ui/badge";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
+
+// Interface definitions remain the same
+interface Category {
+    _id: string;
+    name: string;
+    organization: string;
+    createdAt: string;
+    updatedAt: string;
+    __v: number;
+}
+
+interface Unit {
+    _id: string;
+    name: string;
+    createdAt: string;
+    updatedAt: string;
+    __v: number;
+}
 
 interface Product {
     _id: string;
     productName: string;
     hsnCode: string;
-    category: string;
-    unit: string;
+    category: Category;
+    unit: Unit;
     rate: number;
     maxDiscount: number;
-    imageUrl?: string; // Added image field
+    imageUrl?: string;
 }
 
 export default function ProductsPage() {
@@ -47,8 +76,11 @@ export default function ProductsPage() {
     const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
     const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
-    const [viewMode, setViewMode] = useState<"table" | "gallery">("table"); // Toggle state
-    const router = useRouter(); // Initialize router
+    const [viewMode, setViewMode] = useState<"table" | "gallery">("gallery");
+    const [isLoading, setIsLoading] = useState<boolean>(true);
+    const [activeTab, setActiveTab] = useState<string>("all");
+
+    const router = useRouter();
 
     useEffect(() => {
         fetchProducts();
@@ -60,6 +92,8 @@ export default function ProductsPage() {
             setProducts(response.data);
         } catch (error) {
             console.error("Error fetching products:", error);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -80,8 +114,8 @@ export default function ProductsPage() {
             ...products.map(({ productName, hsnCode, category, unit, rate, maxDiscount }) => [
                 productName,
                 hsnCode,
-                category,
-                unit,
+                category?.name || "N/A",
+                unit?.name || "N/A",
                 rate,
                 maxDiscount,
             ]),
@@ -97,111 +131,338 @@ export default function ProductsPage() {
         document.body.removeChild(link);
     };
 
-    const sortedFilteredProducts = products
-        .filter(({ productName, category }) =>
-            [productName, category].some((field) =>
-                field.toLowerCase().includes(searchTerm.toLowerCase())
-            )
-        )
-        .sort((a, b) => (a[sortField as keyof Product] > b[sortField as keyof Product] ? 1 : -1));
+    // Get all unique categories for filtering
+    const categories = [...new Set(products.map(product => product.category?.name))].filter(Boolean);
+
+    const filteredProducts = products.filter(product => {
+        // Filter by search term
+        const matchesSearch =
+            product.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            product.category?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            product.hsnCode.toLowerCase().includes(searchTerm.toLowerCase());
+
+        // Filter by category tab
+        const matchesCategory =
+            activeTab === "all" ||
+            product.category?.name === activeTab;
+
+        return matchesSearch && matchesCategory;
+    });
+
+    // Sort products
+    const sortedFilteredProducts = [...filteredProducts].sort((a, b) => {
+        if (sortField === "productName") {
+            return a.productName.localeCompare(b.productName);
+        } else if (sortField === "category") {
+            return (a.category?.name || "").localeCompare(b.category?.name || "");
+        } else if (sortField === "rate") {
+            return a.rate - b.rate;
+        }
+        return 0;
+    });
+
+    if (isLoading) {
+        return (
+            <div className="p-8">
+                <div className="flex items-center justify-between mb-8">
+                    <Skeleton className="h-10 w-60" />
+                    <div className="flex gap-2">
+                        <Skeleton className="h-10 w-32" />
+                        <Skeleton className="h-10 w-32" />
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                    {[1, 2, 3, 4, 5, 6, 7, 8].map((item) => (
+                        <Skeleton key={item} className="h-[300px] w-full rounded-lg" />
+                    ))}
+                </div>
+            </div>
+        );
+    }
 
     return (
-        <div className="p-6">
-            <div className="flex gap-4 mt-4 mb-4 justify-center w-full">
-                <div className="flex justify-center gap-4">
-                    <Input className="w-48" label="Search Products" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-                    <Button onClick={() => setIsModalOpen(true)} className="text-white flex gap-2">
+        <div className="p-6 max-w-7xl mt-4 mx-auto">
+            <div className="flex flex-col gap-2 mb-8">
+                <h1 className="text-3xl font-bold tracking-tight">Products</h1>
+                <p className="text-muted-foreground">Manage your product catalog, edit details and track inventory.</p>
+            </div>
+
+            <div className="flex flex-col md:flex-row gap-4 mb-6 justify-between">
+                <div className="relative w-full md:w-96">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        className="pl-10 w-full"
+                        placeholder="Search products, categories or HSN codes..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                    <Button onClick={() => setIsModalOpen(true)} className="bg-primary hover:bg-primary/90 flex gap-2">
                         <Plus size={16} /> Add Product
                     </Button>
-                    <Button variant={"outline"} onClick={handleExportCSV} className="text-white flex gap-2">
-                        <Download size={16} /> Export
-                    </Button>
-                    <Button variant={"outline"} onClick={() => setViewMode(viewMode === "table" ? "gallery" : "table")} className="hover:bg-gray-700 text-white flex gap-2">
-                        {viewMode === "table" ? <LayoutGrid size={16} /> : <List size={16} />}
-                        {viewMode === "table" ? "Gallery View" : "Table View"}
-                    </Button>
-                    <Select onValueChange={setSortField}>
-                        <SelectTrigger className="bg-">
-                            <SelectValue placeholder="Sort By - Created Sequence" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="productName">Product Name</SelectItem>
-                            <SelectItem value="category">Category</SelectItem>
-                            <SelectItem value="rate">Rate</SelectItem>
-                        </SelectContent>
-                    </Select>
+
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline" className="flex gap-2">
+                                <SlidersHorizontal size={16} /> Options
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-56">
+                            <DropdownMenuLabel>Product Actions</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={handleExportCSV} className="flex gap-2 cursor-pointer">
+                                <Download size={16} /> Export as CSV
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setViewMode(viewMode === "table" ? "gallery" : "table")} className="flex gap-2 cursor-pointer">
+                                {viewMode === "table" ? <LayoutGrid size={16} /> : <List size={16} />}
+                                {viewMode === "table" ? "Gallery View" : "Table View"}
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuLabel>Sort By</DropdownMenuLabel>
+                            <DropdownMenuItem onClick={() => setSortField("productName")} className="cursor-pointer">
+                                Product Name {sortField === "productName" && "✓"}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setSortField("category")} className="cursor-pointer">
+                                Category {sortField === "category" && "✓"}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setSortField("rate")} className="cursor-pointer">
+                                Price {sortField === "rate" && "✓"}
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
             </div>
 
-            {viewMode === "table" ? (
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Product</TableHead>
-                            <TableHead>HSN Code</TableHead>
-                            <TableHead>Category</TableHead>
-                            <TableHead>Rate</TableHead>
-                            <TableHead>Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {sortedFilteredProducts.map((product) => (
-                            <TableRow className="cursor-pointer"
-                                onClick={() => router.push(`/CRM/products/${product._id}`)}
-                                key={product._id}>
-                                <TableCell>{product.productName}</TableCell>
-                                <TableCell>{product.hsnCode}</TableCell>
-                                <TableCell>{product.category}</TableCell>
-                                <TableCell>{product.rate}</TableCell>
-                                <TableCell className="flex items-center mt-2 gap-2">
-                                    <Pencil className="text-blue-500 h-5 cursor-pointer" onClick={() => {
-                                        setSelectedProduct(product);
-                                        setIsEditModalOpen(true);
-                                    }} />
-                                    <AlertDialog>
-                                        <AlertDialogTrigger asChild>
-                                            <Trash className="text-red-500 h-5 cursor-pointer" onClick={() => setConfirmDelete(product._id)} />
-                                        </AlertDialogTrigger>
-                                        <AlertDialogContent>
-                                            <AlertDialogHeader>
-                                                <h3 className="text-lg font-bold">Delete Product</h3>
-                                                <p>Are you sure you want to delete this product? This action cannot be undone.</p>
-                                            </AlertDialogHeader>
-                                            <AlertDialogFooter>
-                                                <AlertDialogCancel onClick={() => setConfirmDelete(null)}>Cancel</AlertDialogCancel>
-                                                <AlertDialogAction onClick={handleDelete} className="bg-red-500 text-white">
-                                                    Delete
-                                                </AlertDialogAction>
-                                            </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                    </AlertDialog>
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            ) : (
-                <div className="grid grid-cols-4 gap-6">
-                    {sortedFilteredProducts.map((product) => (
-                        <Card
-                        className="hover:border-primary cursor-pointer"
-                            onClick={() => router.push(`/CRM/products/${product._id}`)}
-                            key={product._id}>
-                            <CardHeader>
-                                <img src={product.imageUrl || "/fallback.png"} alt={product.productName} className="w-full h-36 object-cover rounded-lg" />
-                            </CardHeader>
-                            <CardContent>
-                                <h3 className="font-bold">{product.productName}</h3>
-                                <p>{product.category}</p>
-                                <p>₹{product.rate}</p>
-                            </CardContent>
-                        </Card>
+            <Tabs defaultValue="all" className="mb-6" onValueChange={setActiveTab}>
+                <TabsList className="mb-2 flex flex-wrap gap-4 bg-accent h-auto">
+                    <TabsTrigger className="border-none" value="all">All Products</TabsTrigger>
+                    {categories.map(category => (
+                        <TabsTrigger className="border-none" key={category} value={category as string}>
+                            {category}
+                        </TabsTrigger>
                     ))}
-                </div>
-            )}
+                </TabsList>
+
+                <TabsContent value={activeTab}>
+                    {sortedFilteredProducts.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-12 text-center">
+                            <div className="rounded-full bg-muted p-4 mb-4">
+                                <Tag className="h-8 w-8 text-muted-foreground" />
+                            </div>
+                            <h3 className="text-lg font-semibold mb-2">No products found</h3>
+                            <p className="text-muted-foreground max-w-md mb-4">
+                                We couldn't find any products matching your criteria. Try adjusting your search or filters.
+                            </p>
+                            <Button onClick={() => { setSearchTerm(""); setActiveTab("all"); }}>
+                                Clear filters
+                            </Button>
+                        </div>
+                    ) : viewMode === "table" ? (
+                        <div className="rounded-md border overflow-hidden">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Product</TableHead>
+                                        <TableHead>HSN Code</TableHead>
+                                        <TableHead>Category</TableHead>
+                                        <TableHead>Rate</TableHead>
+                                        <TableHead className="text-right">Actions</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {sortedFilteredProducts.map((product) => (
+                                        <TableRow
+                                            className="cursor-pointer hover:bg-muted/50"
+                                            onClick={() => router.push(`/CRM/products/${product._id}`)}
+                                            key={product._id}
+                                        >
+                                            <TableCell className="font-medium">{product.productName}</TableCell>
+                                            <TableCell>{product.hsnCode}</TableCell>
+                                            <TableCell>
+                                                <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+                                                    {product.category?.name || "N/A"}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell className="font-medium">₹{product.rate.toLocaleString()}</TableCell>
+                                            <TableCell className="text-right">
+                                                <div className="flex items-center justify-end gap-2" onClick={e => e.stopPropagation()}>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setSelectedProduct(product);
+                                                            setIsEditModalOpen(true);
+                                                        }}
+                                                        className="h-8 w-8 text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+                                                    >
+                                                        <Pencil className="h-4 w-4" />
+                                                    </Button>
+
+                                                    <AlertDialog>
+                                                        <AlertDialogTrigger asChild>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setConfirmDelete(product._id);
+                                                                }}
+                                                                className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                            >
+                                                                <Trash className="h-4 w-4" />
+                                                            </Button>
+                                                        </AlertDialogTrigger>
+                                                        <AlertDialogContent>
+                                                            <AlertDialogHeader>
+                                                                <h3 className="text-lg font-bold">Delete Product</h3>
+                                                                <p>Are you sure you want to delete this product? This action cannot be undone.</p>
+                                                            </AlertDialogHeader>
+                                                            <AlertDialogFooter>
+                                                                <AlertDialogCancel onClick={() => setConfirmDelete(null)}>Cancel</AlertDialogCancel>
+                                                                <AlertDialogAction onClick={handleDelete} className="bg-red-500 text-white hover:bg-red-600">
+                                                                    Delete
+                                                                </AlertDialogAction>
+                                                            </AlertDialogFooter>
+                                                        </AlertDialogContent>
+                                                    </AlertDialog>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                            {sortedFilteredProducts.map((product) => (
+                                <Card
+                                    key={product._id}
+                                    className="overflow-hidden transition-all duration-200 hover:shadow-lg hover:translate-y-[-2px] border-muted/50"
+                                >
+                                    <div className="relative aspect-square">
+                                        <img
+                                            src={product.imageUrl || "/fallback.png"}
+                                            alt={product.productName}
+                                            className="w-full h-full object-cover transition-transform hover:scale-105 duration-500 ease-in-out"
+                                            onClick={() => router.push(`/CRM/products/${product._id}`)}
+                                        />
+                                        <div className="absolute top-2 right-2 flex gap-1">
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setSelectedProduct(product);
+                                                    setIsEditModalOpen(true);
+                                                }}
+                                                className="h-8 w-8 bg-white/90 hover:bg-white text-blue-500 backdrop-blur-sm rounded-full shadow-sm"
+                                            >
+                                                <Pencil className="h-4 w-4" />
+                                            </Button>
+
+                                            <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setConfirmDelete(product._id);
+                                                        }}
+                                                        className="h-8 w-8 bg-white/90 hover:bg-white text-red-500 backdrop-blur-sm rounded-full shadow-sm"
+                                                    >
+                                                        <Trash className="h-4 w-4" />
+                                                    </Button>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader>
+                                                        <h3 className="text-lg font-bold">Delete Product</h3>
+                                                        <p>Are you sure you want to delete this product? This action cannot be undone.</p>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                        <AlertDialogCancel onClick={() => setConfirmDelete(null)}>Cancel</AlertDialogCancel>
+                                                        <AlertDialogAction onClick={handleDelete} className="bg-red-500 text-white hover:bg-red-600">
+                                                            Delete
+                                                        </AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
+                                        </div>
+
+                                        <Badge className="absolute bottom-2 left-2 bg-primary/90 hover:bg-primary backdrop-blur-sm">
+                                            ₹{product.rate.toLocaleString()}
+                                        </Badge>
+                                    </div>
+
+                                    <CardContent className="p-4 cursor-pointer" onClick={() => router.push(`/CRM/products/${product._id}`)}>
+                                        <div className="flex justify-between items-start mb-2">
+                                            <h3 className="font-semibold text-lg line-clamp-1 group-hover:text-primary">
+                                                {product.productName}
+                                            </h3>
+                                        </div>
+
+                                        <div className="flex flex-wrap gap-2 mb-3">
+                                            <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+                                                {product.category?.name || "No Category"}
+                                            </Badge>
+
+                                            {product.maxDiscount > 0 && (
+                                                <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800">
+                                                    {product.maxDiscount}% Max Discount
+                                                </Badge>
+                                            )}
+                                        </div>
+
+                                        <div className="text-sm text-muted-foreground space-y-1">
+                                            <div className="flex items-center gap-2">
+                                                <Barcode className="h-3.5 w-3.5 text-muted-foreground/70" />
+                                                <span>HSN: {product.hsnCode}</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <Weight className="h-3.5 w-3.5 text-muted-foreground/70" />
+                                                <span>Unit: {product.unit?.name || "N/A"}</span>
+                                            </div>
+                                        </div>
+                                    </CardContent>
+
+                                    <CardFooter className="p-4 pt-0 gap-2">
+                                        <Button
+                                            variant="default"
+                                            className="w-full"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                router.push(`/CRM/products/${product._id}`);
+                                            }}
+                                        >
+                                            View Details
+                                        </Button>
+                                    </CardFooter>
+                                </Card>
+                            ))}
+                        </div>
+                    )}
+                </TabsContent>
+            </Tabs>
 
             <AddProduct isOpen={isModalOpen} setIsOpen={setIsModalOpen} onProductCreated={fetchProducts} />
-            <EditProduct onProductUpdated={fetchProducts} isOpen={isEditModalOpen} setIsOpen={setIsEditModalOpen} product={selectedProduct} />
+            <EditProduct onProductUpdated={fetchProducts} isOpen={isEditModalOpen} setIsOpen={setIsEditModalOpen} product={selectedProduct as any} />
+
+            {/* Pagination placeholder - can be implemented if needed */}
+            {sortedFilteredProducts.length > 0 && (
+                <div className="flex justify-center mt-8">
+                    <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" disabled>Previous</Button>
+                        <Button variant="outline" size="sm" className="bg-primary text-primary-foreground">1</Button>
+                        <Button variant="outline" size="sm">2</Button>
+                        <Button variant="outline" size="sm">3</Button>
+                        <Button variant="outline" size="sm">Next</Button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

@@ -1,20 +1,40 @@
 // app/api/companies/[id]/route.ts
 
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/lib/db";
-import { Company } from "@/models/companyModel";
+import companyModel from "@/models/companyModel";
 
-interface Params {
-    params: { id: string };
+
+
+
+export async function GET(request: NextRequest,
+    { params }: { params: { id: string } }
+) {
+    try {
+        await connectDB();
+        const { id } = params;
+
+        const company = await companyModel.findById(id);
+        if (!company) {
+            return NextResponse.json({ message: "Company not found" }, { status: 404 });
+        }
+
+        return NextResponse.json(company);
+    } catch (error) {
+        return NextResponse.json({ error: "Error fetching company" }, { status: 500 });
+    }
 }
 
-export async function PATCH(request: Request, { params }: Params) {
+
+export async function PATCH(request: NextRequest,
+    { params }: { params: { id: string } }
+) {
     try {
         await connectDB();
         const { id } = params;
         const data = await request.json();
 
-        const updatedCompany = await Company.findByIdAndUpdate(id, data, {
+        const updatedCompany = await companyModel.findByIdAndUpdate(id, data, {
             new: true,
         });
         if (!updatedCompany) {
@@ -26,11 +46,13 @@ export async function PATCH(request: Request, { params }: Params) {
     }
 }
 
-export async function DELETE(request: Request, { params }: Params) {
+export async function DELETE(request: NextRequest,
+    { params }: { params: { id: string } }
+) {
     try {
         await connectDB();
         const { id } = params;
-        await Company.findByIdAndDelete(id);
+        await companyModel.findByIdAndDelete(id);
         return NextResponse.json({ message: "Company deleted" }, { status: 200 });
     } catch (error) {
         return NextResponse.json({ error: "Server error" }, { status: 500 });

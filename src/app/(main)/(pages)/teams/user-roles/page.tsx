@@ -2,25 +2,51 @@
 
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { Plus, Pencil, Trash } from "lucide-react";
-
-import AddRole from "@/components/modals/roles/AddRole"; // or "@/components/modals/roles/AddRole"
+import { Plus, Pencil, Trash2 } from "lucide-react";
+import AddRole from "@/components/modals/roles/AddRole";
 import { Button } from "@/components/ui/button";
 import { useUserContext } from "@/contexts/userContext";
+import { Input } from "@/components/ui/input";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface RoleDoc {
     _id: string;
     name: string;
     leadAccess: string;
-    // pagePermissions, featurePermissions, etc.
 }
 
 export default function RolesPage() {
-
     const { user } = useUserContext();
     const orgId = user?.organization ?? "";
     const [roles, setRoles] = useState<RoleDoc[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState("");
 
     useEffect(() => {
         fetchRoles();
@@ -28,7 +54,6 @@ export default function RolesPage() {
 
     const fetchRoles = async () => {
         try {
-            // GET roles for this org
             const response = await axios.get<RoleDoc[]>(`/api/roles`);
             setRoles(response.data);
         } catch (error) {
@@ -38,7 +63,6 @@ export default function RolesPage() {
 
     const handleDelete = async (id: string) => {
         try {
-            // Example: pass orgId in query
             await axios.delete(`/api/roles/${id}?orgId=${orgId}`);
             fetchRoles();
         } catch (error) {
@@ -46,54 +70,118 @@ export default function RolesPage() {
         }
     };
 
+    const filteredRoles = roles.filter(role =>
+        role.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
     return (
-        <div className="p-6 text-xs">
-            <h2 className="text-xl font-bold mb-4">Roles</h2>
-            <div className="flex gap-4 mb-4">
-                <input
-                    type="text"
-                    placeholder="Search"
-                    className="border px-4 py-2 rounded"
-                />
-                <Button
-                    variant="default"
-                    className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 flex items-center gap-2 text-xs"
-                    onClick={() => setIsModalOpen(true)}
-                >
-                    <Plus size={16} /> Add Role
-                </Button>
-            </div>
+        <div className="p-6 space-y-6">
+            <Card>
+                <CardHeader>
+                    <div className="flex justify-between items-center">
+                        <div>
+                            <CardTitle className="text-xl font-semibold">User Roles</CardTitle>
+                            <CardDescription>
+                                Manage and configure user roles and permissions
+                            </CardDescription>
+                        </div>
+                        <Button
+                            onClick={() => setIsModalOpen(true)}
+                            className="bg-[#815bf5] hover:bg-[#815bf5]/90"
+                        >
+                            <Plus className="h-4 w-4 mr-2" /> Add Role
+                        </Button>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-4">
+                        {/* Search Bar */}
+                        <div className="flex items-center space-x-2">
+                            <Input
+                                label="Search Role"
+                                placeholder="Search roles..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="max-w-sm dark:text-white text-black"
+                            />
+                        </div>
 
-            <table className="w-full border border-gray-700 rounded">
-                <thead>
-                    <tr className="bg-gray-800 text-white text-left">
-                        <th className="p-2">Role Name</th>
-                        <th className="p-2">Lead Access</th>
-                        <th className="p-2">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {roles.map((role) => (
-                        <tr key={role._id} className="border-b">
-                            <td className="p-2">{role.name}</td>
-                            <td className="p-2">{role.leadAccess}</td>
-                            <td className="p-2 flex gap-2">
-                                <button className="text-blue-500">
-                                    <Pencil size={16} />
-                                </button>
-                                <button
-                                    onClick={() => handleDelete(role._id)}
-                                    className="text-red-500"
-                                >
-                                    <Trash size={16} />
-                                </button>
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
+                        {/* Roles Table */}
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Role Name</TableHead>
+                                    <TableHead>Lead Access</TableHead>
+                                    <TableHead className="text-right">Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {filteredRoles.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={3} className="text-center text-muted-foreground">
+                                            No roles found
+                                        </TableCell>
+                                    </TableRow>
+                                ) : (
+                                    filteredRoles.map((role) => (
+                                        <TableRow key={role._id}>
+                                            <TableCell className="font-medium">{role.name}</TableCell>
+                                            <TableCell>
+                                                <Badge variant="secondary">
+                                                    {role.leadAccess}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <div className="flex justify-end space-x-2">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-8 w-8 p-0 text-blue-500 hover:text-blue-700"
+                                                    >
+                                                        <Pencil className="h-4 w-4" />
+                                                    </Button>
 
-            {/* Dialog for adding new role */}
+                                                    <AlertDialog>
+                                                        <AlertDialogTrigger asChild>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
+                                                        </AlertDialogTrigger>
+                                                        <AlertDialogContent>
+                                                            <AlertDialogHeader>
+                                                                <AlertDialogTitle>Delete Role</AlertDialogTitle>
+                                                                <AlertDialogDescription>
+                                                                    Are you sure you want to delete the role "{role.name}"?
+                                                                    This action cannot be undone and may affect users assigned to this role.
+                                                                </AlertDialogDescription>
+                                                            </AlertDialogHeader>
+                                                            <AlertDialogFooter>
+                                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                                <AlertDialogAction
+                                                                    onClick={() => handleDelete(role._id)}
+                                                                    className="bg-red-500 hover:bg-red-600"
+                                                                >
+                                                                    Delete
+                                                                </AlertDialogAction>
+                                                            </AlertDialogFooter>
+                                                        </AlertDialogContent>
+                                                    </AlertDialog>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* Add Role Modal */}
             <AddRole
                 isOpen={isModalOpen}
                 setIsOpen={setIsModalOpen}
