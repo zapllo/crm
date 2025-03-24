@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 
 export function ThemeLayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isAuthPage = pathname === '/login' || pathname === '/signup';
+  const isAuthPage = pathname === '/login' || pathname === '/signup' || pathname === '/';
   
   return (
     <ThemeProvider

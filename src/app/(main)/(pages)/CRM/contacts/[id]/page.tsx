@@ -3,18 +3,9 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import axios from "axios";
-import { Pencil, Trash, ArrowLeft, Loader2, Search, Edit2, Edit } from "lucide-react";
+import { Pencil, Trash, ArrowLeft, Loader2, Search, Edit2, Edit, PlusCircle, User, Mail, Phone, MapPin, Calendar, ExternalLink, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import {
-    AlertDialog,
-    AlertDialogTrigger,
-    AlertDialogContent,
-    AlertDialogHeader,
-    AlertDialogFooter,
-    AlertDialogAction,
-    AlertDialogCancel,
-} from "@/components/ui/alert-dialog";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import EditContact from "@/components/modals/contacts/editContact";
 import ManageContactTagsModal from "@/components/modals/contactTags/manageContactTags";
 import {
@@ -26,6 +17,27 @@ import {
     TableCell,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import {
+    AlertDialog,
+    AlertDialogTrigger,
+    AlertDialogContent,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogAction,
+    AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
+import {
+    HoverCard,
+    HoverCardContent,
+    HoverCardTrigger,
+} from "@/components/ui/hover-card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 // Types
 interface IContact {
@@ -148,46 +160,66 @@ export default function ContactDetailsPage() {
     if (loading) {
         return (
             <div className="flex items-center justify-center h-full">
-                <Loader2 className="w-6 text-primary h-6 animate-spin" />
+                <div className="flex flex-col items-center gap-2">
+                    <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                    <p className="text-sm text-muted-foreground">Loading contact information...</p>
+                </div>
             </div>
         );
     }
 
     if (!contact) {
         return (
-            <div className="p-6">
-                <p className="text-gray-500">No contact found.</p>
+            <div className="flex flex-col items-center justify-center h-full p-6">
+                <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+                    <User className="w-8 h-8 text-muted-foreground" />
+                </div>
+                <h3 className="text-lg font-medium">Contact Not Found</h3>
+                <p className="text-muted-foreground mb-6">The contact you're looking for doesn't exist or may have been deleted.</p>
+                <Button onClick={() => router.push("/CRM/contacts")}>
+                    Return to Contacts
+                </Button>
             </div>
         );
     }
 
+    // Extract initials for avatar
+    const getInitials = () => {
+        return `${contact.firstName?.charAt(0) || ''}${contact.lastName?.charAt(0) || ''}`.toUpperCase();
+    };
+
+
     return (
-        <div className="p-6 overflow-y-scroll h-screen">
+        <div className="container mx-auto py-6 space-y-8">
             {/* Header / Navigation */}
-            <div className="flex justify-between items-center mb-6">
-                {/* Back button */}
-                <div
-                    onClick={() => router.push("/CRM/contacts")}
-                    className="flex items-center cursor-pointer gap-2"
-                >
-                    <div
-                        className="rounded-full h-8 w-8 items-center flex justify-center border
-                          hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black"
+            <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => router.push("/CRM/contacts")}
+                        className="rounded-full"
                     >
-                        <ArrowLeft />
+                        <ArrowLeft className="h-4 w-4" />
+                    </Button>
+                    <div>
+                        <h1 className="text-2xl font-bold tracking-tight">
+                            {contact.firstName} {contact.lastName}
+                        </h1>
+                        <p className="text-muted-foreground">
+                            {contact.company?.companyName && `@${contact.company.companyName}`}
+                        </p>
                     </div>
-                    <span>Back to Contacts</span>
                 </div>
 
-                {/* Right side: Edit, Delete */}
                 <div className="flex gap-2">
                     <Button
                         variant="outline"
                         onClick={() => setIsEditModalOpen(true)}
                         className="gap-2"
                     >
-                        <Pencil className="text-blue-400" size={16} />
-                        Edit Contact
+                        <Pencil className="h-4 w-4" />
+                        Edit
                     </Button>
 
                     <AlertDialog
@@ -195,24 +227,24 @@ export default function ContactDetailsPage() {
                         onOpenChange={setShowDeleteDialog}
                     >
                         <AlertDialogTrigger asChild>
-                            <Button variant="outline" className="gap-2">
-                                <Trash className="text-red-500" size={16} />
-                                Delete Contact
+                            <Button variant="destructive" className="gap-2">
+                                <Trash className="h-4 w-4" />
+                                Delete
                             </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                             <AlertDialogHeader>
-                                <h3 className="text-lg font-bold">Delete Contact</h3>
-                                <p>
+                                <AlertDialogTitle>Delete Contact</AlertDialogTitle>
+                                <AlertDialogDescription>
                                     Are you sure you want to delete this contact? This action
-                                    cannot be undone.
-                                </p>
+                                    cannot be undone and will remove all associated data.
+                                </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                                 <AlertDialogAction
                                     onClick={handleDelete}
-                                    className="bg-red-500 text-white"
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                 >
                                     Delete
                                 </AlertDialogAction>
@@ -222,134 +254,229 @@ export default function ContactDetailsPage() {
                 </div>
             </div>
 
-            {/* Main Content */}
-            <div className="flex gap-6">
-                {/* LEFT: Basic Contact Info in a Card */}
-                <Card className="min-w-[320px] w-1/3">
-                    <CardHeader>
-                        <h2 className="text-xl font-bold">Contact Details</h2>
-                    </CardHeader>
-                    <CardContent className="space-y-3 text-sm">
-                        <p>
-                            <strong>Name:</strong> {contact.firstName} {contact.lastName}
-                        </p>
-                        <p>
-                            <strong>Email:</strong> {contact.email}
-                        </p>
-                        <p>
-                            <strong>WhatsApp:</strong> {contact.whatsappNumber}
-                        </p>
-                        <p>
-                            <strong>Company:</strong> {contact.company?.companyName || ""}
-                        </p>
-                        <p>
-                            <strong>Address:</strong> {contact.address}
-                        </p>
-                        <p>
-                            <strong>City:</strong> {contact.city}
-                        </p>
-                        <p>
-                            <strong>State:</strong> {contact.state}
-                        </p>
-                        <p>
-                            <strong>Pincode:</strong> {contact.pincode}
-                        </p>
-                        {/* etc. dateOfBirth, dateOfAnniversary, etc. */}
-                    </CardContent>
-                    {/* CONTACT TAGS SECTION */}
-                    <div className="p-6">
-                        <div>
-                            <div className="flex justify-between items-center mb-4">
-                                <h2 className="text-lg font-bold">Contact Tags</h2>
-                                <Button className="text-xs flex items-center gap-1 border-none shadow-none bg-transparent hover:bg-transparent dark:text-white text-black hover:text-blue-500" onClick={() => setShowTagModal(true)}>
-                                    <Edit className="h-5 font-thin" />
-                                </Button>
-                            </div>
-                        </div>
-                        <div>
-                            {contact.tags && contact.tags.length > 0 ? (
-                                <div className="flex flex-wrap gap-2">
-                                    {contact.tags.map((t) => (
-                                        <span
-                                            key={t._id}
-                                            className="px-2 py-1 text-xs rounded-full text-white"
-                                            style={{ backgroundColor: t.color || "#ccc" }}
-                                        >
-                                            {t.name}
-                                        </span>
-                                    ))}
-                                </div>
-                            ) : (
-                                <p className="text-gray-400">No tags assigned yet.</p>
-                            )}
-                        </div>
-                    </div>
-                    {/* Example: Custom Fields? */}
-                    {contact.customFieldValues && contact.customFieldValues.length > 0 && (
-                        <Card>
-                            <CardHeader>
-                                <h2 className="text-xl font-bold">Custom Fields</h2>
-                            </CardHeader>
-                            <CardContent className="space-y-2 text-sm">
-                                {contact.customFieldValues.map((cf) => (
-                                    <div
-                                        key={cf.definition._id}
-                                        className="border-b border-gray-700 pb-2"
-                                    >
-                                        <p>
-                                            <strong>{cf.definition.name}:</strong>{" "}
-                                            {String(cf.value)}
-                                        </p>
+            <Tabs defaultValue="overview" className="w-full">
+                <TabsList className="grid w-full max-w-md gap-4 bg-accent grid-cols-3">
+                    <TabsTrigger value="overview">Overview</TabsTrigger>
+                    <TabsTrigger value="leads">Leads</TabsTrigger>
+                    <TabsTrigger value="custom">Custom Fields</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="overview" className="mt-6 space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {/* Contact Profile Card */}
+                        <Card className="md:col-span-1">
+                            <CardHeader className="pb-2 flex flex-row items-start space-y-0">
+                                <div className="flex flex-col items-center justify-center w-full">
+                                    <Avatar className="h-24 w-24 mb-2">
+                                        <AvatarFallback className="text-2xl bg-primary text-primary-foreground">
+                                            {getInitials()}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    <div className="text-center">
+                                        <h2 className="text-xl font-semibold">
+                                            {contact.firstName} {contact.lastName}
+                                        </h2>
+                                        {contact.company?.companyName && (
+                                            <p className="text-sm text-muted-foreground">
+                                                {contact.company.companyName}
+                                            </p>
+                                        )}
                                     </div>
-                                ))}
+                                </div>
+                            </CardHeader>
+                            <CardContent>
+                                <Separator className="my-4" />
+                                <div className="space-y-4">
+                                    {contact.email && (
+                                        <div className="flex items-center gap-3">
+                                            <Mail className="h-4 w-4 text-muted-foreground" />
+                                            <a href={`mailto:${contact.email}`} className="text-sm hover:underline">
+                                                {contact.email}
+                                            </a>
+                                        </div>
+                                    )}
+                                    {contact.whatsappNumber && (
+                                        <div className="flex items-center gap-3">
+                                            <Phone className="h-4 w-4 text-muted-foreground" />
+                                            <a href={`tel:${contact.whatsappNumber}`} className="text-sm hover:underline">
+                                                {contact.whatsappNumber}
+                                            </a>
+                                        </div>
+                                    )}
+                                    {(contact.address || contact.city || contact.state) && (
+                                        <div className="flex items-start gap-3">
+                                            <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
+                                            <div className="text-sm">
+                                                {contact.address && <p>{contact.address}</p>}
+                                                {(contact.city || contact.state) && (
+                                                    <p>
+                                                        {contact.city}{contact.city && contact.state && ", "}
+                                                        {contact.state} {contact.pincode}
+                                                    </p>
+                                                )}
+                                                {contact.country && <p>{contact.country}</p>}
+                                            </div>
+                                        </div>
+                                    )}
+                                    {(contact.dateOfBirth || contact.dateOfAnniversary) && (
+                                        <div className="flex items-start gap-3">
+                                            <Calendar className="h-4 w-4 text-muted-foreground mt-0.5" />
+                                            <div className="text-sm">
+                                                {contact.dateOfBirth && (
+                                                    <p><span className="text-muted-foreground">Birthday:</span> {new Date(contact.dateOfBirth).toLocaleDateString()}</p>
+                                                )}
+                                                {contact.dateOfAnniversary && (
+                                                    <p><span className="text-muted-foreground">Anniversary:</span> {new Date(contact.dateOfAnniversary).toLocaleDateString()}</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <Separator className="my-4" />
+
+                                {/* Tags Section */}
+                                <div className="space-y-3">
+                                    <div className="flex justify-between items-center">
+                                        <h3 className="text-sm font-medium flex items-center gap-2">
+                                            <Tag className="h-4 w-4" /> Tags
+                                        </h3>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-8 px-2"
+                                            onClick={() => setShowTagModal(true)}
+                                        >
+                                            <Edit className="h-3.5 w-3.5" />
+                                        </Button>
+                                    </div>
+                                    {contact.tags && contact.tags.length > 0 ? (
+                                        <div className="flex flex-wrap gap-2">
+                                            {contact.tags.map((tag) => (
+                                                <Badge
+                                                    key={tag._id}
+                                                    style={{
+                                                        backgroundColor: tag.color || "#ccc",
+                                                        color: "#fff"
+                                                    }}
+                                                    className="px-2.5 py-0.5 text-xs rounded-md"
+                                                >
+                                                    {tag.name}
+                                                </Badge>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="w-full text-muted-foreground"
+                                            onClick={() => setShowTagModal(true)}
+                                        >
+                                            <PlusCircle className="mr-2 h-3.5 w-3.5" />
+                                            Add Tags
+                                        </Button>
+                                    )}
+                                </div>
                             </CardContent>
                         </Card>
-                    )}
 
+                        {/* Activity/Summary Section */}
+                        <Card className="md:col-span-2">
+                            <CardHeader>
+                                <CardTitle>Contact Summary</CardTitle>
+                                <CardDescription>
+                                    Overview of activity and interactions with {contact.firstName}
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <Card>
+                                        <CardHeader className="pb-2">
+                                            <CardTitle className="text-sm font-medium">Leads</CardTitle>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <div className="text-2xl font-bold">{leads.length}</div>
+                                            <p className="text-xs text-muted-foreground">Total associated leads</p>
+                                        </CardContent>
+                                        {/* <CardFooter className="pt-0">
+                                            <Button
+                                                variant="ghost"
+                                                className="h-8 p-0 text-blue-500"
+                                                onClick={() => set}
+                                            >
+                                                View Details
+                                                <ExternalLink className="ml-1 h-3 w-3" />
+                                            </Button>
+                                        </CardFooter> */}
+                                    </Card>
 
-                </Card>
+                                    {/* You can add more summary cards here */}
+                                    {/* <Card>
+                                        <CardHeader className="pb-2">
+                                            <CardTitle className="text-sm font-medium">Last Contacted</CardTitle>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <div className="text-sm font-medium">2 days ago</div>
+                                            <p className="text-xs text-muted-foreground">Via email</p>
+                                        </CardContent>
+                                    </Card> */}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </TabsContent>
 
-                {/* MIDDLE/RIGHT: Additional Info */}
-                <div className="flex-grow space-y-6">
-
-
-                    {/* LEADS SECTION */}
+                <TabsContent value="leads" className="mt-6 space-y-4">
                     <Card>
                         <CardHeader>
-                            <div className="flex flex-col items-center justify-center mb-2">
-                                <h2 className="text-lg font-bold">Leads Related to this Contact</h2>
-                                <p className="text-sm italic text-gray-500">
-                                    Total leads - {filteredLeads.length}
-                                </p>
+                            <div className="flex justify-between items-center">
+                                <div>
+                                    <CardTitle>Leads</CardTitle>
+                                    <CardDescription>
+                                        Manage leads associated with {contact.firstName} {contact.lastName}
+                                    </CardDescription>
+                                </div>
+                               
                             </div>
                         </CardHeader>
                         <CardContent>
-                            {/* Optional search for leads */}
-                            <div className="flex items-center mb-4">
-                                <div className="relative items-center flex">
-                                    <Search className="absolute left-3 top-2.5 text-gray-400" size={16} />
-                                    <input
-                                        className="pl-10 p-2 text-sm focus:border-primary rounded-lg outline-none bg-transparent border flex items-center"
-                                        placeholder="Search Leads..."
+                            <div className="mb-4">
+                                <div className="relative">
+                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                                    <Input
+                                        placeholder="Search leads..."
+                                        className="pl-10"
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
                                     />
                                 </div>
                             </div>
 
-                            {filteredLeads.length === 0 ? (
-                                <p className="text-gray-400 text-center">
-                                    No leads found for this contact.
-                                </p>
-                            ) : (
-                                <div className="rounded overflow-hidden">
-                                    <Table className="border">
-                                        <TableHeader>
+                            <ScrollArea className="h-[500px]">
+                                {filteredLeads.length === 0 ? (
+                                    <div className="flex flex-col items-center justify-center py-10 text-center">
+                                        <div className="rounded-full bg-muted p-3 mb-3">
+                                            <Search className="h-6 w-6 text-muted-foreground" />
+                                        </div>
+                                        <h3 className="text-lg font-medium">No leads found</h3>
+                                        <p className="text-sm text-muted-foreground max-w-md mx-auto mb-4">
+                                            {searchTerm ?
+                                                `No leads matching "${searchTerm}" were found.` :
+                                                `There are no leads associated with this contact yet.`}
+                                        </p>
+                                        <Button>
+                                            <PlusCircle className="mr-2 h-4 w-4" />
+                                            Create New Lead
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <Table>
+                                        <TableHeader className="sticky top-0 bg-background">
                                             <TableRow>
-                                                <TableHead>Title</TableHead>
-                                                <TableHead>Amount</TableHead>
-                                                <TableHead>Stage</TableHead>
-                                                <TableHead>Dates</TableHead>
+                                                <TableHead>Lead</TableHead>
+                                                <TableHead className="text-right">Amount</TableHead>
+                                                <TableHead className="text-center">Stage</TableHead>
+                                                <TableHead className="text-right">Close Date</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
@@ -357,61 +484,129 @@ export default function ContactDetailsPage() {
                                                 <TableRow
                                                     key={lead._id}
                                                     onClick={() => router.push(`/CRM/leads/${lead._id}`)}
-                                                    className="border-b cursor-pointer  "
+                                                    className="cursor-pointer hover:bg-muted/50"
                                                 >
-                                                    <TableCell className="font-semibold">
-                                                        {lead.title}
-                                                    </TableCell>
-                                                    <TableCell>₹{lead.amount.toLocaleString()}</TableCell>
                                                     <TableCell>
-                                                        <Badge>{lead.stage}</Badge>
+                                                        <div>
+                                                            <p className="font-medium">{lead.title}</p>
+                                                            <p className="text-xs text-muted-foreground">
+                                                                Created: {new Date(lead.createdAt).toLocaleDateString()}
+                                                            </p>
+                                                        </div>
                                                     </TableCell>
-                                                    <TableCell className="text-xs">
-                                                        Created:{" "}
-                                                        {new Date(lead.createdAt).toLocaleDateString()}
-                                                        <br />
-                                                        Updated:{" "}
-                                                        {new Date(lead.updatedAt).toLocaleDateString()}
-                                                        <br />
-                                                        Close Date:{" "}
+                                                    <TableCell className="text-right font-medium">
+                                                        ₹{lead.amount.toLocaleString()}
+                                                    </TableCell>
+                                                    <TableCell className="text-center">
+                                                        <HoverCard>
+                                                            <HoverCardTrigger>
+                                                                <Badge
+                                                                    className={
+                                                                        lead.stage === "Closed Won" ? "bg-green-500" :
+                                                                            lead.stage === "Closed Lost" ? "bg-red-500" :
+                                                                                lead.stage === "Negotiation" ? "bg-amber-500" :
+                                                                                    lead.stage === "Proposal" ? "bg-blue-500" :
+                                                                                        undefined
+                                                                    }
+                                                                >
+                                                                    {lead.stage}
+                                                                </Badge>
+                                                            </HoverCardTrigger>
+                                                            <HoverCardContent className="w-80">
+                                                                <div className="space-y-1">
+                                                                    <h4 className="text-sm font-semibold">{lead.stage} Stage</h4>
+                                                                    <p className="text-sm">
+                                                                        Last updated: {new Date(lead.updatedAt).toLocaleDateString()}
+                                                                    </p>
+                                                                </div>
+                                                            </HoverCardContent>
+                                                        </HoverCard>
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
                                                         {new Date(lead.closeDate).toLocaleDateString()}
                                                     </TableCell>
                                                 </TableRow>
                                             ))}
                                         </TableBody>
                                     </Table>
+                                )}
+                            </ScrollArea>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                <TabsContent value="custom" className="mt-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Custom Fields</CardTitle>
+                            <CardDescription>
+                                Additional information and attributes for this contact
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            {contact.customFieldValues && contact.customFieldValues.length > 0 ? (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {contact.customFieldValues.map((cf) => (
+                                        <Card key={cf.definition._id} className="border">
+                                            <CardHeader className="pb-2">
+                                                <CardTitle className="text-sm font-medium">
+                                                    {cf.definition.name}
+                                                </CardTitle>
+                                            </CardHeader>
+                                            <CardContent>
+                                                <div className="font-medium">
+                                                    {cf.definition.fieldType === 'date'
+                                                        ? new Date(cf.value).toLocaleDateString()
+                                                        : String(cf.value)}
+                                                </div>
+                                                <p className="text-xs text-muted-foreground">
+                                                    {cf.definition.fieldType}
+                                                </p>
+                                            </CardContent>
+                                        </Card>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="flex flex-col items-center justify-center py-8 text-center">
+                                    <div className="rounded-full bg-muted p-3 mb-3">
+                                        <PlusCircle className="h-6 w-6 text-muted-foreground" />
+                                    </div>
+                                    <h3 className="text-lg font-medium">No custom fields</h3>
+                                    <p className="text-sm text-muted-foreground max-w-sm mx-auto mt-1 mb-4">
+                                        You haven't added any custom fields to this contact yet.
+                                    </p>
+                                    {/* <Button>
+                                        Add Custom Field
+                                    </Button> */}
                                 </div>
                             )}
                         </CardContent>
                     </Card>
-                </div>
-            </div>
+                </TabsContent>
+            </Tabs>
 
             {/* Edit Contact Modal */}
-            {
-                isEditModalOpen && (
-                    <EditContact
-                        isOpen={isEditModalOpen}
-                        setIsOpen={setIsEditModalOpen}
-                        contact={contact}
-                    />
-                )
-            }
+            {isEditModalOpen && (
+                <EditContact
+                    isOpen={isEditModalOpen}
+                    setIsOpen={setIsEditModalOpen}
+                    contact={contact}
+                    // onSuccess={fetchContact}
+                />
+            )}
 
             {/* Manage Contact Tags Modal */}
-            {
-                showTagModal && (
-                    <ManageContactTagsModal
-                        contactId={contact._id}
-                        currentTags={contact.tags || []}
-                        onClose={() => setShowTagModal(false)}
-                        onUpdate={() => {
-                            setShowTagModal(false);
-                            fetchContact(); // refresh contact data
-                        }}
-                    />
-                )
-            }
-        </div >
+            {showTagModal && (
+                <ManageContactTagsModal
+                    contactId={contact._id}
+                    currentTags={contact.tags || []}
+                    onClose={() => setShowTagModal(false)}
+                    onUpdate={() => {
+                        setShowTagModal(false);
+                        fetchContact(); // refresh contact data
+                    }}
+                />
+            )}
+        </div>
     );
 }

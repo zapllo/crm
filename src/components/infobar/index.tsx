@@ -133,13 +133,15 @@ export default function InfoBar() {
 
   const logout = async () => {
     try {
-      await axios.get("/api/auth/logout");
-      router.push('/login');
+      const response = await axios.get("/api/auth/logout");
+      if (response.data.success) {
+        // Use client-side navigation to redirect
+        router.push('/login');
+      }
     } catch (error: any) {
       console.error("Logout error:", error.message);
     }
   };
-
   // Mock notifications for demo
   const notifications = [
     {
@@ -396,7 +398,7 @@ export default function InfoBar() {
                     <span>Mobile Apps</span>
                   </DropdownMenuSubTrigger>
                   <DropdownMenuPortal>
-                    <DropdownMenuSubContent>
+                    <DropdownMenuSubContent className="bg-white dark:bg-accent">
                       <DropdownMenuItem onClick={() => router.push("/help/mobile-app")}>
                         <FaAndroid className="mr-2 h-4 w-4" />
                         <span>Android App</span>

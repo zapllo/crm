@@ -58,7 +58,7 @@ export default function LoginPage() {
                     description: "Login successful. Redirecting to dashboard...",
                     variant: "default",
                 });
-                router.replace("/CRM/dashboard");
+                router.push("/CRM/dashboard");
             }
         } catch (err: any) {
             const msg = err.response?.data?.error || "Invalid credentials";
@@ -73,161 +73,161 @@ export default function LoginPage() {
         }
     };
 
-// If user is present or still loading
-if (loading || user) {
-    return (
-        <div className="h-screen bg-[#04071F] flex items-center justify-center overflow-hidden relative">
-            {/* Animated background elements */}
-            <div className="absolute inset-0 overflow-hidden">
-                <div className="absolute top-1/4 left-1/3 w-64 h-64 bg-[#815bf5] rounded-full filter blur-[80px] opacity-20 animate-pulse" 
-                    style={{ animationDuration: '4s' }} />
-                <div className="absolute bottom-1/3 right-1/4 w-80 h-80 bg-[#FC8929] rounded-full filter blur-[90px] opacity-15 animate-pulse" 
-                    style={{ animationDuration: '6s' }} />
-                <div className="absolute top-2/3 left-1/2 w-48 h-48 bg-[#9f75ff] rounded-full filter blur-[70px] opacity-20 animate-pulse" 
-                    style={{ animationDuration: '5s' }} />
-            </div>
-            
-            <div className="relative z-10 flex flex-col items-center">
-                {/* Logo with subtle animation */}
-                <motion.div
-                    initial={{ scale: 0.9, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ duration: 0.5 }}
-                    className="mb-10"
-                >
-                    <img src="/logo.png" className="h-12" alt="Zapllo Logo" />
-                </motion.div>
-                
-                {/* Primary loading animation */}
-                <div className="relative flex items-center justify-center mb-8">
-                    <svg className="w-24 h-24" viewBox="0 0 100 100">
-                        {/* Outer circle */}
-                        <circle 
-                            cx="50" cy="50" r="40" 
-                            stroke="rgba(129, 91, 245, 0.1)" 
-                            strokeWidth="4" 
-                            fill="none" 
-                        />
-                        {/* Animated progress circle */}
-                        <motion.circle 
-                            cx="50" cy="50" r="40" 
-                            stroke="url(#gradientStroke)" 
-                            strokeWidth="4" 
-                            fill="none" 
-                            strokeLinecap="round"
-                            initial={{ pathLength: 0, rotate: 0 }}
-                            animate={{ 
-                                pathLength: [0, 0.5, 1], 
-                                rotate: 360
-                            }}
-                            transition={{ 
-                                duration: 3, 
-                                repeat: Infinity, 
-                                ease: "easeInOut" 
-                            }}
-                            style={{ 
-                                rotate: "0 0 0 0 50 50",
-                                transformOrigin: "center" 
-                            }}
-                        />
-                        {/* Gradient definition */}
-                        <defs>
-                            <linearGradient id="gradientStroke" x1="0%" y1="0%" x2="100%" y2="0%">
-                                <stop offset="0%" stopColor="#815bf5" />
-                                <stop offset="100%" stopColor="#FC8929" />
-                            </linearGradient>
-                        </defs>
-                    </svg>
-                    
-                    {/* Center pulse element */}
-                    <div className="absolute inset-0 flex items-center justify-center">
-                        <motion.div 
-                            className="w-10 h-10 bg-gradient-to-br from-[#815bf5] to-[#9f75ff] rounded-full"
-                            animate={{ 
-                                scale: [1, 1.2, 1],
-                                opacity: [0.7, 1, 0.7]
-                            }}
-                            transition={{ 
-                                duration: 2,
-                                repeat: Infinity,
-                                ease: "easeInOut"
-                            }}
-                        />
-                    </div>
+    // If user is present or still loading
+    if (loading || user) {
+        return (
+            <div className="h-screen bg-[#04071F] flex items-center  justify-center overflow-hidden relative">
+                {/* Animated background elements */}
+                <div className="absolute inset-0 overflow-hidden">
+                    <div className="absolute top-1/4 left-1/3 w-64 h-64 bg-[#815bf5] rounded-full filter blur-[80px] opacity-20 animate-pulse"
+                        style={{ animationDuration: '4s' }} />
+                    <div className="absolute bottom-1/3 right-1/4 w-80 h-80 bg-[#FC8929] rounded-full filter blur-[90px] opacity-15 animate-pulse"
+                        style={{ animationDuration: '6s' }} />
+                    <div className="absolute top-2/3 left-1/2 w-48 h-48 bg-[#9f75ff] rounded-full filter blur-[70px] opacity-20 animate-pulse"
+                        style={{ animationDuration: '5s' }} />
                 </div>
-                
-                {/* Loading message */}
-                <motion.div
-                    animate={{ 
-                        opacity: [0.5, 1, 0.5],
-                    }}
-                    transition={{ 
-                        duration: 2,
-                        repeat: Infinity,
-                        ease: "easeInOut"
-                    }}
-                    className="text-center"
-                >
-                    <h3 className="text-white font-medium text-xl mb-2">Preparing Your Dashboard</h3>
-                    <p className="text-[#a29bfe] text-sm max-w-xs text-center">
-                        Loading your personalized CRM experience. Just a moment...
-                    </p>
-                </motion.div>
-                
-                {/* Loading steps indication */}
-                <div className="mt-8 flex space-x-2">
-                    {[0, 1, 2, 3].map((i) => (
-                        <motion.div
-                            key={i}
-                            className="w-2 h-2 bg-[#815bf5] rounded-full"
-                            animate={{ 
-                                scale: [1, 1.5, 1],
-                                opacity: [0.3, 1, 0.3]
-                            }}
-                            transition={{ 
-                                duration: 1.5,
-                                repeat: Infinity,
-                                delay: i * 0.3,
-                                ease: "easeInOut"
-                            }}
-                        />
-                    ))}
-                </div>
-                
-                {/* Helpful tips that cycle */}
-                <motion.div 
-                    className="mt-10 max-w-sm text-center px-6"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 1 }}
-                >
-                    <AnimatePresence mode="wait">
-                        {[
-                            "Zapllo helps you convert 35% more leads on average",
-                            "Use automation tools to save up to 12 hours per week",
-                            "Track your team's performance with real-time analytics",
-                            "Customize your dashboard for optimal productivity"
-                        ].map((tip, index) => (
-                            <motion.p
-                                key={index}
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -10 }}
-                                transition={{ duration: 0.5 }}
-                                className="text-white/60 text-sm font-light"
-                                style={{ 
-                                    display: Math.floor((Date.now() / 3000) % 4) === index ? 'block' : 'none'
+
+                <div className="relative z-10 flex flex-col items-center">
+                    {/* Logo with subtle animation */}
+                    <motion.div
+                        initial={{ scale: 0.9, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ duration: 0.5 }}
+                        className="mb-10"
+                    >
+                        <img src="/logo.png" className="h-12" alt="Zapllo Logo" />
+                    </motion.div>
+
+                    {/* Primary loading animation */}
+                    <div className="relative flex items-center justify-center mb-8">
+                        <svg className="w-24 h-24" viewBox="0 0 100 100">
+                            {/* Outer circle */}
+                            <circle
+                                cx="50" cy="50" r="40"
+                                stroke="rgba(129, 91, 245, 0.1)"
+                                strokeWidth="4"
+                                fill="none"
+                            />
+                            {/* Animated progress circle */}
+                            <motion.circle
+                                cx="50" cy="50" r="40"
+                                stroke="url(#gradientStroke)"
+                                strokeWidth="4"
+                                fill="none"
+                                strokeLinecap="round"
+                                initial={{ pathLength: 0, rotate: 0 }}
+                                animate={{
+                                    pathLength: [0, 0.5, 1],
+                                    rotate: 360
                                 }}
-                            >
-                                <span className="text-[#FC8929]">TIP:</span> {tip}
-                            </motion.p>
+                                transition={{
+                                    duration: 3,
+                                    repeat: Infinity,
+                                    ease: "easeInOut"
+                                }}
+                                style={{
+                                    rotate: "0 0 0 0 50 50",
+                                    transformOrigin: "center"
+                                }}
+                            />
+                            {/* Gradient definition */}
+                            <defs>
+                                <linearGradient id="gradientStroke" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" stopColor="#815bf5" />
+                                    <stop offset="100%" stopColor="#FC8929" />
+                                </linearGradient>
+                            </defs>
+                        </svg>
+
+                        {/* Center pulse element */}
+                        <div className="absolute inset-0 flex items-center justify-center">
+                            <motion.div
+                                className="w-10 h-10 bg-gradient-to-br from-[#815bf5] to-[#9f75ff] rounded-full"
+                                animate={{
+                                    scale: [1, 1.2, 1],
+                                    opacity: [0.7, 1, 0.7]
+                                }}
+                                transition={{
+                                    duration: 2,
+                                    repeat: Infinity,
+                                    ease: "easeInOut"
+                                }}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Loading message */}
+                    <motion.div
+                        animate={{
+                            opacity: [0.5, 1, 0.5],
+                        }}
+                        transition={{
+                            duration: 2,
+                            repeat: Infinity,
+                            ease: "easeInOut"
+                        }}
+                        className="text-center"
+                    >
+                        <h3 className="text-white font-medium text-xl mb-2">Preparing Your Dashboard</h3>
+                        <p className="text-[#a29bfe] text-sm max-w-xs text-center">
+                            Loading your personalized CRM experience. Just a moment...
+                        </p>
+                    </motion.div>
+
+                    {/* Loading steps indication */}
+                    <div className="mt-8 flex space-x-2">
+                        {[0, 1, 2, 3].map((i) => (
+                            <motion.div
+                                key={i}
+                                className="w-2 h-2 bg-[#815bf5] rounded-full"
+                                animate={{
+                                    scale: [1, 1.5, 1],
+                                    opacity: [0.3, 1, 0.3]
+                                }}
+                                transition={{
+                                    duration: 1.5,
+                                    repeat: Infinity,
+                                    delay: i * 0.3,
+                                    ease: "easeInOut"
+                                }}
+                            />
                         ))}
-                    </AnimatePresence>
-                </motion.div>
+                    </div>
+
+                    {/* Helpful tips that cycle */}
+                    <motion.div
+                        className="mt-10 max-w-sm text-center px-6"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 1 }}
+                    >
+                        <AnimatePresence mode="wait">
+                            {[
+                                "Zapllo helps you convert 35% more leads on average",
+                                "Use automation tools to save up to 12 hours per week",
+                                "Track your team's performance with real-time analytics",
+                                "Customize your dashboard for optimal productivity"
+                            ].map((tip, index) => (
+                                <motion.p
+                                    key={index}
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
+                                    transition={{ duration: 0.5 }}
+                                    className="text-white/60 text-sm font-light"
+                                    style={{
+                                        display: Math.floor((Date.now() / 3000) % 4) === index ? 'block' : 'none'
+                                    }}
+                                >
+                                    <span className="text-[#FC8929]">TIP:</span> {tip}
+                                </motion.p>
+                            ))}
+                        </AnimatePresence>
+                    </motion.div>
+                </div>
             </div>
-        </div>
-    );
-}
+        );
+    }
 
     const FeatureItem = ({ text }: { text: string }) => (
         <div className="flex items-start gap-2">
@@ -241,14 +241,15 @@ if (loading || user) {
     return (
         <div className="flex flex-col md:flex-row h-screen overflow-y-scroll justify-center bg-[#04071F] overflow-hidden">
             {/* Left Section - Product Information */}
-
-            <div className="hidden md:flex md:w-1/2  relative p-10 flex-col h-screen m-auto    justify-center overflow-hidden">
+            <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#815bf5] rounded-full filter blur-[120px] opacity-30" />
+            <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#FC8929] rounded-full filter blur-[120px] opacity-30" />
+            <div className="hidden md:flex   relative p-10 flex-col h-screen m-auto    justify-center overflow-hidden">
                 {/* Background effects */}
                 <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#815bf5] rounded-full filter blur-[120px] opacity-30" />
                 <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#FC8929] rounded-full filter blur-[120px] opacity-30" />
 
                 {/* Content */}
-                <div className="relative z-10 max-w-lg mt-4 mx-auto h-screen overflow-y-scroll scrollbar-hide  ">
+                <div className="relative z-10  mt-4 mx-auto h-screen overflow-y-scroll w-full scrollbar-hide  ">
                     <img src="/logo.png" className="h-10 mb-8" alt="Logo" />
 
                     <div className="space-y-4">
@@ -351,7 +352,7 @@ if (loading || user) {
             </div>
 
             {/* Right Section - Login Form */}
-            <div className="w-full md:w-1/2 h-screen m-auto flex items-center justify-center p-6 relative">
+            <div className="w-full md:w-1/2  h-screen m-auto flex items-center justify-center p-6 relative">
                 {/* Decorative elements */}
                 <div className="absolute top-0 left-0 w-full h-full opacity-30 pointer-events-none md:hidden">
                     <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#815bf5] rounded-full filter blur-[120px]" />
@@ -362,9 +363,9 @@ if (loading || user) {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5 }}
-                    className="w-full max-w-md h-screen overflow-y-scroll scrollbar-hide z-10"
+                    className="w-full  h-screen m-auto flex items-center justify-center max-w-4xl  overflow-y-scroll scrollbar-hide z-10"
                 >
-                    <Card className="relative border-none h-screen overflow-y-scroll scrollbar-hide bg-background/60 backdrop-blur-xl shadow-2xl text-white overflow-hidden">
+                    <Card className="relative border-none h-  overflow-y-scroll scrollbar-hide bg-background/60 backdrop-blur-xl shadow-2xl text-white overflow-hidden">
                         {/* <div className="absolute top-0 left-0 right-0">
                             <Progress value={100} className="h-1 bg-muted-800" />
                         </div> */}
@@ -491,7 +492,7 @@ if (loading || user) {
                             <p className="text-xs text-center text-zinc-600">
                                 🔒 We care about your privacy
                                 <a href="/terms" className="text-zinc-400 hover:text-[#815bf5] transition-colors">
-                                {" "}  (Terms of Service
+                                    {" "}  (Terms of Service
                                 </a>{" "}
                                 &{" "}
                                 <a href="/privacypolicy" className="text-zinc-400 hover:text-[#815bf5] transition-colors">

@@ -305,15 +305,17 @@ export default function SignupPage() {
     );
 
     return (
-        <div className="flex flex-col md:flex-row h-screen bg-[#04071F] ">
+        <div className="flex flex-col md:flex-row h-screen scrollbar-hide bg-[#04071F] ">
             {/* Left Section - Product Information */}
+            <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#815bf5] rounded-full filter blur-[120px] opacity-30" />
+            <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#FC8929] rounded-full filter blur-[120px] opacity-30" />
             <div className="hidden md:flex md:w-1/2 relative p-10 flex-col justify-center ">
                 {/* Background effects */}
                 <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#815bf5] rounded-full filter blur-[120px] opacity-30" />
                 <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#FC8929] rounded-full filter blur-[120px] opacity-30" />
 
                 {/* Content */}
-                <div className="relative z-10 max-w-lg mt-4 mx-auto h-screen overflow-y-scroll scrollbar-hide  ">
+                <div className="relative z-10  mt-4 mx-auto h-screen overflow-y-scroll scrollbar-hide   ">
                     <img src="/logo.png" className="h-10 mb-8" alt="Logo" />
 
                     <div className="space-y-4">
@@ -446,7 +448,8 @@ export default function SignupPage() {
             </div>
 
             {/* Right Section - Sign Up Form */}
-            <div className="w-full md:w-1/2 mt-4 flex items-center h-screen overflow-y-scroll justify-center p-4 md:p-6 relative">
+            <div className="w-full md:w-1/2 mt-4 flex items-center h-screen overflow-y-scroll scrollbar-hide justify-center p-4 md:p-6 relative">
+     
                 {/* Decorative background elements for mobile */}
                 <div className="absolute top-0 left-0 w-full h-full opacity-30 pointer-events-none md:hidden">
                     <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#815bf5] rounded-full filter blur-[120px]" />
@@ -757,7 +760,7 @@ export default function SignupPage() {
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-3 mt-4 text-xs">
-                                    <FeatureItem text="Free 14-day trial" />
+                                    <FeatureItem text="Free 7-day trial" />
                                     <FeatureItem text="Unlimited leads" />
                                     <FeatureItem text="CRM automation" />
                                     <FeatureItem text="Premium support" />
