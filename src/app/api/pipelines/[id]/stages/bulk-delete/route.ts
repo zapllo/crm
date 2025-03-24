@@ -13,9 +13,11 @@ interface BulkDeleteRequest {
   selectedStages: string[];
 }
 
-export async function PATCH(request: NextRequest, { params }: { params: { pipelineId: string } }) {
+export async function PATCH(request: Request,
+  { params }: { params: Promise<{ pipelineId: string }> }
+) {
   try {
-    const { pipelineId } = params;
+    const pipelineId = (await params).pipelineId
     const { selectedStages }: BulkDeleteRequest = await request.json();
 
     await connectDB();

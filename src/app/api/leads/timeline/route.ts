@@ -33,7 +33,7 @@ export async function GET(req: Request) {
             }).exec();
 
         // Format timeline entries with `movedBy`
-        const timelineEntries = lead.timeline.map(entry => ({
+        const timelineEntries = lead.timeline.map((entry: any) => ({
             stage: entry.stage,
             action: entry.action,
             remark: entry.remark,
@@ -45,7 +45,7 @@ export async function GET(req: Request) {
         }));
 
         // Format follow-up entries using `createdAt` as timestamp
-        const followupEntries = followups.map(followup => ({
+        const followupEntries = followups.map((followup: any) => ({
             stage: 'Follow-Up',
             action: `Follow-Up Type: ${followup.type}`,
             remark: followup.description,

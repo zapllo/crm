@@ -102,14 +102,7 @@ const config = {
   					transform: 'translateY(-50%)'
   				}
   			},
-  			'accordion-down': {
-  				from: {
-  					height: '0'
-  				},
-  				to: {
-  					height: 'var(--radix-accordion-content-height)'
-  				}
-  			},
+  			// accordion-down is already defined above
   			'shine-pulse': {
   				'0%': {
   					'background-position': '0% 0%'
@@ -129,14 +122,7 @@ const config = {
   					transform: 'rotatex(20deg) rotateZ(-20deg) skewX(20deg) translateZ(0) translateY(-100%)'
   				}
   			},
-  			'accordion-up': {
-  				from: {
-  					height: 'var(--radix-accordion-content-height)'
-  				},
-  				to: {
-  					height: '0'
-  				}
-  			},
+  			// accordion-up is already defined above,
   			'shimmer': {
   				'0%, 90%, 100%': {
   					'background-position': 'calc(-100% - var(--shimmer-width)) 0 '
@@ -242,8 +228,7 @@ const config = {
   			'orbit': 'orbit calc(var(--duration)*1s) linear infinite',
   			'marquee': 'marquee var(--duration) linear infinite',
   			'marquee-vertical': 'marquee-vertical var(--duration) linear infinite',
-  			'accordion-down': 'accordion-down 0.2s ease-out',
-  			'accordion-up': 'accordion-up 0.2s ease-out'
+  			// accordion animations already defined above
   		}
   	}
   },

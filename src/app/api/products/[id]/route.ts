@@ -2,11 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/lib/db";
 import Product from "@/models/productModel"; // Ensure correct path
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: Request,
+    { params }: { params: Promise<{ id: string }> }
+) {
     try {
-        await connectDB();
+        const id = (await params).id
 
-        const { id } = params;
+        // const { id } = params;
         // console.log(id, 'checkkkk')
         if (!id) {
             return NextResponse.json({ error: "Product ID is required" }, { status: 400 });

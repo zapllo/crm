@@ -4,17 +4,20 @@ import Pipeline from "@/models/pipelineModel";
 
 // Define the Stage interface
 interface Stage {
-  _id: string;
-  name: string;
-  color: string;
+    _id: string;
+    name: string;
+    color: string;
 }
 
 // PATCH /api/pipelines/:pipelineId/stages/:stageId
-export async function PATCH(request: NextRequest, { params }: { params: { id: string; stageId: string } }) {
-    const { id, stageId } = params;
-    const { newName }: { newName: string } = await request.json();
-
+export async function PATCH(request: Request,
+    { params }: { params: Promise<{ id: string, stageId: string }> }
+) {
     try {
+        const id = (await params).id
+        const stageId = (await params).stageId
+        const { newName }: { newName: string } = await request.json();
+
         // Connect to the database
         await connectDB();
 
@@ -26,7 +29,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
         }
 
         // Find the stage in both openStages and closeStages
-        let stage= null;
+        let stage = null;
 
         // Try to find the stage in openStages
         stage = pipeline.openStages.find((st: Stage) => st._id.toString() === stageId);
@@ -56,10 +59,12 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     }
 }
 // DELETE /api/pipelines/:pipelineId/stages/:stageId
-export async function DELETE(request: NextRequest, { params }: { params: { id: string; stageId: string } }) {
-    const { id, stageId } = params;
-
+export async function DELETE(request: Request,
+    { params }: { params: Promise<{ id: string, stageId: string }> }
+) {
     try {
+        const id = (await params).id
+        const stageId = (await params).stageId
         // Connect to the database
         await connectDB();
 

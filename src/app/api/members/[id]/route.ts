@@ -3,9 +3,6 @@ import { Types } from 'mongoose'
 import connectDB from '@/lib/db'
 import { User } from '@/models/userModel'
 
-interface Params {
-    params: { id: string }
-}
 
 /**
  * PATCH /api/members/[id]
@@ -13,17 +10,20 @@ interface Params {
  * DELETE /api/members/[id]?orgId=ORG_ID
  */
 
-export async function PATCH(request: Request, { params }: Params) {
+export async function PATCH(req: Request,
+    { params }: { params: Promise<{ id: string }> }
+) {
     try {
+        const id = (await params).id
         await connectDB()
 
-        const { id } = params
+        // const { id } = params
         if (!Types.ObjectId.isValid(id)) {
             return NextResponse.json({ error: 'Invalid user id' }, { status: 400 })
         }
 
         // Parse the request body
-        const data = await request.json()
+        const data = await req.json()
         const { orgId, firstName, lastName, email, password, roleId, whatsappNo } = data
         if (!orgId) {
             return NextResponse.json({ error: 'Missing orgId in request body' }, { status: 400 })
@@ -56,17 +56,20 @@ export async function PATCH(request: Request, { params }: Params) {
     }
 }
 
-export async function DELETE(request: Request, { params }: Params) {
+export async function DELETE(req: Request,
+    { params }: { params: Promise<{ id: string }> }
+) {
     try {
+        const id = (await params).id
         await connectDB()
 
-        const { id } = await params
+        // const { id } = await params
         if (!Types.ObjectId.isValid(id)) {
             return NextResponse.json({ error: 'Invalid user id' }, { status: 400 })
         }
 
         // orgId might be passed in query string
-        const { searchParams } = new URL(request.url)
+        const { searchParams } = new URL(req.url)
         const orgId = searchParams.get('orgId')
         if (!orgId) {
             return NextResponse.json({ error: 'Missing orgId in query' }, { status: 400 })

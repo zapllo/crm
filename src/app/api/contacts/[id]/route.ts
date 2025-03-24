@@ -8,14 +8,11 @@ import contactTagModel from "@/models/contactTagModel";
 // (Optionally, if you want to populate tags with a ContactTag model, import that too.)
 // import ContactTag from "@/models/contactTagModel";
 
-export async function GET(
-    request: NextRequest,
-    { params }: { params: { id: string } }
+export async function GET(req: Request,
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        await connectDB();
-
-        const { id } = params;
+        const id = (await params).id
 
         const contact = await Contact.findById(id)
             // Explicitly specify the "model" key in the population
@@ -39,15 +36,13 @@ export async function GET(
     }
 }
 
-export async function PATCH(
-    request: NextRequest,
-    { params }: { params: { id: string } }
+export async function PATCH(req: Request,
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const id = (await params).id
         await connectDB();
-
-        const { id } = params;
-        const body = await request.json();
+        const body = await req.json();
         const updates = body.updates || {};
 
         const contact = await Contact.findByIdAndUpdate(id, updates, { new: true });

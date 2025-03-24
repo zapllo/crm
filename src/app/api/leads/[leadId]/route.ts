@@ -3,21 +3,24 @@ import Lead from "@/models/leadModel";
 import { getDataFromToken } from "@/lib/getDataFromToken";
 import connectDB from "@/lib/db";
 
-export async function PATCH(request: NextRequest, { params }: { params: { leadId: string } }) {
+export async function PATCH(req: Request,
+    { params }: { params: Promise<{ leadId: string }> }
+) {
     try {
+        const leadId = (await params).leadId
         await connectDB();
 
-        const userId = getDataFromToken(request);
+        const userId = getDataFromToken(req);
         if (!userId) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const { remark } = await request.json();
+        const { remark } = await req.json();
         if (!remark) {
             return NextResponse.json({ error: "Remark is required" }, { status: 400 });
         }
 
-        const lead = await Lead.findById(params.leadId);
+        const lead = await Lead.findById(leadId);
         if (!lead) {
             return NextResponse.json({ error: "Lead not found" }, { status: 404 });
         }

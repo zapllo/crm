@@ -2,13 +2,13 @@ import connectDB from "@/lib/db";
 import Tag from "@/models/leadTagsModel";
 import { NextResponse } from "next/server";
 
-export async function PATCH(request: Request,
+export async function PATCH(req: Request,
     { params }: { params: Promise<{ id: string }> }
 ) {
-    const id = (await params).id
     try {
+        const id = (await params).id
         await connectDB();
-        const body = await request.json();
+        const body = await req.json();
         const { name, color } = body;
 
         const updatedTag = await Tag.findByIdAndUpdate(
@@ -32,8 +32,8 @@ export async function PATCH(request: Request,
 export async function DELETE(request: Request,
     { params }: { params: Promise<{ id: string }> }
 ) {
-    const id = (await params).id
     try {
+        const id = (await params).id
         await connectDB();
 
         const deletedTag = await Tag.findByIdAndDelete(id);

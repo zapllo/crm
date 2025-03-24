@@ -7,11 +7,11 @@ import { NextResponse } from "next/server";
 
 
 // GET handler
-export async function GET(request: Request,
+export async function GET(req: Request,
     { params }: { params: Promise<{ id: string }> }
 ) {
-    const id = (await params).id
     try {
+        const id = (await params).id
         await connectDB();
 
         const pipeline = await Pipeline.findById(id);
@@ -29,13 +29,15 @@ export async function GET(request: Request,
 
 
 // PATCH handler
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
-    const { id } = params; // Extract pipeline ID from request params
+export async function PATCH(req: Request,
+    { params }: { params: Promise<{ id: string }> }
+) {
     try {
+        const id = (await params).id
         await connectDB();
 
         // Get userId from token
-        const userId = getDataFromToken(request);
+        const userId = getDataFromToken(req);
         if (!userId) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
@@ -47,7 +49,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
         }
 
         // Parse request body
-        const body = await request.json();
+        const body = await req.json();
         const { name, openStages, closeStages, customFields } = body;
 
         // Validate close stages for won/lost
@@ -89,8 +91,8 @@ export async function PATCH(request: Request, { params }: { params: { id: string
 export async function DELETE(req: Request,
     { params }: { params: Promise<{ id: string }> }
 ) {
-    const id = (await params).id
     try {
+        const id = (await params).id
         await connectDB();
 
         const deletedPipeline = await Pipeline.findByIdAndDelete(id);

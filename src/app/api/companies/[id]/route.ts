@@ -1,19 +1,16 @@
-// app/api/companies/[id]/route.ts
-
 import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/lib/db";
 import companyModel from "@/models/companyModel";
+// Add segment config
+export const dynamic = 'force-dynamic';
 
-
-
-
-export async function GET(request: NextRequest,
-    { params }: { params: { id: string } }
+// Change the parameter structure to use context object
+export async function GET(req: Request,
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const id = (await params).id
         await connectDB();
-        const { id } = params;
-
         const company = await companyModel.findById(id);
         if (!company) {
             return NextResponse.json({ message: "Company not found" }, { status: 404 });
@@ -25,14 +22,14 @@ export async function GET(request: NextRequest,
     }
 }
 
-
-export async function PATCH(request: NextRequest,
-    { params }: { params: { id: string } }
+export async function PATCH(req: Request,
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const id = (await params).id
         await connectDB();
-        const { id } = params;
-        const data = await request.json();
+
+        const data = await req.json();
 
         const updatedCompany = await companyModel.findByIdAndUpdate(id, data, {
             new: true,
@@ -46,12 +43,12 @@ export async function PATCH(request: NextRequest,
     }
 }
 
-export async function DELETE(request: NextRequest,
-    { params }: { params: { id: string } }
+export async function DELETE(req: Request,
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const id = (await params).id
         await connectDB();
-        const { id } = params;
         await companyModel.findByIdAndDelete(id);
         return NextResponse.json({ message: "Company deleted" }, { status: 200 });
     } catch (error) {

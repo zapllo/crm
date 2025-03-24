@@ -2,11 +2,12 @@ import connectDB from "@/lib/db";
 import followupModel from "@/models/followupModel";
 import { NextResponse } from "next/server";
 
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request,
+    { params }: { params: Promise<{ id: string }> }
+) {
     try {
-        await connectDB();
-        const { id } = params;
-        const data = await request.json();
+        const id = (await params).id
+        const data = await req.json();
 
         const updatedFollowup = await followupModel.findByIdAndUpdate(id, data, { new: true });
         if (!updatedFollowup) {
@@ -19,10 +20,12 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: Request,
+    { params }: { params: Promise<{ id: string }> }
+) {
     try {
+        const id = (await params).id
         await connectDB();
-        const { id } = params;
 
         await followupModel.findByIdAndDelete(id);
         return NextResponse.json({ message: "Follow-up deleted" }, { status: 200 });

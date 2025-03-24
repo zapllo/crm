@@ -34,8 +34,8 @@ export async function GET(request: Request) {
 
     // Return minimal info to the Channels page
     return NextResponse.json({
-      emailAddress: account.emailAddress,
-      createdAt: account.createdAt,
+      emailAddress: (account as any).email || (account as any).emailAddress || '',
+      createdAt: (account as any).createdAt || new Date(),
     });
   } catch (error) {
     console.error("Error in GET /api/channels/connect:", error);
