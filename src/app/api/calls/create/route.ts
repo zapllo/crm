@@ -5,6 +5,7 @@ import Wallet from '@/models/walletModel';
 import { getDataFromToken } from '@/lib/getDataFromToken';
 import mongoose from 'mongoose';
 import { User } from '@/models/userModel';
+import twilio from 'twilio'; // Add this import
 
 export async function POST(req: NextRequest) {
     try {
@@ -54,11 +55,46 @@ export async function POST(req: NextRequest) {
 
         await call.save();
 
-        return NextResponse.json(call);
-    } catch (error) {
+        // Initialize Twilio client
+        const client = twilio(
+            process.env.TWILIO_ACCOUNT_SID,
+            process.env.TWILIO_AUTH_TOKEN
+        );
+
+        // Ensure we have a valid call ID
+        const callId = call._id.toString();
+
+        console.log('Initiating Twilio call with parameters:', {
+            to: phoneNumber,
+            from: process.env.TWILIO_PHONE_NUMBER,
+            url: `${process.env.NEXT_PUBLIC_APP_URL}/api/calls/twiml?callId=${callId}&To=${encodeURIComponent(phoneNumber)}`,
+        });
+
+        // Initiate the actual call through Twilio
+        const twilioPhoneNumber = process.env.TWILIO_PHONE_NUMBER || '';
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://crm.zapllo.com';
+        const twilioCall = await client.calls.create({
+            to: phoneNumber,
+            from: twilioPhoneNumber,
+            url: `${appUrl}/api/calls/twiml?callId=${callId}&To=${encodeURIComponent(phoneNumber)}`,
+            statusCallback: `${appUrl}/api/calls/webhook?callId=${callId}`,
+            statusCallbackMethod: 'POST',
+            statusCallbackEvent: ['initiated', 'ringing', 'answered', 'completed'],
+        });
+
+        // Update the call record with the Twilio SID
+        call.twilioCallSid = twilioCall.sid;
+        await call.save();
+
+        return NextResponse.json({
+            success: true,
+            message: 'Call initiated successfully',
+            call: call
+        });
+    } catch (error: any) {
         console.error('Error creating call:', error);
         return NextResponse.json(
-            { error: 'Failed to create call record' },
+            { error: 'Failed to create call record', details: error.message },
             { status: 500 }
         );
     }
