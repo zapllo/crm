@@ -5,7 +5,7 @@ import Wallet from '@/models/walletModel';
 import { getDataFromToken } from '@/lib/getDataFromToken';
 import mongoose from 'mongoose';
 import { User } from '@/models/userModel';
-import twilio from 'twilio'; // Add this import
+import twilio from 'twilio';
 
 export async function POST(req: NextRequest) {
     try {
@@ -55,7 +55,22 @@ export async function POST(req: NextRequest) {
 
         await call.save();
 
+        // Format the phone number with correct country code
+        let formattedPhoneNumber = phoneNumber;
+
+        // If the number doesn't start with +, add +91
+        if (!phoneNumber.startsWith('+')) {
+            formattedPhoneNumber = '+91' + phoneNumber;
+        }
+        // If it starts with just +, add 91 after the +
+        else if (phoneNumber.startsWith('+') && !phoneNumber.startsWith('+91')) {
+            formattedPhoneNumber = '+91' + phoneNumber.substring(1);
+        }
+
         // Initialize Twilio client
+        if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN || !process.env.TWILIO_PHONE_NUMBER) {
+            throw new Error('Missing Twilio credentials in environment variables');
+        }
         const client = twilio(
             process.env.TWILIO_ACCOUNT_SID,
             process.env.TWILIO_AUTH_TOKEN
@@ -65,19 +80,17 @@ export async function POST(req: NextRequest) {
         const callId = call._id.toString();
 
         console.log('Initiating Twilio call with parameters:', {
-            to: phoneNumber,
-            from: process.env.TWILIO_PHONE_NUMBER,
-            url: `${process.env.NEXT_PUBLIC_APP_URL}/api/calls/twiml?callId=${callId}&To=${encodeURIComponent(phoneNumber)}`,
+            to: formattedPhoneNumber,
+            from: process.env.TWILIO_PHONE_NUMBER as string,
+            url: `${process.env.NEXT_PUBLIC_APP_URL}/api/calls/twiml?callId=${callId}&To=${encodeURIComponent(formattedPhoneNumber)}`,
         });
 
         // Initiate the actual call through Twilio
-        const twilioPhoneNumber = process.env.TWILIO_PHONE_NUMBER || '';
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://crm.zapllo.com';
         const twilioCall = await client.calls.create({
-            to: phoneNumber,
-            from: twilioPhoneNumber,
-            url: `${appUrl}/api/calls/twiml?callId=${callId}&To=${encodeURIComponent(phoneNumber)}`,
-            statusCallback: `${appUrl}/api/calls/webhook?callId=${callId}`,
+            to: formattedPhoneNumber,
+            from: process.env.TWILIO_PHONE_NUMBER,
+            url: `${process.env.NEXT_PUBLIC_APP_URL}/api/calls/twiml?callId=${callId}&To=${encodeURIComponent(formattedPhoneNumber)}`,
+            statusCallback: `${process.env.NEXT_PUBLIC_APP_URL}/api/calls/webhook?callId=${callId}`,
             statusCallbackMethod: 'POST',
             statusCallbackEvent: ['initiated', 'ringing', 'answered', 'completed'],
         });
