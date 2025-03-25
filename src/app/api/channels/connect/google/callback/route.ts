@@ -52,6 +52,11 @@ export async function GET(request: Request) {
     });
     const googleEmail = userInfoRes.data.email;
 
+    console.log("Retrieved code:", code);
+    console.log("User ID from token:", userId);
+    console.log("Found user:", user);
+    console.log("Token response:", tokenRes.data);
+    console.log("Google user info:", userInfoRes.data);
     // Store in DB
     const account = await EmailAccount.findOneAndUpdate(
       {
@@ -65,6 +70,9 @@ export async function GET(request: Request) {
       },
       { upsert: true, new: true }
     );
+    // Add debugging to check if account was created
+    console.log("Created/Updated Email Account:", account);
+
 
     // Redirect back to Channels page
     return NextResponse.redirect("https://crm.zapllo.com/settings/channels");
