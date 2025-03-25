@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import twilio from 'twilio';
 import connectDB from '@/lib/db';
 import Call from '@/models/callModel';
+import mongoose from 'mongoose';
 
 export async function POST(req: NextRequest) {
   try {
@@ -31,12 +32,8 @@ export async function POST(req: NextRequest) {
           callId = call._id.toString();
           console.log("Found call by CallSid:", callId);
           
-          // Get the phone number
-          const populatedCall = await Call.findById(call._id).populate('contactId');
-          if (populatedCall?.contactId?.phoneNumber) {
-            to = populatedCall.contactId.phoneNumber;
-            console.log("Found phone number from call:", to);
-          }
+          // Log call details for debugging
+          console.log("Call details:", JSON.stringify(call, null, 2));
         }
       }
       
@@ -47,18 +44,102 @@ export async function POST(req: NextRequest) {
           direction: 'outbound'
         })
         .sort({ startTime: -1 })
-        .populate('contactId')
         .limit(1);
         
         if (recentCall) {
           callId = recentCall._id.toString();
           console.log("Using most recent outbound call:", callId);
+          console.log("Recent call details:", JSON.stringify(recentCall, null, 2));
+        }
+      }
+      
+      // Now that we have a callId, let's find the destination number
+      if (callId) {
+        // Query create/route.ts to see what request parameters were used
+        console.log("Looking up call record by ID:", callId);
+        
+        // First, check if the call document already has a phoneNumber field
+        const call = await Call.findById(callId);
+        if (call) {
+          console.log("Retrieved call for contact lookup:", JSON.stringify(call));
           
-          // Get phone number if available
-          if (recentCall.contactId && recentCall.contactId.phoneNumber) {
-            to = recentCall.contactId.phoneNumber;
-            console.log("Using phone number from recent call:", to);
+          // Check if this call has a direct phoneNumber field
+          if (call.phoneNumber) {
+            to = call.phoneNumber;
+            console.log("Found phone number directly on call record:", to);
           }
+          
+          // If not, check if it has a contactId and get the phone from there
+          if (!to && call.contactId) {
+            // Try to look up the contact directly
+            try {
+              const Contact = mongoose.model('Contact');
+              const contact = await Contact.findById(call.contactId);
+              
+              if (contact) {
+                console.log("Found contact:", JSON.stringify(contact, null, 2));
+                
+                if (contact.phoneNumber) {
+                  to = contact.phoneNumber;
+                  console.log("Found phone number from contact:", to);
+                } else if (contact.phone) {
+                  to = contact.phone;
+                  console.log("Found phone from contact:", to);
+                } else if (contact.mobile) {
+                  to = contact.mobile;
+                  console.log("Found mobile from contact:", to);
+                }
+              }
+            } catch (e) {
+              console.error("Error looking up contact:", e);
+              
+              // If direct contact lookup fails, try populating
+              try {
+                const populatedCall = await Call.findById(callId).populate('contactId');
+                console.log("Populated call:", JSON.stringify(populatedCall, null, 2));
+                
+                if (populatedCall?.contactId) {
+                  // Try different possible field names
+                  const contactObj = populatedCall.contactId;
+                  if (contactObj.phoneNumber) {
+                    to = contactObj.phoneNumber;
+                    console.log("Found phoneNumber in populated contact:", to);
+                  } else if (contactObj.phone) {
+                    to = contactObj.phone;
+                    console.log("Found phone in populated contact:", to);
+                  } else if (contactObj.mobile) {
+                    to = contactObj.mobile;
+                    console.log("Found mobile in populated contact:", to);
+                  }
+                }
+              } catch (popError) {
+                console.error("Error populating contact:", popError);
+              }
+            }
+          }
+        }
+      }
+      
+      // As a last resort, try to get the phone number from the request URL or form data
+      if (!to) {
+        try {
+          // Check URL parameters
+          const url = new URL(req.url);
+          const urlTo = url.searchParams.get('To');
+          if (urlTo) {
+            to = urlTo;
+            console.log("Found 'To' in URL parameters:", to);
+          } else {
+            // Try form data
+            const formData = await req.formData();
+            const formTo = formData.get('To') as string;
+            if (formTo) {
+              to = formTo;
+              console.log("Found 'To' in form data:", to);
+            }
+          }
+        } catch (e) {
+          console.error("Error extracting 'To' from request:", e);
         }
       }
     } catch (e) {
@@ -97,6 +178,7 @@ export async function POST(req: NextRequest) {
         record: 'record-from-answer',
         recordingStatusCallback: `https://crm.zapllo.com/api/calls/webhook?callId=${callId || 'unknown'}`,
         recordingStatusCallbackMethod: 'POST',
+        recordingStatusCallbackEvent: ['completed'],
         timeout: 30
       });
       
