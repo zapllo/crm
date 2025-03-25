@@ -10,7 +10,7 @@ const Layout = (props: Props) => {
     return (
         <div className='h-[calc(100vh-3rem)] mt-12 overflow-hidden'>
             <ResizablePanelGroup direction="horizontal">
-                <ResizablePanel defaultSize={25} minSize={20} maxSize={30}>
+                <ResizablePanel defaultSize={20} minSize={20} maxSize={30}>
                     <CRMSidebar />
                 </ResizablePanel>
                 <ResizableHandle withHandle />

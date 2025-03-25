@@ -5,7 +5,7 @@ export async function GET() {
   // 1) Build the Google OAuth URL with your client_id, redirect_uri, scope, etc.
   const googleClientId = process.env.GOOGLE_CLIENT_ID;
   const redirectUri = encodeURIComponent(
-    "http://localhost:3000/api/channels/connect/google/callback"
+    "https://crm.zapllo.com/api/channels/connect/google/callback"
   );
   const scope = "https://www.googleapis.com/auth/userinfo.email https://mail.google.com/";
   // Add offline access if you want refresh token

@@ -22,6 +22,12 @@ const AlertDialogOverlay = React.forwardRef<
       className
     )}
     {...props}
+    // Ensure the overlay is completely removed from the DOM when closed
+    onAnimationEnd={(e) => {
+      if (e.animationName.includes('fade-out')) {
+        document.body.style.pointerEvents = "";
+      }
+    }}
     ref={ref}
   />
 ))
@@ -40,6 +46,12 @@ const AlertDialogContent = React.forwardRef<
         className
       )}
       {...props}
+      onCloseAutoFocus={(e) => {
+        // Prevent focusing back which can sometimes cause issues
+        e.preventDefault();
+        // Clean up DOM state
+        document.body.style.pointerEvents = "";
+      }}
     />
   </AlertDialogPortal>
 ))

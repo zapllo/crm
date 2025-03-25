@@ -107,8 +107,12 @@ export default function CTASection() {
                                             onChange={(e) => setEmail(e.target.value)}
                                             required
                                         />
-                                        <Button type="submit" variant="secondary" className="bg-white text-primary hover:bg-white/90 transition-colors">
-                                            Get Started <ArrowRight className="ml-2 h-4 w-4" />
+                                        <Button type="submit" variant="secondary" className="bg-white text-primary hover:bg-white/90 transition-colors group relative overflow-hidden">
+                                            <span className="relative z-10 flex items-center">
+                                                Get Started
+                                                <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                                            </span>
+                                            <span className="absolute inset-0 opacity-0 group-hover:opacity-30 bg-[radial-gradient(circle,_white_10%,_transparent_70%)] group-hover:animate-shine" />
                                         </Button>
                                     </>
                                 ) : (
@@ -140,7 +144,7 @@ export default function CTASection() {
                         </div>
                     </motion.div>
 
-                 
+
                 </div>
 
                 <motion.div

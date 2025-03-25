@@ -12,10 +12,10 @@ export default function LandingPage() {
     <div className="flex flex-col min-h-screen">
       <Header />
       <HeroSection />
-      <FeaturesSection />
-      <DemoSection />
-      <IntegrationSection />
-      <TestimonialsSection />
+      <FeaturesSection id='features' />
+      <DemoSection id='demo' />
+      <IntegrationSection id='integrations' />
+      <TestimonialsSection id='testimonials' />
       {/* <CTASection /> */}
       <Footer />
     </div>

@@ -6,13 +6,30 @@ export function middleware(request: NextRequest) {
 
     // Define public paths that don't require authentication
     const isPublicPath = ['/login', '/signup', '/verifyemail'].includes(path);
-
+    const WEBHOOK_PATHS = [
+        '/api/calls/webhook',
+        '/api/calls/transcription',
+        '/api/calls/twiml',
+    ];
     // Get the token and loginTime from cookies
     const token = request.cookies.get('token')?.value || '';
     const loginTime = request.cookies.get('loginTime')?.value || '';
 
     // Mobile device detection using User-Agent
+    // If this is a Twilio webhook path, add a special header to identify it
+    if (WEBHOOK_PATHS.some(webhookPath => path.startsWith(webhookPath))) {
+        // Add a custom header to identify this as a webhook request
+        // This header will be used in your getDataFromToken function to skip auth checks
+        const requestHeaders = new Headers(request.headers);
+        requestHeaders.set('x-webhook-request', 'true');
 
+        // Create a new request with the modified headers
+        return NextResponse.next({
+            request: {
+                headers: requestHeaders,
+            },
+        });
+    }
 
     if (loginTime) {
         const currentTime = new Date().getTime();

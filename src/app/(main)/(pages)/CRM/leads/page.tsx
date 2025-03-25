@@ -1634,7 +1634,7 @@ export default function LeadsDashboard() {
                                     <label className="text-sm font-medium">Estimate Amount</label>
                                     <div className="flex items-center border rounded-md overflow-hidden focus-within:ring-1 focus-within:ring-primary">
                                         <div className="px-3 py-2 bg-muted">
-                                            <IndianRupee className="h-4 w-4 text-muted-foreground" />
+                                            <IndianRupee className=" text-muted-foreground" />
                                         </div>
                                         <input
                                             type="number"

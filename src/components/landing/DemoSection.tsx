@@ -68,14 +68,14 @@ const demoTabs = [
     }
 ]
 
-export default function DemoSection() {
+export default function DemoSection({ id }: { id?: string }) {
     const [videoOpen, setVideoOpen] = useState(false)
     const [deviceView, setDeviceView] = useState<"desktop" | "mobile">("desktop")
     const ref = useRef(null)
     const isInView = useInView(ref, { once: true, amount: 0.2 })
 
     return (
-        <section ref={ref} className="w-full py-12 md:py-24 bg-slate-50 dark:bg-slate-900 overflow-hidden">
+        <section id={id} ref={ref} className="w-full py-12 md:py-24 bg-slate-50 dark:bg-slate-900 overflow-hidden">
             <div className="container px-4 md:px-6">
                 <motion.div
                     className="flex flex-col items-center text-center space-y-4 mb-12"

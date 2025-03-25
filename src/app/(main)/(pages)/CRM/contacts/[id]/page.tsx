@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import axios from "axios";
-import { Pencil, Trash, ArrowLeft, Loader2, Search, Edit2, Edit, PlusCircle, User, Mail, Phone, MapPin, Calendar, ExternalLink, Tag } from "lucide-react";
+import { Pencil, Trash, ArrowLeft, Loader2, Search, Edit2, Edit, PlusCircle, User, Mail, Phone, MapPin, Calendar, ExternalLink, Tag, PhoneCall } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import EditContact from "@/components/modals/contacts/editContact";
@@ -38,6 +38,8 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import CallHistory from "@/components/call/call-history";
+import PhoneDialer from "@/components/call/phone-dialer";
 
 // Types
 interface IContact {
@@ -107,6 +109,8 @@ export default function ContactDetailsPage() {
     const [leads, setLeads] = useState<ILead[]>([]);
     const [filteredLeads, setFilteredLeads] = useState<ILead[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
+    const [showCallDialog, setShowCallDialog] = useState(false);
+
 
     useEffect(() => {
         if (id) {
@@ -215,6 +219,14 @@ export default function ContactDetailsPage() {
                 <div className="flex gap-2">
                     <Button
                         variant="outline"
+                        onClick={() => setShowCallDialog(true)}
+                        className="gap-2"
+                    >
+                        <Phone className="h-4 w-4" />
+                        Call
+                    </Button>
+                    <Button
+                        variant="outline"
                         onClick={() => setIsEditModalOpen(true)}
                         className="gap-2"
                     >
@@ -258,6 +270,7 @@ export default function ContactDetailsPage() {
                 <TabsList className="grid w-full max-w-md gap-4 bg-accent grid-cols-3">
                     <TabsTrigger value="overview">Overview</TabsTrigger>
                     <TabsTrigger value="leads">Leads</TabsTrigger>
+                    <TabsTrigger value="calls">Calls</TabsTrigger>
                     <TabsTrigger value="custom">Custom Fields</TabsTrigger>
                 </TabsList>
 
@@ -436,7 +449,7 @@ export default function ContactDetailsPage() {
                                         Manage leads associated with {contact.firstName} {contact.lastName}
                                     </CardDescription>
                                 </div>
-                               
+
                             </div>
                         </CardHeader>
                         <CardContent>
@@ -534,7 +547,28 @@ export default function ContactDetailsPage() {
                         </CardContent>
                     </Card>
                 </TabsContent>
-
+                <TabsContent value="calls" className="mt-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Call History</CardTitle>
+                            <CardDescription>
+                                Recent calls with {contact.firstName} {contact.lastName}
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <CallHistory contactId={contact._id} />
+                        </CardContent>
+                        <CardFooter>
+                            <Button
+                                onClick={() => setShowCallDialog(true)}
+                                className="w-full gap-2"
+                            >
+                                <PhoneCall className="h-4 w-4" />
+                                Call {contact.firstName}
+                            </Button>
+                        </CardFooter>
+                    </Card>
+                </TabsContent>
                 <TabsContent value="custom" className="mt-6">
                     <Card>
                         <CardHeader>
@@ -585,13 +619,26 @@ export default function ContactDetailsPage() {
                 </TabsContent>
             </Tabs>
 
+            <PhoneDialer
+                contactId={contact._id}
+                contactName={`${contact.firstName} ${contact.lastName}`}
+                contactPhone={contact.whatsappNumber}
+                contactEmail={contact.email}
+                isOpen={showCallDialog}
+                setIsOpen={setShowCallDialog}
+                onCallComplete={() => {
+                    // Refresh call history on call completion
+                    // You can add your implementation here
+                }}
+            />
+
             {/* Edit Contact Modal */}
             {isEditModalOpen && (
                 <EditContact
                     isOpen={isEditModalOpen}
                     setIsOpen={setIsEditModalOpen}
                     contact={contact}
-                    // onSuccess={fetchContact}
+                // onSuccess={fetchContact}
                 />
             )}
 

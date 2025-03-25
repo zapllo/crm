@@ -89,8 +89,8 @@ export default function HeroSection() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5 }}
                     >
-                        <Badge className="w-fit mb-2 bg-primary/20 text-primary hover:bg-primary/30 backdrop-blur-sm">
-                            <span className="animate-pulse mr-1">🔥</span> Trusted by <CountUp end={10000} separator="," duration={2.5} />+ businesses
+                        <Badge className="w-fit mb-2 bg-primary/20 mt-4 text-primary hover:bg-primary/30 backdrop-blur-sm">
+                            <span className="animate-pulse mr-1">🔥</span> Trusted by {'  '} <CountUp end={10000} separator="," duration={2.5} />+ businesses
                         </Badge>
 
                         <div className="space-y-2">
@@ -115,11 +115,14 @@ export default function HeroSection() {
 
                         <div className="flex flex-col gap-2 min-[400px]:flex-row">
                             <Link href="/signup">
-                                <Button size="lg" className="px-8 group relative overflow-hidden">
-                                    <span className="relative z-10">Start Free Trial</span>
-                                    <span className="absolute inset-0 bg-primary group-hover:translate-y-full transition-transform duration-300" />
-                                    <span className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-                                    <ArrowRight className="ml-2 h-4 w-4 relative z-10 group-hover:translate-x-1 transition-transform" />
+                                <Button size="lg" className="relative group overflow-hidden">
+                                    <span className="relative z-10 flex items-center">
+                                        Start free trial
+                                        <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                                    </span>
+                                    <span className="absolute inset-0 bg-primary z-0 group-hover:bg-opacity-0 transition-all duration-300" />
+                                    <span className="absolute inset-0 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+                                    <span className="absolute inset-0 opacity-0 group-hover:opacity-20 bg-[radial-gradient(circle,_white_10%,_transparent_70%)] group-hover:animate-shine" />
                                 </Button>
                             </Link>
                             <Link href="/demo">
@@ -289,27 +292,187 @@ export default function HeroSection() {
                     </motion.div>
                 </div>
 
-                {/* Social proof - Logos */}
+
+
+                {/* Modern social proof - Brands section */}
+                {/* Modern social proof - Brands section */}
                 <motion.div
-                    className="mt-12 sm:mt-16 border-t pt-8"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-16 md:mt-24 relative"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
                     transition={{ delay: 1, duration: 0.6 }}
                 >
-                    <p className="text-sm text-center text-muted-foreground mb-6">Trusted by leading companies worldwide</p>
-                    <div className="flex flex-wrap justify-center gap-x-8 gap-y-4">
-                        {["netflix", "slack", "amazon", "spotify", "meta"].map((brand, i) => (
-                            <motion.div
-                                key={brand}
-                                className="grayscale opacity-70 hover:grayscale-0 hover:opacity-100 transition-all duration-300"
-                                whileHover={{ scale: 1.05 }}
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 0.7 }}
-                                transition={{ delay: 1.2 + (i * 0.1), duration: 0.4 }}
-                            >
-                                <img src={`/brands/${brand}.png`} alt={`${brand} logo`} className="h-14  w-auto" />
-                            </motion.div>
-                        ))}
+                    <div className="text-center mb-8">
+                        <h2 className="text-2xl md:text-3xl font-bold">
+                            Trusted by <span className="text-primary">thousands of businesses</span> like yours
+                        </h2>
+                    </div>
+
+                    <div className="relative overflow-hidden dark:bg-slate-100 bg-accent ">
+                        {/* Gradient fades on sides for infinite scroll effect */}
+                        <div className="absolute left-0 top-0 bottom-0 w-16 z-10 bg-gradient-to-r from-background to-transparent"></div>
+                        <div className="absolute right-0 top-0 bottom-0 w-16 z-10 bg-gradient-to-l from-background to-transparent"></div>
+
+                        {/* First row of logos that slides left */}
+                        <motion.div
+                            className="flex py-4 space-x-12 md:space-x-16"
+                            animate={{ x: [0, -1000] }}
+                            transition={{
+                                x: {
+                                    repeat: Infinity,
+                                    repeatType: "loop",
+                                    duration: 40,
+                                    ease: "linear"
+                                }
+                            }}
+                        >
+                            {[
+                                { alt: "Malabar Logo", src: "/brands/malabar.webp" },
+                                { alt: "Emerald", src: "/brands/emerald.webp" },
+                                { alt: "Sabhyasachi", src: "/brands/sabhyasachi.webp" },
+                                { alt: "Pantaloons", src: "/brands/pantaloons.webp" },
+                                { alt: "Walking Tree", src: "/brands/walkingtree.webp" }
+                            ].map((brand, i) => (
+                                <motion.div
+                                    key={`row1-${brand.alt}`}
+                                    className="flex items-center justify-center opacity-100 hover:opacity-80 transition-all duration-300"
+                                    whileHover={{ scale: 1.05 }}
+                                >
+                                    <img
+                                        src={brand.src}
+                                        alt={`${brand.alt}`}
+                                        className="w-auto max-h-16 md:max-h-24"
+                                    />
+                                </motion.div>
+                            ))}
+
+                            {/* Duplicate set for seamless loop */}
+                            {[
+                                { alt: "Malabar Logo", src: "/brands/malabar.webp" },
+                                { alt: "Emerald", src: "/brands/emerald.webp" },
+                                { alt: "Sabhyasachi", src: "/brands/sabhyasachi.webp" },
+                                { alt: "Pantaloons", src: "/brands/pantaloons.webp" },
+                                { alt: "Walking Tree", src: "/brands/walkingtree.webp" }
+                            ].map((brand, i) => (
+                                <motion.div
+                                    key={`row1b-${brand.alt}`}
+                                    className="flex items-center justify-center opacity-100 hover:opacity-80 transition-all duration-300"
+                                    whileHover={{ scale: 1.05 }}
+                                >
+                                    <img
+                                        src={brand.src}
+                                        alt={`${brand.alt}`}
+                                        className="w-auto max-h-16 md:max-h-24"
+                                    />
+                                </motion.div>
+                            ))}
+                        </motion.div>
+
+                        {/* Second row of logos that slides right (opposite direction) */}
+                        <motion.div
+                            className="flex py-4 space-x-12 md:space-x-16"
+                            animate={{ x: [-1000, 0] }}
+                            transition={{
+                                x: {
+                                    repeat: Infinity,
+                                    repeatType: "loop",
+                                    duration: 40,
+                                    ease: "linear"
+                                }
+                            }}
+                        >
+                            {[
+                                { alt: "Lineargent", src: "/brands/lineargent.webp" },
+                                { alt: "Green Lab", src: "/brands/greenlab.webp" },
+                                { alt: "Birla Braniacs", src: "/brands/birlabraniacs.webp" },
+                                { alt: "BVC Ventures", src: "/brands/bvcventures.webp" },
+                                { alt: "Walking Tree", src: "/brands/walkingtree.webp" }
+                            ].map((brand, i) => (
+                                <motion.div
+                                    key={`row2-${brand.alt}`}
+                                    className="flex items-center justify-center opacity-100 hover:opacity-80 transition-all duration-300"
+                                    whileHover={{ scale: 1.05 }}
+                                >
+                                    <img
+                                        src={brand.src}
+                                        alt={`${brand.alt}`}
+                                        className="w-auto max-h-16 md:max-h-24"
+                                    />
+                                </motion.div>
+                            ))}
+
+                            {/* Duplicate set for seamless loop */}
+                            {[
+                                { alt: "Lineargent", src: "/brands/lineargent.webp" },
+                                { alt: "Green Lab", src: "/brands/greenlab.webp" },
+                                { alt: "Birla Braniacs", src: "/brands/birlabraniacs.webp" },
+                                { alt: "BVC Ventures", src: "/brands/bvcventures.webp" },
+                                { alt: "Walking Tree", src: "/brands/walkingtree.webp" }
+                            ].map((brand, i) => (
+                                <motion.div
+                                    key={`row2b-${brand.alt}`}
+                                    className="flex items-center justify-center opacity-100 hover:opacity-80 transition-all duration-300"
+                                    whileHover={{ scale: 1.05 }}
+                                >
+                                    <img
+                                        src={brand.src}
+                                        alt={`${brand.alt}`}
+                                        className="w-auto max-h-16 md:max-h-24"
+                                    />
+                                </motion.div>
+                            ))}
+                        </motion.div>
+                    </div>
+
+                    {/* Social proof numbers */}
+                    <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                        <motion.div
+                            className="p-4"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 1.2, duration: 0.5 }}
+                        >
+                            <p className="text-3xl md:text-4xl font-bold text-primary">
+                                <CountUp end={10000} separator="," duration={2.5} />+
+                            </p>
+                            <p className="text-sm text-muted-foreground mt-1">Businesses</p>
+                        </motion.div>
+
+                        <motion.div
+                            className="p-4"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 1.3, duration: 0.5 }}
+                        >
+                            <p className="text-3xl md:text-4xl font-bold text-primary">
+                                <CountUp end={50} duration={2} />+
+                            </p>
+                            <p className="text-sm text-muted-foreground mt-1">Countries</p>
+                        </motion.div>
+
+                        <motion.div
+                            className="p-4"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 1.4, duration: 0.5 }}
+                        >
+                            <p className="text-3xl md:text-4xl font-bold text-primary">
+                                <CountUp end={98} suffix="%" decimals={1} duration={2.5} />
+                            </p>
+                            <p className="text-sm text-muted-foreground mt-1">Customer satisfaction</p>
+                        </motion.div>
+
+                        <motion.div
+                            className="p-4"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 1.5, duration: 0.5 }}
+                        >
+                            <p className="text-3xl md:text-4xl font-bold text-primary">
+                                $<CountUp end={2.8} decimals={1} suffix="M" duration={2.5} />
+                            </p>
+                            <p className="text-sm text-muted-foreground mt-1">Revenue generated</p>
+                        </motion.div>
                     </div>
                 </motion.div>
             </div>
