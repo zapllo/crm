@@ -15,7 +15,7 @@ export async function GET(request: Request) {
     const code = searchParams.get("code");
     if (!code) {
       // No code? Possibly user denied consent.
-      return NextResponse.redirect("/settings/channels"); 
+      return NextResponse.redirect("https://crm.zapllo.com/settings/channels");
     }
 
     // We need to know which user is connecting. If your app is purely token-based, you might store the user's token in a cookie. 
@@ -23,12 +23,12 @@ export async function GET(request: Request) {
     // For illustration, let's do:
     const userId = getDataFromToken(request);
     if (!userId) {
-      return NextResponse.redirect("/settings/channels");
+      return NextResponse.redirect("https://crm.zapllo.com/settings/channels");
     }
 
     const user = await User.findById(userId);
     if (!user) {
-      return NextResponse.redirect("/settings/channels");
+      return NextResponse.redirect("https://crm.zapllo.com/settings/channels");
     }
 
     // Exchange code for tokens
@@ -67,9 +67,9 @@ export async function GET(request: Request) {
     );
 
     // Redirect back to Channels page
-    return NextResponse.redirect("/settings/channels");
+    return NextResponse.redirect("https://crm.zapllo.com/settings/channels");
   } catch (error) {
     console.error("Error in Google callback:", error);
-    return NextResponse.redirect("/settings/channels");
+    return NextResponse.redirect("https://crm.zapllo.com/settings/channels");
   }
 }
