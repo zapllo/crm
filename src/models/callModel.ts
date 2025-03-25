@@ -28,7 +28,7 @@ const callSchema = new Schema<ICall>(
   {
     organizationId: { type: Schema.Types.ObjectId, ref: 'Organization', required: true },
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    contactId: { type: Schema.Types.ObjectId, ref: 'Contcact', required: true },
+    contactId: { type: Schema.Types.ObjectId, ref: 'Contact', required: true },
     leadId: { type: Schema.Types.ObjectId, ref: 'Lead' },
     twilioCallSid: { type: String, required: true },
     twilioRecordingSid: { type: String },
