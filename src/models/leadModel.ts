@@ -32,6 +32,9 @@ interface ILead extends Document {
     timeline: ITimeline[]; // Stage change history
     followups: Schema.Types.ObjectId[]; // Array of followup IDs
     notes: INote[]; // Array of notes
+    files: string[]; // Array of file URLs
+    audioRecordings: string[]; // Array of audio recording URLs
+    links: { url: string; title: string }[]; // Array of link objects with title
 }
 
 const timelineSchema = new Schema<ITimeline>({
@@ -64,10 +67,16 @@ const leadSchema = new Schema<ILead>(
         remarks: { type: String },
         pipeline: { type: Schema.Types.ObjectId, ref: 'Pipeline', required: true },
         organization: { type: Schema.Types.ObjectId, ref: "Organization" },
-        stage: { type: String, required: true, default:"" },
+        stage: { type: String, required: true, default: "" },
         timeline: [timelineSchema], // Array of timeline entries
         followups: [{ type: Schema.Types.ObjectId, ref: 'Followup' }], // Array of followup IDs
         notes: [noteSchema], // Array of notes
+        files: [{ type: String }], // Array of file URLs
+        audioRecordings: [{ type: String }], // Array of audio recording URLs
+        links: [{
+            url: { type: String, required: true },
+            title: { type: String }
+        }],
     },
     { timestamps: true }
 );

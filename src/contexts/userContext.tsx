@@ -2,14 +2,25 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import axios from 'axios';
 
+interface Organization {
+  _id: string;
+  companyName: string;
+  trialExpires: string; // This will be a date string
+  isPro: boolean;
+  subscribedPlan?: string;
+  subscriptionExpires?: string;
+}
+
 interface IUser {
   userId: string;
   email: string;
   isOrgAdmin: boolean;
   firstName?: string;
-  organization?: string;
-  role: string;
   lastName?: string;
+  whatsappNo?: string;
+  profileImage?: string;
+  organization?: Organization;
+  role: string;
 }
 
 interface UserContextProps {

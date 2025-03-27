@@ -21,7 +21,8 @@ import {
     Info,
     Percent,
     RefreshCw,
-    ZoomIn
+    ZoomIn,
+    PencilLine
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -58,6 +59,11 @@ import {
     HoverCardContent,
     HoverCardTrigger
 } from "@/components/ui/hover-card";
+import { usePermissions } from "@/hooks/use-permissions";
+import { canView, canAdd, canDelete, canEdit, usePermissionStatus } from "@/contexts/permissionsContext";
+import { NoPermissionFallback } from "@/components/ui/no-permission-fallback";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
 
 interface Category {
     _id: string;
@@ -117,6 +123,8 @@ export default function ProductDetails() {
     const [activeTab, setActiveTab] = useState("details");
     const [isImageDialogOpen, setIsImageDialogOpen] = useState(false);
 
+    const { isLoading: permissionsLoading, isInitialized } = usePermissions();
+
     useEffect(() => {
         if (id) {
             fetchProductDetails();
@@ -160,6 +168,29 @@ export default function ProductDetails() {
         );
         setFilteredLeads(results);
     }, [searchTerm, leads]);
+
+    // Check permissions before rendering content
+    if (permissionsLoading) {
+        return (
+            <div className="flex items-center justify-center h-[calc(100vh-100px)]">
+                <div className="flex flex-col items-center gap-3 p-8 text-center">
+                    <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                    <h3 className="text-lg font-medium">Loading permissions...</h3>
+                    <p className="text-muted-foreground">Please wait while we verify your access</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Check for view permission after permissions are loaded
+    if (isInitialized && !canView("Products")) {
+        return (
+            <NoPermissionFallback
+                title="No Access to Products"
+                description="You don't have permission to view the products page."
+            />
+        );
+    }
 
     if (!product) {
         return (
@@ -228,38 +259,57 @@ export default function ProductDetails() {
                 </div>
 
                 <div className="flex items-center gap-2 w-full sm:w-auto">
-                    <Button
-                        variant="outline"
-                        className="flex items-center gap-2"
-                        onClick={() => setIsEditModalOpen(true)}
-                    >
-                        <Pencil size={16} /> Edit
-                    </Button>
-
-                    <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button variant="destructive" className="flex items-center gap-2">
-                                <Trash size={16} /> Delete
-                            </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Product</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    Are you sure you want to delete "{product.productName}"? This action cannot be undone.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                    onClick={handleDelete}
-                                    className="bg-red-500 hover:bg-red-600 text-white"
-                                >
-                                    Delete
-                                </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
+                    {canAdd("Products") ? (
+                        <Button
+                            onClick={() => setIsEditModalOpen(true)}
+                            variant='outline'
+                            className=""
+                        >
+                            <PencilLine className="mr-2 h-4 w-4" /> Edit Product
+                        </Button>
+                    ) : (
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        className=" cursor-not-allowed"
+                                        variant='outline'
+                                    >
+                                        <PencilLine className="mr-2 h-4 w-4" /> Edit
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>You don't have permission to add products</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    )}
+                    {canDelete("Products") && (
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="destructive" className="flex items-center gap-2">
+                                    <Trash size={16} /> Delete
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete Product</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Are you sure you want to delete "{product.productName}"? This action cannot be undone.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                        onClick={handleDelete}
+                                        className="bg-red-500 hover:bg-red-600 text-white"
+                                    >
+                                        Delete
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    )}
                 </div>
             </div>
 

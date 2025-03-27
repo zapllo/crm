@@ -78,22 +78,7 @@ const MenuOptions = () => {
       <div className="mt-auto mb-4 flex flex-col items-center gap-4">
         <Separator className="w-10 bg-[#37384B]/60" />
         
-        <TooltipProvider>
-          <Tooltip delayDuration={300}>
-            <TooltipTrigger asChild>
-              <Avatar className="h-9 w-9 border-2 border-[#FC8929]/30 cursor-pointer hover:border-[#FC8929]/70 transition-all">
-                <AvatarImage src="https://github.com/shadcn.png" />
-                <AvatarFallback className="bg-[#FC8929]/20 text-[#FC8929]">CN</AvatarFallback>
-              </Avatar>
-            </TooltipTrigger>
-            <TooltipContent
-              side="right"
-              className="bg-[#0F1133]/90 text-white border-[#37384B] backdrop-blur-lg"
-            >
-              <p className="font-medium">Your Profile</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+       
 
         <TooltipProvider>
           <Tooltip delayDuration={300}>

@@ -15,6 +15,11 @@ export interface IOrganization extends Document {
   subscribedUserCount?: number;
   subscriptionExpires?: Date;
   trialExpires: Date;
+  notifications?: {
+    newLeadEmail: boolean;
+    newLeadWhatsapp: boolean;
+    dailyReportTime?: string; // Store time in 24-hour format (HH:MM)
+  };
 }
 
 const organizationSchema = new Schema<IOrganization>(
@@ -74,9 +79,9 @@ const organizationSchema = new Schema<IOrganization>(
       type: Boolean,
       default: false,
     },
-    credits: { 
-      type: Number, 
-      default: 0 
+    credits: {
+      type: Number,
+      default: 0
     },
     subscribedPlan: {
       type: String,
@@ -91,8 +96,22 @@ const organizationSchema = new Schema<IOrganization>(
       type: Date,
       required: true,
     },
+    notifications: {
+      newLeadEmail: {
+        type: Boolean,
+        default: true,
+      },
+      newLeadWhatsapp: {
+        type: Boolean,
+        default: false,
+      },
+      dailyReportTime: {
+        type: String,
+        default: "09:00" // Default to 9:00 AM
+      }
+    },
   },
-  { timestamps: true }
+{ timestamps: true }
 );
 
 export const Organization: Model<IOrganization> =

@@ -49,7 +49,10 @@ export async function PATCH(req: Request,
         if (whatsappNo !== undefined) user.whatsappNo = whatsappNo
 
         await user.save()
-        return NextResponse.json(user, { status: 200 })
+        // Fetch the updated user with populated role
+        const updatedUser = await User.findById(id).populate('role')
+
+        return NextResponse.json(updatedUser, { status: 200 })
     } catch (error: any) {
         console.error('Error updating member:', error)
         return NextResponse.json({ error: 'Server error' }, { status: 500 })

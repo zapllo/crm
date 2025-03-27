@@ -65,6 +65,10 @@ import { FaUser, FaPhone, FaEnvelope, FaWhatsapp, FaTags, FaUserClock } from "re
 import AddFollowup from "@/components/modals/followups/AddFollowup";
 import EditFollowup from "@/components/modals/followups/EditFollowup";
 import { cn } from "@/lib/utils";
+import { usePermissions } from "@/hooks/use-permissions";
+import { canView, canAdd, canDelete, canEdit, usePermissionStatus } from "@/contexts/permissionsContext";
+import { NoPermissionFallback } from "@/components/ui/no-permission-fallback";
+
 
 interface Reminder {
     notificationType: "email" | "whatsapp";
@@ -134,6 +138,8 @@ export default function FollowupPage() {
     const [isRefreshing, setIsRefreshing] = useState(false);
 
     const router = useRouter();
+
+    const { isLoading: permissionsLoading, isInitialized } = usePermissions();
 
     useEffect(() => {
         fetchFollowups();
@@ -352,6 +358,26 @@ export default function FollowupPage() {
         return <Badge variant="outline" className="bg-slate-50 text-slate-600 border-slate-200">Upcoming</Badge>;
     };
 
+    // Check permissions before rendering
+    if (permissionsLoading) {
+        return (
+            <div className="flex flex-col h-screen items-center justify-center space-y-4 bg-background/40 backdrop-blur-sm">
+                <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                <p className="text-lg font-medium text-muted-foreground">Loading permissions...</p>
+            </div>
+        );
+    }
+
+    // Check for view permission after permissions are loaded
+    if (isInitialized && !canView("FollowUps")) {
+        return (
+            <NoPermissionFallback
+                title="No Access to Follow-ups"
+                description="You don't have permission to view the follow-ups page."
+            />
+        );
+    }
+
     return (
         <div className="flex flex-col h-screen mt-4 max-h-screen overflow-y-scroll scrollbar-hide bg-background">
             {/* Dashboard Header Section */}
@@ -382,7 +408,18 @@ export default function FollowupPage() {
                                     </>
                                 )}
                             </Button>
-                            <AddFollowup onFollowupAdded={fetchFollowups} />
+                            {canAdd("FollowUps") ? (
+                                <AddFollowup onFollowupAdded={fetchFollowups} />
+                            ) : (
+                                <Button
+                                    variant="default"
+                                    className="gap-1 opacity-50 cursor-not-allowed"
+                                    disabled
+                                >
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    Add Follow-up
+                                </Button>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -890,7 +927,9 @@ function EmptyState({ searchQuery, onClearFilters, onAddFollowup }: {
                         <Filter className="mr-2 h-4 w-4" />
                         Clear Filters
                     </Button>
-                    <AddFollowup onFollowupAdded={onAddFollowup} />
+                    {canAdd("FollowUps") && (
+                        <AddFollowup onFollowupAdded={onAddFollowup} />
+                    )}
                 </div>
             </div>
         </div>
@@ -983,14 +1022,16 @@ function EnhancedFollowupCard({
                             <TooltipProvider>
                                 <Tooltip>
                                     <TooltipTrigger asChild>
-                                        <Button
-                                            size="icon"
-                                            variant="ghost"
-                                            className="h-6 w-6"
-                                            onClick={onEditClick}
-                                        >
-                                            <PencilLine className="h-3 w-3" />
-                                        </Button>
+                                        {canEdit("FollowUps") && (
+                                            <Button
+                                                size="icon"
+                                                variant="ghost"
+                                                className="h-6 w-6"
+                                                onClick={onEditClick}
+                                            >
+                                                <PencilLine className="h-3 w-3" />
+                                            </Button>
+                                        )}
                                     </TooltipTrigger>
                                     <TooltipContent side="top" className="text-xs">
                                         <p>Edit</p>
@@ -998,12 +1039,15 @@ function EnhancedFollowupCard({
                                 </Tooltip>
                             </TooltipProvider>
                             <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                                        <MoreHorizontal className="h-3 w-3" />
-                                    </Button>
-                                </DropdownMenuTrigger>
+                                {canEdit("FollowUps") && (
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                                            <MoreHorizontal className="h-3 w-3" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                )}
                                 <DropdownMenuContent align="end" className="w-[160px]">
+
                                     <DropdownMenuItem onClick={onEditClick} className="cursor-pointer text-xs">
                                         <PencilLine className="mr-1.5 h-3 w-3" />
                                         Edit Follow-up

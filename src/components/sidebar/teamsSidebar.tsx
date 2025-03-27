@@ -1,10 +1,10 @@
 'use client'
 import React, { useState, useEffect, useCallback } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { 
-  Shield, 
-  User2, 
-  Users2, 
+import {
+  Shield,
+  User2,
+  Users2,
   ChevronRight,
   UserPlus,
   UserCog,
@@ -59,14 +59,14 @@ const TeamsSidebar: React.FC = () => {
 
   // Navigation items
   const navItems: TeamNavItem[] = [
-    {
-      title: "Sales Team",
-      href: "/teams/sales-team",
-      icon: <Briefcase className="h-5 w-5" />,
-      description: "View and manage the sales department",
-      shortcutKey: "s",
-    //   badge: { text: "Active", variant: "outline" }
-    },
+    // {
+    //   title: "Sales Team",
+    //   href: "/teams/sales-team",
+    //   icon: <Briefcase className="h-5 w-5" />,
+    //   description: "View and manage the sales department",
+    //   shortcutKey: "s",
+    // //   badge: { text: "Active", variant: "outline" }
+    // },
     {
       title: "User Roles",
       href: "/teams/user-roles",
@@ -80,25 +80,25 @@ const TeamsSidebar: React.FC = () => {
       icon: <Users2 className="h-5 w-5" />,
       description: "View and manage all team members"
     },
-    {
-      title: "Invite Members",
-      href: "/teams/invite",
-      icon: <UserPlus className="h-5 w-5" />,
-      description: "Send invitations to new team members",
-      badge: { text: "New", variant: "secondary" }
-    },
-    {
-      title: "Team Settings",
-      href: "/teams/settings",
-      icon: <UserCog className="h-5 w-5" />,
-      description: "Configure team preferences and settings"
-    },
-    {
-      title: "Departments",
-      href: "/teams/departments",
-      icon: <Building className="h-5 w-5" />,
-      description: "Organize teams into departments"
-    },
+    // {
+    //   title: "Invite Members",
+    //   href: "/teams/invite",
+    //   icon: <UserPlus className="h-5 w-5" />,
+    //   description: "Send invitations to new team members",
+    //   badge: { text: "New", variant: "secondary" }
+    // },
+    // {
+    //   title: "Team Settings",
+    //   href: "/teams/settings",
+    //   icon: <UserCog className="h-5 w-5" />,
+    //   description: "Configure team preferences and settings"
+    // },
+    // {
+    //   title: "Departments",
+    //   href: "/teams/departments",
+    //   icon: <Building className="h-5 w-5" />,
+    //   description: "Organize teams into departments"
+    // },
   ];
 
   // Rotate tips every 12 seconds
@@ -110,7 +110,7 @@ const TeamsSidebar: React.FC = () => {
         setTipAnimation(false);
       }, 500);
     }, 12000);
-    
+
     return () => clearInterval(tipInterval);
   }, []);
 
@@ -154,7 +154,7 @@ const TeamsSidebar: React.FC = () => {
               Manage teams and members
             </p>
           </div> */}
-        
+
           <nav className="space-y-1.5">
             {navItems.map((item) => (
               <Tooltip key={item.href}>
@@ -172,26 +172,26 @@ const TeamsSidebar: React.FC = () => {
                       {item.icon}
                     </div>
                     <span className="flex-1">{item.title}</span>
-                    
+
                     {item.badge && (
                       <Badge variant={item.badge.variant} className="ml-auto mr-1.5">
                         {item.badge.text}
                       </Badge>
                     )}
-                    
+
                     {item.shortcutKey && (
                       <kbd className="hidden sm:inline-flex h-5 items-center gap-1 rounded border bg-muted px-1.5 text-[10px] font-medium text-muted-foreground opacity-70">
                         Alt+{item.shortcutKey.toUpperCase()}
                       </kbd>
                     )}
-                    
-                    <ChevronRight 
+
+                    <ChevronRight
                       className={cn(
                         "h-4 w-4 opacity-0 transition-all group-hover:opacity-100",
                         pathname === item.href ? "text-white" : "text-muted-foreground"
-                      )} 
+                      )}
                     />
-                    
+
                     {/* Hover effect - subtle gradient line */}
                     {item.href !== pathname && (
                       <div className="absolute inset-0 rounded-md opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity">
@@ -215,12 +215,12 @@ const TeamsSidebar: React.FC = () => {
               </Tooltip>
             ))}
           </nav>
-          
+
           <Separator className="my-6" />
-          
+
           {/* Rotating Tips Section */}
           <div className="px-3 py-2">
-            <div 
+            <div
               className={cn(
                 "rounded-md bg-gradient-to-br from-[#815BF5]/10 via-[#815BF5]/5 to-purple-500/10 p-4 text-xs border border-[#815BF5]/20 transition-all",
                 tipAnimation ? "opacity-0 transform -translate-y-2" : "opacity-100"
@@ -230,10 +230,10 @@ const TeamsSidebar: React.FC = () => {
                 <LightbulbIcon className="h-4 w-4 text-yellow-500 mr-1.5" />
                 <p className="font-semibold text-[#815BF5] flex items-center">
                   Team Tip
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-5 w-5 ml-auto rounded-full hover:bg-[#815BF5]/10" 
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-5 w-5 ml-auto rounded-full hover:bg-[#815BF5]/10"
                     onClick={() => {
                       setTipAnimation(true);
                       setTimeout(() => {
@@ -251,10 +251,15 @@ const TeamsSidebar: React.FC = () => {
                 {teamTips[activeTip]}
               </p>
             </div>
-            
+
             {/* Team Communication Box */}
             <div className="mt-4 rounded-md bg-[#815BF5]/10 p-3 text-xs">
-              <p className="font-semibold text-[#815BF5]">Team Communication</p>
+              <div className='flex justify-between'>
+                <p className="font-semibold text-[#815BF5]">Team Communication</p>
+                <Badge variant="outline" className="bg-blue-50 text-[8px] text-blue-600 dark:bg-blue-900 dark:text-blue-200 border-blue-200 dark:border-blue-700">
+                  Coming Soon
+                </Badge>
+              </div>
               <p className="mt-1 text-muted-foreground">
                 Connect with your team members or join group discussions.
               </p>

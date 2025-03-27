@@ -32,6 +32,9 @@ import {
     DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
+import { usePermissions } from '@/hooks/use-permissions';
+import { canView, canAdd, canDelete, canEdit, usePermissionStatus } from "@/contexts/permissionsContext";
+import { NoPermissionFallback } from '@/components/ui/no-permission-fallback';
 
 /* ----------- TYPES ----------- */
 interface LeadDetailsType {
@@ -89,6 +92,9 @@ export default function LeadDetails() {
     const [leadDetails, setLeadDetails] = useState<LeadDetailsType | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const router = useRouter();
+    // Add permission check
+    const { isLoading: permissionsLoading, isInitialized } = usePermissions();
+    const hasViewPermission = canView("Leads");
 
     // Read "tab" parameter from URL
     const defaultTab = searchParams.get("tab") || "timeline";
@@ -108,6 +114,28 @@ export default function LeadDetails() {
     useEffect(() => {
         fetchLeadDetails();
     }, [leadId]);
+
+    // Add this before any rendering logic
+    if (permissionsLoading) {
+        return (
+            <div className="flex items-center justify-center h-screen">
+                <div className="flex flex-col items-center gap-2">
+                    <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                    <p className="text-muted-foreground">Loading permissions...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Check for view permission after permissions are loaded
+    if (isInitialized && !hasViewPermission) {
+        return (
+            <NoPermissionFallback
+                title="No Access to Lead Details"
+                description="You don't have permission to view lead details."
+            />
+        );
+    }
 
     if (isLoading) {
         return (
@@ -191,17 +219,21 @@ export default function LeadDetails() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Lead Actions</DropdownMenuLabel>
-                            <MoveLeadDialog
-                                leadId={leadId || ''}
-                                currentStage={leadDetails.stage}
-                                onLeadMoved={() => fetchLeadDetails()}
-                            // trigger={<DropdownMenuItem onSelect={(e) => e.preventDefault()}>Move Stage</DropdownMenuItem>}
-                            />
-                            <AddNoteDialog
-                                leadId={leadId || ''}
-                                onNoteAdded={() => fetchLeadDetails()}
-                            // trigger={<DropdownMenuItem onSelect={(e) => e.preventDefault()}>Add Note</DropdownMenuItem>}
-                            />
+                            {canEdit("Leads") && (
+                                <MoveLeadDialog
+                                    leadId={leadId || ''}
+                                    currentStage={leadDetails.stage}
+                                    onLeadMoved={() => fetchLeadDetails()}
+                                // trigger={<DropdownMenuItem onSelect={(e) => e.preventDefault()}>Move Stage</DropdownMenuItem>}
+                                />
+                            )}
+                            {canAdd("Leads") && (
+                                <AddNoteDialog
+                                    leadId={leadId || ''}
+                                    onNoteAdded={() => fetchLeadDetails()}
+                                // trigger={<DropdownMenuItem onSelect={(e) => e.preventDefault()}>Add Note</DropdownMenuItem>}
+                                />
+                            )}
                             {/* <AddFollowupDialog
                                 onFollowupAdded={() => fetchLeadDetails()}
                             // trigger={<DropdownMenuItem onSelect={(e) => e.preventDefault()}>Schedule Follow-up</DropdownMenuItem>}

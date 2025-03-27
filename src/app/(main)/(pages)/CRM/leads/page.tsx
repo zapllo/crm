@@ -20,7 +20,8 @@ import {
     ChevronRight,
     ChevronLeft,
     ChevronsLeft,
-    ChevronsRight
+    ChevronsRight,
+    Lock
 } from "lucide-react";
 
 import {
@@ -107,6 +108,11 @@ import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
+import { usePermissions } from "@/hooks/use-permissions";
+import { NoPermissionFallback } from "@/components/ui/no-permission-fallback";
+import { canView, canAdd, canDelete, canEdit, usePermissionStatus } from "@/contexts/permissionsContext";
+import MediaAttachments from "@/components/MediaAttachments";
+
 
 /* ---------------- TYPES ---------------- */
 interface Lead {
@@ -297,6 +303,11 @@ export default function LeadsDashboard() {
         end?: Date;
     }>({});
 
+    const [files, setFiles] = useState<string[]>([]);
+    const [audioRecordings, setAudioRecordings] = useState<string[]>([]);
+    const [links, setLinks] = useState<{ url: string; title: string }[]>([]);
+
+
     // Source selection
     const [sourceOpen, setSourceOpen] = useState(false);
     const [source, setSource] = useState("");
@@ -324,6 +335,10 @@ export default function LeadsDashboard() {
     });
     const sensors = useSensors(pointerSensor);
 
+    // Get permissions and their loading status
+    const { isLoading: permissionsLoading, isInitialized } = usePermissions();
+    // Combined loading state
+    const isPageLoading = isLoading || permissionsLoading;
     /* -------------------- Functions -------------------- */
 
     // Source popup handlers
@@ -456,7 +471,6 @@ export default function LeadsDashboard() {
     };
 
 
-
     // Bulk Delete stages
     const handleBulkDeleteSubmit = async () => {
         if (!selectedStages.length) return;
@@ -492,9 +506,16 @@ export default function LeadsDashboard() {
     };
 
     /* ---------------- Effects ---------------- */
+    // Permission check is now available immediately
+    const hasPermission = canView("Leads");
 
-    // 1) Load pipeline board on mount
+    // Only run data loading effects if user has permission
     useEffect(() => {
+        // Skip loading data if no permission
+        // if (!hasPermission) return;
+        if (permissionsLoading || !isInitialized) return;
+        if (!canView("Leads")) return;
+
         const fetchPipelines = async () => {
             try {
                 setIsLoading(true);
@@ -889,6 +910,9 @@ export default function LeadsDashboard() {
                 estimateAmount,
                 closeDate: closeDateStr,
                 source: source,
+                files,
+                audioRecordings,
+                links
             });
 
             // refresh board if current pipeline == modalPipeline
@@ -933,6 +957,9 @@ export default function LeadsDashboard() {
         setNewSource("");
         setCustomDateRange({});
         setPopoverSourceInputValue("");
+        setLinks([]);
+        setFiles([]);
+        setAudioRecordings([]);
     }
 
     const handleDragStart = (event: any) => {
@@ -1146,11 +1173,33 @@ export default function LeadsDashboard() {
             : null;
 
     /* ---------------- RENDER ---------------- */
+    // If user can't even view this page, show fallback
+    if (permissionsLoading) {
+        return (
+            <div className="flex flex-col h-screen items-center justify-center space-y-4 bg-background/40 backdrop-blur-sm">
+                <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                <p className="text-lg font-medium text-muted-foreground">Loading permissions...</p>
+            </div>
+        );
+    }
+
+    // Check permissions after they've loaded
+    // Check for view permission after permissions are loaded
+    if (isInitialized && !canView("Leads")) {
+        return (
+            <NoPermissionFallback
+                title="No Access to Leads"
+                description="You don't have permission to view the leads page."
+            />
+        );
+    }
+
+
     if (isLoading) {
         return (
             <div className="flex flex-col h-screen items-center justify-center space-y-4 bg-background/40 backdrop-blur-sm">
                 <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                <p className="text-lg font-medium text-muted-foreground">Loading your sales dashboard...</p>
+                <p className="text-lg font-medium text-muted-foreground">Loading your leads dashboard...</p>
             </div>
         );
     }
@@ -1238,22 +1287,43 @@ export default function LeadsDashboard() {
                     </div>
 
                     <div className="flex items-center gap-2">
-                        {/* + Lead button */}
-                        <Button
-                            variant="default"
-                            onClick={() => {
-                                setIsLeadModalOpen(true);
-                            }}
-                            className="gap-1"
-                            disabled={isCreatingLead}
-                        >
-                            {isCreatingLead ? (
-                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            ) : (
-                                <Plus className="h-4 w-4 mr-2" />
-                            )}
-                            Add Lead
-                        </Button>
+                        {/* Conditionally render Add Lead button based on permissions */}
+                        {canAdd("Leads") ? (
+                            <Button
+                                variant="default"
+                                onClick={() => {
+                                    setIsLeadModalOpen(true);
+                                }}
+                                className="gap-1"
+                                disabled={isCreatingLead}
+                            >
+                                {isCreatingLead ? (
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                ) : (
+                                    <Plus className="h-4 w-4 mr-2" />
+                                )}
+                                Add Lead
+                            </Button>
+                        ) : (
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button
+                                            variant="default"
+                                            className="gap-1 opacity-50 cursor-not-allowed"
+                                            disabled
+                                        >
+                                            <Plus className="h-4 w-4 mr-2" />
+                                            Add Lead
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>You don't have permission to add leads</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        )}
+
 
                         {/* Filter button */}
                         <Button
@@ -1457,17 +1527,22 @@ export default function LeadsDashboard() {
                                 <DroppableStage
                                     key={stage._id || stage.name}
                                     stage={stage}
-                                    onAddLead={handleAddLeadToStage}
-                                    onEditStage={handleEditStage}
-                                    onDeleteStage={handleDeleteStage}
-                                    onBulkDeleteToggle={handleBulkDeleteToggle}
-                                    isBulkDeleteEnabled={isBulkDeleteEnabled}
+                                    onAddLead={canAdd("Leads") ? handleAddLeadToStage : undefined}
+                                    onEditStage={canEdit("Leads") ? handleEditStage : undefined}
+                                    onDeleteStage={canDelete("Leads") ? handleDeleteStage : undefined}
+                                    onBulkDeleteToggle={canDelete("Leads") ? handleBulkDeleteToggle : undefined}
+                                    isBulkDeleteEnabled={isBulkDeleteEnabled && canDelete("Leads")}
+                                    canAddLead={canAdd("Leads")}
+                                    canEditStage={canEdit("Leads")}
+                                    canDeleteStage={canDelete("Leads")}
                                 >
                                     {stage.leads?.map((lead) => (
                                         <DraggableLead
                                             key={lead._id}
                                             lead={lead}
                                             setDraggedLead={setDraggedLead}
+                                            canDrag={canEdit("Leads")}
+                                            canView={canView("Leads")}
                                         />
                                     ))}
                                 </DroppableStage>
@@ -1513,7 +1588,7 @@ export default function LeadsDashboard() {
                         setIsLeadModalOpen(open);
                     }}
                 >
-                    <DialogContent className="sm:max-w-[500px] h-screen m-auto overflow-y-scroll scrollbar-hide z-[100]">
+                    <DialogContent className="sm:max-w-[500px] h-fit max-h-screen m-auto overflow-y-scroll scrollbar-hide z-[100]">
                         <DialogHeader>
                             <DialogTitle className="text-xl font-semibold">Add New Lead</DialogTitle>
                             <DialogDescription>
@@ -1711,7 +1786,14 @@ export default function LeadsDashboard() {
                                 </div>
                             </div>
                         </div>
-
+                        <MediaAttachments
+                            initialFiles={files}
+                            initialAudioRecordings={audioRecordings}
+                            initialLinks={links}
+                            onFilesChange={setFiles}
+                            onAudioRecordingsChange={setAudioRecordings}
+                            onLinksChange={setLinks}
+                        />
                         <DialogFooter>
                             <Button
                                 variant="outline"
@@ -2075,9 +2157,13 @@ function isDarkColor(hexColor?: string): boolean {
 function DraggableLead({
     lead,
     setDraggedLead,
+    canDrag = true,
+    canView = true,
 }: {
     lead: Lead;
     setDraggedLead: React.Dispatch<React.SetStateAction<Lead | null>>;
+    canDrag?: boolean;
+    canView?: boolean;
 }) {
     const router = useRouter();
     const { attributes, listeners, setNodeRef } = useDraggable({
@@ -2085,9 +2171,11 @@ function DraggableLead({
         data: {
             lead,
         },
-    });
+        disabled: !canDrag, // Disable dragging if user doesn't have edit permission
+    })
 
     const handleNavigate = (e: React.MouseEvent) => {
+        if (!canView) return; // Don't navigate if can't view
         e.stopPropagation();
         router.push(`/CRM/leads/${lead._id}`);
     };
@@ -2097,11 +2185,11 @@ function DraggableLead({
             className="mt-3 border hover:border-primary hover:shadow-md transition-all duration-200 cursor-pointer"
         >
             <div
-                ref={setNodeRef}
-                {...attributes}
-                {...listeners}
+                ref={canDrag ? setNodeRef : undefined}
+                {...(canDrag ? attributes : {})}
+                {...(canDrag ? listeners : {})}
                 className="p-3"
-                onClick={handleNavigate}
+                onClick={canView ? handleNavigate : undefined}
             >
                 <div className="flex justify-between items-start">
                     <h3 className="font-medium text-sm line-clamp-2">{lead.title}</h3>
@@ -2171,7 +2259,7 @@ function DraggableLead({
                     )}
                 </div>
             </div>
-        </Card>
+        </Card >
     );
 }
 
@@ -2184,17 +2272,24 @@ function DroppableStage({
     onDeleteStage,
     onBulkDeleteToggle,
     isBulkDeleteEnabled,
+    canAddLead = true,
+    canEditStage = true,
+    canDeleteStage = true,
 }: {
     stage: Stage;
     children: React.ReactNode;
-    onAddLead: (stage: Stage) => void;
-    onEditStage: (stage: Stage) => void;
-    onDeleteStage: (stage: Stage) => void;
-    onBulkDeleteToggle: (stageName: string) => void;
-    isBulkDeleteEnabled: boolean;
+    onAddLead?: (stage: Stage) => void;
+    onEditStage?: (stage: Stage) => void;
+    onDeleteStage?: (stage: Stage) => void;
+    onBulkDeleteToggle?: (stageName: string) => void;
+    isBulkDeleteEnabled?: boolean;
+    canAddLead?: boolean;
+    canEditStage?: boolean;
+    canDeleteStage?: boolean;
 }) {
     const { setNodeRef, isOver } = useDroppable({
         id: stage.name,
+        disabled: !canEditStage, // Disable dropping if user doesn't have edit permission
     });
 
     const totalAmount = stage?.leads?.reduce((sum, ld) => sum + (ld.amount || 0), 0) || 0;
@@ -2208,14 +2303,14 @@ function DroppableStage({
     }
 
     const handleBulkDeleteToggle = (stageName: string) => {
-        onBulkDeleteToggle(stageName);
+        if (onBulkDeleteToggle) onBulkDeleteToggle(stageName);
     };
 
     return (
         <Card
             className={cn(
                 "min-w-[300px] border bg-card transition-all duration-150",
-                isOver && "ring-2 ring-primary ring-offset-2"
+                isOver && canEditStage && "ring-2 ring-primary ring-offset-2"
             )}
             style={{
                 borderTopWidth: '3px',
@@ -2244,29 +2339,39 @@ function DroppableStage({
                             {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
                         </Button>
 
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-7 w-7">
-                                    <DotsVerticalIcon className="h-4 w-4" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                <DropdownMenuLabel>Stage Actions</DropdownMenuLabel>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => onAddLead(stage)}>
-                                    <Plus className="h-4 w-4 mr-2" />
-                                    Add Lead
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => onEditStage(stage)}>
-                                    <Settings className="h-4 w-4 mr-2" />
-                                    Edit Stage
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => onDeleteStage(stage)} className="text-destructive">
-                                    <Cross2Icon className="h-4 w-4 mr-2" />
-                                    Delete Stage
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
+                        {(canAddLead || canEditStage || canDeleteStage) && (
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-7 w-7">
+                                        <DotsVerticalIcon className="h-4 w-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuLabel>Stage Actions</DropdownMenuLabel>
+                                    <DropdownMenuSeparator />
+
+                                    {canAddLead && onAddLead && (
+                                        <DropdownMenuItem onClick={() => onAddLead(stage)}>
+                                            <Plus className="h-4 w-4 mr-2" />
+                                            Add Lead
+                                        </DropdownMenuItem>
+                                    )}
+                                    {canEditStage && onEditStage && (
+                                        <DropdownMenuItem onClick={() => onEditStage(stage)}>
+                                            <Settings className="h-4 w-4 mr-2" />
+                                            Edit Stage
+                                        </DropdownMenuItem>
+                                    )}
+
+                                    {canDeleteStage && onDeleteStage && (
+                                        <DropdownMenuItem onClick={() => onDeleteStage(stage)} className="text-destructive">
+                                            <Cross2Icon className="h-4 w-4 mr-2" />
+                                            Delete Stage
+                                        </DropdownMenuItem>
+                                    )}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        )}
                     </div>
                 </div>
 
@@ -2277,7 +2382,7 @@ function DroppableStage({
             </CardHeader>
 
             <div
-                ref={setNodeRef}
+                ref={canEditStage ? setNodeRef : undefined} // Only set ref if user can edit
                 className={cn(
                     "p-2 min-h-[calc(100vh-460px)] transition-all duration-300",
                     isCollapsed && "opacity-50"
@@ -2301,17 +2406,26 @@ function DroppableStage({
                 {stage.leads?.length === 0 && (
                     <div className="flex flex-col items-center justify-center h-40 text-center border border-dashed rounded-md p-4">
                         <p className="text-sm text-muted-foreground mb-2">No leads in this stage</p>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            className="mt-2"
-                            onClick={() => onAddLead(stage)}
-                        >
-                            <Plus className="h-4 w-4 mr-2" />
-                            Add Lead
-                        </Button>
+
+                        {canAddLead && onAddLead ? (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="mt-2"
+                                onClick={() => onAddLead(stage)}
+                            >
+                                <Plus className="h-4 w-4 mr-2" />
+                                Add Lead
+                            </Button>
+                        ) : (
+                            <p className="text-xs text-muted-foreground mt-2">
+                                {!canAddLead && "You don't have permission to add leads"}
+                            </p>
+                        )}
                     </div>
                 )}
+
+
             </div>
         </Card>
     );

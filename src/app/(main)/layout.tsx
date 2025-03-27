@@ -1,6 +1,7 @@
 "use client";
 
 import InfoBar from "@/components/infobar";
+import PremiumTrialBanner from "@/components/premiumTrialBanner";
 import MenuOptions from "@/components/sidebar";
 import { Button } from "@/components/ui/button";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
@@ -20,13 +21,14 @@ const Layout = (props: Props) => {
 
 
     return (
-        <div
-            className={`flex overflow-hidden   scrollbar-hide h-full w-full`}
-        >
-            <MenuOptions />
-            <div className="w-full overflow-hidden h-screen">
-                <InfoBar />
-                <div className="ml-16 ">{props.children}</div>
+        <div className="flex flex-col overflow-hidden scrollbar-hide h-full w-full">
+            <PremiumTrialBanner />
+            <div className="flex flex-grow overflow-hidden">
+                <MenuOptions />
+                <div className="w-full overflow-hidden h-screen">
+                    <InfoBar />
+                    <div className="ml-16">{props.children}</div>
+                </div>
             </div>
         </div>
     );

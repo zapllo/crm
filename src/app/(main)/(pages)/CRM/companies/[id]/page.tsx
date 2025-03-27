@@ -66,6 +66,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import EditCompany from "@/components/modals/companies/EditCompany";
+import { usePermissions } from "@/hooks/use-permissions";
+import { canView, canAdd, canDelete, canEdit, usePermissionStatus } from "@/contexts/permissionsContext";
+import { NoPermissionFallback } from "@/components/ui/no-permission-fallback";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 // Types
 interface ICompany {
@@ -130,6 +134,7 @@ export default function CompanyDetailsPage() {
     const [contacts, setContacts] = useState<IContact[]>([]);
     const [filteredContacts, setFilteredContacts] = useState<IContact[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
+    const { isLoading: permissionsLoading, isInitialized } = usePermissions();
 
     useEffect(() => {
         if (id) {
@@ -189,7 +194,28 @@ export default function CompanyDetailsPage() {
             .toUpperCase()
             .substring(0, 2);
     }
+    // Check permissions before rendering content
+    if (permissionsLoading) {
+        return (
+            <div className="flex items-center justify-center h-[calc(100vh-100px)]">
+                <div className="flex flex-col items-center gap-3 p-8 text-center">
+                    <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                    <h3 className="text-lg font-medium">Loading permissions...</h3>
+                    <p className="text-muted-foreground">Please wait while we verify your access</p>
+                </div>
+            </div>
+        );
+    }
 
+    // Check for view permission after permissions are loaded
+    if (isInitialized && !canView("Companies")) {
+        return (
+            <NoPermissionFallback
+                title="No Access to Company Details"
+                description="You don't have permission to view company details."
+            />
+        );
+    }
     if (loading) {
         return (
             <div className="flex items-center justify-center h-[calc(100vh-100px)]">
@@ -253,14 +279,34 @@ export default function CompanyDetailsPage() {
                     </div>
 
                     <div className="flex gap-2">
-                        <Button
-                            variant="outline"
-                            onClick={() => setIsEditModalOpen(true)}
-                            className="gap-2"
-                        >
-                            <Pencil className="h-4 w-4" />
-                            Edit
-                        </Button>
+                        {canEdit("Companies") ? (
+                            <Button
+                                variant="outline"
+                                onClick={() => setIsEditModalOpen(true)}
+                                className="gap-2"
+                            >
+                                <Pencil className="h-4 w-4" />
+                                Edit
+                            </Button>
+                        ) : (
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button
+                                            variant="outline"
+                                            className="gap-2 opacity-50 cursor-not-allowed"
+                                            disabled
+                                        >
+                                            <Pencil className="h-4 w-4" />
+                                            Edit
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>You don't have permission to edit companies</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        )}
 
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -269,12 +315,14 @@ export default function CompanyDetailsPage() {
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                                <DropdownMenuItem
-                                    onClick={() => setIsEditModalOpen(true)}
-                                    className="cursor-pointer"
-                                >
-                                    <Pencil className="h-4 w-4 mr-2" /> Edit Details
-                                </DropdownMenuItem>
+                                {canEdit("Companies") && (
+                                    <DropdownMenuItem
+                                        onClick={() => setIsEditModalOpen(true)}
+                                        className="cursor-pointer"
+                                    >
+                                        <Pencil className="h-4 w-4 mr-2" /> Edit Details
+                                    </DropdownMenuItem>
+                                )}
                                 {company.website && (
                                     <DropdownMenuItem
                                         onClick={() => window.open(`https://${company.website.replace(/^https?:\/\//, '')}`, '_blank')}
@@ -284,12 +332,14 @@ export default function CompanyDetailsPage() {
                                     </DropdownMenuItem>
                                 )}
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                    onClick={() => setShowDeleteDialog(true)}
-                                    className="text-destructive cursor-pointer"
-                                >
-                                    <Trash className="h-4 w-4 mr-2" /> Delete Company
-                                </DropdownMenuItem>
+                                {canDelete("Companies") && (
+                                    <DropdownMenuItem
+                                        onClick={() => setShowDeleteDialog(true)}
+                                        className="text-destructive cursor-pointer"
+                                    >
+                                        <Trash className="h-4 w-4 mr-2" /> Delete Company
+                                    </DropdownMenuItem>
+                                )}
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </div>
@@ -482,7 +532,7 @@ export default function CompanyDetailsPage() {
                                         All contacts associated with {company.companyName}
                                     </CardDescription>
                                 </div>
-                              
+
                             </div>
                         </CardHeader>
                         <CardContent>
@@ -527,7 +577,7 @@ export default function CompanyDetailsPage() {
                                                 <TableHead>Email</TableHead>
                                                 <TableHead>WhatsApp</TableHead>
                                                 <TableHead>Location</TableHead>
-                                                <TableHead className="text-right">Actions</TableHead>
+                                                {/* <TableHead className="text-right">Actions</TableHead> */}
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
@@ -571,46 +621,7 @@ export default function CompanyDetailsPage() {
                                                             </div>
                                                         ) : "—"}
                                                     </TableCell>
-                                                    <TableCell className="text-right">
-                                                        <DropdownMenu>
-                                                            <DropdownMenuTrigger asChild>
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="icon"
-                                                                    className="h-8 w-8"
-                                                                    onClick={(e) => e.stopPropagation()}
-                                                                >
-                                                                    <MoreHorizontal className="h-4 w-4" />
-                                                                    <span className="sr-only">Open menu</span>
-                                                                </Button>
-                                                            </DropdownMenuTrigger>
-                                                            <DropdownMenuContent align="end">
-                                                                <DropdownMenuItem
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        router.push(`/CRM/contacts/${contact._id}`);
-                                                                    }}
-                                                                >
-                                                                    View details
-                                                                </DropdownMenuItem>
-                                                                <DropdownMenuItem
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        router.push(`/CRM/contacts/${contact._id}/edit`);
-                                                                    }}
-                                                                >
-                                                                    Edit
-                                                                </DropdownMenuItem>
-                                                                <DropdownMenuSeparator />
-                                                                <DropdownMenuItem
-                                                                    className="text-destructive"
-                                                                    onClick={(e) => e.stopPropagation()}
-                                                                >
-                                                                    Remove from company
-                                                                </DropdownMenuItem>
-                                                            </DropdownMenuContent>
-                                                        </DropdownMenu>
-                                                    </TableCell>
+                                                   
                                                 </TableRow>
                                             ))}
                                         </TableBody>

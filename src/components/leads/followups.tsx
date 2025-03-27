@@ -143,6 +143,7 @@ export default function FollowupSection({ leadId }: { leadId: string }) {
     const [expandedFollowup, setExpandedFollowup] = useState<string | null>(null);
     const [isRefreshing, setIsRefreshing] = useState(false);
 
+
     // Fetch followups on component mount
     useEffect(() => {
         if (leadId) {

@@ -41,10 +41,12 @@ export async function GET(request: Request) {
             );
         }
 
-        // 4) Fetch all members (users) with the same organization
-        const members = await User.find({ organization: orgId }).sort({
-            createdAt: -1,
-        });
+        // 4) Fetch all members (users) with the same organization and populate role data
+        const members = await User.find({ organization: orgId })
+            .populate('role')
+            .sort({
+                createdAt: -1,
+            });
 
         return NextResponse.json(members, { status: 200 });
     } catch (error: any) {
@@ -56,13 +58,28 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
     try {
         await connectDB();
+        // 1. Get the user ID from the token
+        const userId = getDataFromToken(request);
+        if (!userId) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        // 2. Connect to the database
+        await connectDB();
+
+        // 3. Find the user by their ID
+        const user = await User.findById(userId).populate('role');
+        if (!user) {
+            return NextResponse.json({ error: 'User not found' }, { status: 404 });
+        }
+        const orgId = user.organization
+
         const data = await request.json();
         const {
             firstName,
             lastName,
             email,
             password, // must be included
-            orgId,
             roleId,
             whatsappNo,
         } = data;
@@ -83,7 +100,7 @@ export async function POST(request: Request) {
             lastName,
             email,
             password,
-            organization: orgId,
+            organization:orgId,
             role: roleId || null,
             whatsappNo: whatsappNo || "",
             isOrgAdmin: false,

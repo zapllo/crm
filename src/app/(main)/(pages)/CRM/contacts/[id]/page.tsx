@@ -40,6 +40,10 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import CallHistory from "@/components/call/call-history";
 import PhoneDialer from "@/components/call/phone-dialer";
+import { usePermissions } from "@/hooks/use-permissions";
+import { canView, canAdd, canDelete, canEdit, usePermissionStatus } from "@/contexts/permissionsContext";
+import { NoPermissionFallback } from "@/components/ui/no-permission-fallback";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 // Types
 interface IContact {
@@ -110,7 +114,7 @@ export default function ContactDetailsPage() {
     const [filteredLeads, setFilteredLeads] = useState<ILead[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [showCallDialog, setShowCallDialog] = useState(false);
-
+    const { isLoading: permissionsLoading, isInitialized } = usePermissions();
 
     useEffect(() => {
         if (id) {
@@ -159,6 +163,27 @@ export default function ContactDetailsPage() {
         } catch (error) {
             console.error("Error deleting contact:", error);
         }
+    }
+    // Add permission check before rendering content
+    if (permissionsLoading) {
+        return (
+            <div className="flex items-center justify-center h-full">
+                <div className="flex flex-col items-center gap-2">
+                    <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                    <p className="text-sm text-muted-foreground">Loading permissions...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Check for view permission after permissions are loaded
+    if (isInitialized && !canView("Contacts")) {
+        return (
+            <NoPermissionFallback
+                title="No Access to Contact Details"
+                description="You don't have permission to view contact details."
+            />
+        );
     }
 
     if (loading) {
@@ -225,53 +250,74 @@ export default function ContactDetailsPage() {
                         <Phone className="h-4 w-4" />
                         Call
                     </Button>
-                    <Button
-                        variant="outline"
-                        onClick={() => setIsEditModalOpen(true)}
-                        className="gap-2"
-                    >
-                        <Pencil className="h-4 w-4" />
-                        Edit
-                    </Button>
-
-                    <AlertDialog
-                        open={showDeleteDialog}
-                        onOpenChange={setShowDeleteDialog}
-                    >
-                        <AlertDialogTrigger asChild>
-                            <Button variant="destructive" className="gap-2">
-                                <Trash className="h-4 w-4" />
-                                Delete
-                            </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Contact</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    Are you sure you want to delete this contact? This action
-                                    cannot be undone and will remove all associated data.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                    onClick={handleDelete}
-                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                >
+                    {canEdit("Contacts") ? (
+                        <Button
+                            variant="outline"
+                            onClick={() => setIsEditModalOpen(true)}
+                            className="gap-2"
+                        >
+                            <Pencil className="h-4 w-4" />
+                            Edit
+                        </Button>
+                    ) : (
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        className="gap-2 opacity-50 cursor-not-allowed"
+                                        
+                                    >
+                                        <Pencil className="h-4 w-4" />
+                                        Edit
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>You don't have permission to edit contacts</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    )}
+                    {canDelete("Contacts") && (
+                        <AlertDialog
+                            open={showDeleteDialog}
+                            onOpenChange={setShowDeleteDialog}
+                        >
+                            <AlertDialogTrigger asChild>
+                                <Button variant="destructive" className="gap-2">
+                                    <Trash className="h-4 w-4" />
                                     Delete
-                                </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete Contact</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Are you sure you want to delete this contact? This action
+                                        cannot be undone and will remove all associated data.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                        onClick={handleDelete}
+                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    >
+                                        Delete
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    )}
                 </div>
             </div>
 
             <Tabs defaultValue="overview" className="w-full">
-                <TabsList className="grid w-full max-w-md gap-4 bg-accent grid-cols-3">
-                    <TabsTrigger value="overview">Overview</TabsTrigger>
-                    <TabsTrigger value="leads">Leads</TabsTrigger>
-                    <TabsTrigger value="calls">Calls</TabsTrigger>
-                    <TabsTrigger value="custom">Custom Fields</TabsTrigger>
+                <TabsList className="grid w-full max-w-lg gap-4 bg-accent grid-cols-4">
+                    <TabsTrigger className="border-none" value="overview">Overview</TabsTrigger>
+                    <TabsTrigger className="border-none" value="leads">Leads</TabsTrigger>
+                    <TabsTrigger className="border-none" value="calls">Calls</TabsTrigger>
+                    <TabsTrigger className="border-none" value="custom">Custom Fields</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="overview" className="mt-6 space-y-6">

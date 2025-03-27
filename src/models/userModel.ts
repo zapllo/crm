@@ -10,7 +10,7 @@ export interface IUser extends Document {
   whatsappNo?: string;
   isOrgAdmin: boolean;
   organization: mongoose.Types.ObjectId;
-
+  profileImage?: string;
   // Optional references
   role?: mongoose.Types.ObjectId;     // Now optional
   manager?: mongoose.Types.ObjectId;  // Another user who is the manager
@@ -25,6 +25,7 @@ const userSchema = new Schema<IUser>(
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
     whatsappNo: { type: String },
+    profileImage: { type: String },
     isOrgAdmin: { type: Boolean, default: false },
     organization: {
       type: mongoose.Schema.Types.ObjectId,

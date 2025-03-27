@@ -104,7 +104,6 @@ const integrations: IntegrationInfo[] = [
     href: "/settings/integrations/shopify",
     imageSrc: "/integrations/shopify.png",
     category: ["E-Commerce"],
-    popular: true,
   },
   {
     name: "Twilio",
@@ -119,14 +118,15 @@ const integrations: IntegrationInfo[] = [
     href: "/settings/integrations/stripe",
     imageSrc: "/integrations/stripe.png",
     category: ["Payments"],
-    popular: true,
+  
   },
   {
     name: "Interakt",
     description: "Engage customers through WhatsApp Business",
     href: "/settings/integrations/interakt",
-    imageSrc: "/integrations/interakt.png",
+    imageSrc: "/integrations/interakt.jpeg",
     category: ["Communication", "Marketing"],
+    popular:true
   },
   {
     name: "Zoho Inventory",
@@ -162,7 +162,6 @@ const integrations: IntegrationInfo[] = [
     href: "/settings/integrations/google-ads",
     imageSrc: "/integrations/google-ads.png",
     category: ["Marketing"],
-    popular: true,
   },
   {
     name: "Facebook Remarketing",
@@ -253,7 +252,7 @@ export default function IntegrationsPage() {
 
         {categories.map((category) => (
           <TabsContent key={category} value={category} className="mt-0 mb-12">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4">
               {filteredIntegrations
                 .filter((integration) => {
                   if (category === "Featured") {

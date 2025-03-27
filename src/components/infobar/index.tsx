@@ -110,9 +110,11 @@ export default function InfoBar() {
     const routeMap: Record<string, string> = {
       "/CRM/dashboard": "Dashboard",
       "/CRM/contacts": "Contacts",
+      "/CRM/leads": "Lead Dashboard",
+      "/CRM/companies": "Companies",
       "/CRM/products": "Products",
       "/CRM/follow-up": "Follow-ups",
-      "/dashboard/teams": "My Team",
+      "/teams/members": "Team Members",
       "/dashboard/settings": "Settings",
       "/dashboard/profile": "My Profile",
       "/help/tickets": "Support Tickets",
@@ -221,10 +223,12 @@ export default function InfoBar() {
           {/* Left section with page title */}
           <div className="flex items-center gap-2 md:gap-3">
             <h1 className="font-semibold text-xl hidden md:block">{getPageTitle()}</h1>
-            <Badge variant="outline" className="hidden md:flex items-center gap-1 py-1 bg-primary/5">
-              <Crown className="h-3 w-3 text-amber-500" />
-              <span className="text-xs">Premium</span>
-            </Badge>
+            <Link href='/settings/billing'>
+              <Badge variant="outline" className="hidden cursor-pointer md:flex items-center gap-1 py-1 bg-primary/5">
+                <Crown className="h-3 w-3 text-amber-500" />
+                <span className="text-xs">Premium</span>
+              </Badge>
+            </Link>
           </div>
 
           {/* Center section with search */}
@@ -377,7 +381,7 @@ export default function InfoBar() {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuGroup>
-                  <DropdownMenuItem onClick={() => router.push("/dashboard/profile")}>
+                  <DropdownMenuItem onClick={() => router.push("/overview/profile")}>
                     <User2 className="mr-2 h-4 w-4" />
                     <span>Profile</span>
                   </DropdownMenuItem>
@@ -434,7 +438,7 @@ export default function InfoBar() {
       {/* Command palette for global search */}
       <CommandDialog open={searchOpen} onOpenChange={setSearchOpen}>
         <CommandInput placeholder="Type a command or search..." />
-        <CommandList>
+        <CommandList className="">
           <CommandEmpty>No results found.</CommandEmpty>
           <CommandGroup heading="Quick Actions">
             {quickActions.map((action) => (

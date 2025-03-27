@@ -18,7 +18,7 @@ export const menuOptions = [
   {
     name: "Dashboard",
     Component: LayoutDashboard,
-    href: "https://zapllo.com/dashboard",
+    href: "/overview",
     description: "Overview of your workspace"
   },
   {
@@ -44,7 +44,7 @@ export const menuOptions = [
   {
     name: "Billing",
     Component: CreditCard,
-    href: "/billing",
+    href: "/settings/billing",
     description: "Manage subscriptions and payments"
   },
   {

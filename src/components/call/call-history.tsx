@@ -285,7 +285,7 @@ export default function CallHistory({ contactId, limit = 5 }: { contactId?: stri
 
             {/* Call Details Dialog */}
             <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
-                <DialogContent className="sm:max-w-md">
+                <DialogContent className="sm:max-w-md z-[100]">
                     <DialogHeader>
                         <DialogTitle>Call Details</DialogTitle>
                     </DialogHeader>

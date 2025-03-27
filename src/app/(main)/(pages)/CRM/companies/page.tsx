@@ -50,6 +50,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { usePermissions } from "@/hooks/use-permissions";
+import { canView, canAdd, canDelete, canEdit, usePermissionStatus } from "@/contexts/permissionsContext";
+import { NoPermissionFallback } from "@/components/ui/no-permission-fallback";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface Company {
     _id: string;
@@ -77,6 +81,7 @@ export default function CompaniesPage() {
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [viewMode, setViewMode] = useState<"table" | "grid">("table");
     const router = useRouter();
+    const { isLoading: permissionsLoading, isInitialized } = usePermissions();
 
     useEffect(() => {
         fetchCompanies();
@@ -153,7 +158,28 @@ export default function CompaniesPage() {
                 return aValue < bValue ? 1 : -1;
             }
         });
+    // Check permissions before rendering content
+    if (permissionsLoading) {
+        return (
+            <div className="flex h-[calc(100vh-200px)] items-center justify-center">
+                <div className="flex flex-col items-center gap-3 p-8 text-center">
+                    <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                    <h3 className="text-lg font-medium">Loading permissions...</h3>
+                    <p className="text-muted-foreground">Please wait while we verify your access</p>
+                </div>
+            </div>
+        );
+    }
 
+    // Check for view permission after permissions are loaded
+    if (isInitialized && !canView("Companies")) {
+        return (
+            <NoPermissionFallback
+                title="No Access to Companies"
+                description="You don't have permission to view the companies page."
+            />
+        );
+    }
     if (isLoading) {
         return (
             <div className="flex h-[calc(100vh-200px)] items-center justify-center">
@@ -177,12 +203,30 @@ export default function CompaniesPage() {
                         </p>
                     </div>
                     <div className="flex gap-3">
-                        <Button
-                            onClick={() => setIsModalOpen(true)}
-                            className="bg-primary hover:bg-primary/90"
-                        >
-                            <Plus className="mr-2 h-4 w-4" /> Add Company
-                        </Button>
+                        {canAdd("Companies") ? (
+                            <Button
+                                onClick={() => setIsModalOpen(true)}
+                                className="bg-primary hover:bg-primary/90"
+                            >
+                                <Plus className="mr-2 h-4 w-4" /> Add Company
+                            </Button>
+                        ) : (
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button
+                                            className="bg-primary/50 hover:bg-primary/20 cursor-not-allowed"
+
+                                        >
+                                            <Plus className="mr-2 h-4 w-4" /> Add Company
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>You don't have permission to add companies</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        )}
                     </div>
                 </div>
 
@@ -297,17 +341,19 @@ export default function CompaniesPage() {
                                                 </TableCell>
                                                 <TableCell className="text-right">
                                                     <DropdownMenu>
-                                                        <DropdownMenuTrigger asChild>
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                className="action-button h-8 w-8"
-                                                                onClick={(e) => e.stopPropagation()}
-                                                            >
-                                                                <MoreHorizontal className="h-4 w-4" />
-                                                                <span className="sr-only">Open menu</span>
-                                                            </Button>
-                                                        </DropdownMenuTrigger>
+                                                        {canEdit("Companies") && (
+                                                            <DropdownMenuTrigger asChild>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className="action-button h-8 w-8"
+                                                                    onClick={(e) => e.stopPropagation()}
+                                                                >
+                                                                    <MoreHorizontal className="h-4 w-4" />
+                                                                    <span className="sr-only">Open menu</span>
+                                                                </Button>
+                                                            </DropdownMenuTrigger>
+                                                        )}
                                                         <DropdownMenuContent align="end">
                                                             <DropdownMenuItem
                                                                 onClick={(e) => {

@@ -41,6 +41,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { usePermissions } from "@/hooks/use-permissions";
+import { canView, canAdd, canDelete, canEdit, usePermissionStatus } from "@/contexts/permissionsContext";
+import { NoPermissionFallback } from "@/components/ui/no-permission-fallback";
+
 
 interface IContact {
   _id: string;
@@ -84,6 +88,7 @@ export default function ContactsPage() {
   const [selectedContact, setSelectedContact] = useState<IContact | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const router = useRouter();
+  const { isLoading: permissionsLoading, isInitialized } = usePermissions();
 
   useEffect(() => {
     fetchContacts();
@@ -149,6 +154,27 @@ export default function ContactsPage() {
       return aValue.localeCompare(bValue);
     });
 
+  if (permissionsLoading) {
+    return (
+      <div className="flex h-[calc(100vh-100px)] items-center justify-center">
+        <div className="flex flex-col items-center gap-2 p-4 rounded-lg bg-white/5 backdrop-blur-sm">
+          <Loader2 className="animate-spin h-8 w-8 text-primary" />
+          <span className="text-sm text-muted-foreground">Loading permissions...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Check for view permission after permissions are loaded
+  if (isInitialized && !canView("Contacts")) {
+    return (
+      <NoPermissionFallback
+        title="No Access to Contacts"
+        description="You don't have permission to view the contacts page."
+      />
+    );
+  }
+
   if (isLoading) {
     return (
       <div className="flex h-[calc(100vh-100px)] items-center justify-center">
@@ -167,9 +193,11 @@ export default function ContactsPage() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <CardTitle className="text-2xl font-bold">Contacts</CardTitle>
             <div className="flex flex-wrap gap-2">
-              <Button onClick={() => setIsModalOpen(true)} className="bg-primary hover:bg-primary/90 text-white gap-1">
-                <Plus size={16} /> Add Contact
-              </Button>
+              {canAdd("Contacts") && (
+                <Button onClick={() => setIsModalOpen(true)} className="bg-primary hover:bg-primary/90 text-white gap-1">
+                  <Plus size={16} /> Add Contact
+                </Button>
+              )}
               <Button onClick={handleExportCSV} variant="outline" className="gap-1">
                 <Download size={16} /> Export
               </Button>
@@ -182,7 +210,7 @@ export default function ContactsPage() {
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search contacts..." 
+                placeholder="Search contacts..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10 "
@@ -219,7 +247,7 @@ export default function ContactsPage() {
                   </TableRow>
                 ) : (
                   sortedFilteredContacts.map((contact) => (
-                    <TableRow 
+                    <TableRow
                       key={contact._id}
                       className="cursor-pointer transition-colors hover:bg-muted/20"
                       onClick={() => router.push(`/CRM/contacts/${contact._id}`)}
@@ -256,52 +284,54 @@ export default function ContactsPage() {
                         )}
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-blue-500 hover:text-blue-600 hover:bg-blue-50"
-                            onClick={() => {
-                              setSelectedContact(contact);
-                              setIsEditModalOpen(true);
-                            }}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
+                        {canEdit("Contacts") && (
+                          <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-blue-500 hover:text-blue-600 hover:bg-blue-50"
+                              onClick={() => {
+                                setSelectedContact(contact);
+                                setIsEditModalOpen(true);
+                              }}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
 
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50"
-                              >
-                                <Trash className="h-4 w-4" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent className="border-red-100">
-                              <AlertDialogHeader>
-                                <h3 className="text-lg font-semibold">Delete Contact</h3>
-                                <p className="text-muted-foreground">
-                                  Are you sure you want to delete <span className="font-medium">{contact.firstName} {contact.lastName}</span>? 
-                                  This action cannot be undone.
-                                </p>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction 
-                                  onClick={() => {
-                                    setConfirmDelete(contact._id);
-                                    handleDelete();
-                                  }}
-                                  className="bg-red-500 hover:bg-red-600 text-white"
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50"
                                 >
-                                  Delete
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
+                                  <Trash className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent className="border-red-100">
+                                <AlertDialogHeader>
+                                  <h3 className="text-lg font-semibold">Delete Contact</h3>
+                                  <p className="text-muted-foreground">
+                                    Are you sure you want to delete <span className="font-medium">{contact.firstName} {contact.lastName}</span>?
+                                    This action cannot be undone.
+                                  </p>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => {
+                                      setConfirmDelete(contact._id);
+                                      handleDelete();
+                                    }}
+                                    className="bg-red-500 hover:bg-red-600 text-white"
+                                  >
+                                    Delete
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))
@@ -309,7 +339,7 @@ export default function ContactsPage() {
               </TableBody>
             </Table>
           </div>
-          
+
           {sortedFilteredContacts.length > 0 && (
             <div className="flex justify-between items-center mt-4 px-2 text-sm text-muted-foreground">
               <span>Showing {sortedFilteredContacts.length} of {contacts.length} contacts</span>
@@ -323,6 +353,6 @@ export default function ContactsPage() {
 
       {/* Edit Contact Dialog */}
       <EditContact isOpen={isEditModalOpen} setIsOpen={setIsEditModalOpen} contact={selectedContact} />
-    </div>
+    </div >
   );
 }

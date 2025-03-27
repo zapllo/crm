@@ -5,9 +5,12 @@ import axios from 'axios';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Plus, Tag, Weight } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { ImageIcon, Plus, Tag, Weight, X } from 'lucide-react';
+import { toast, useToast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
+import { Progress } from '@/components/ui/progress';
+import { Card, CardContent } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
 
 interface ProductData {
     productName: string;
@@ -48,6 +51,12 @@ const AddProduct: React.FC<AddProductProps> = ({ isOpen, setIsOpen, onProductCre
     const [unitOpen, setUnitOpen] = useState(false);
     const [newUnit, setNewUnit] = useState("");
     const [searchUnitQuery, setSearchUnitQuery] = useState("");
+    // Inside the component, add these state variables
+    const [imageUrl, setImageUrl] = useState<string | null>(null);
+    const [isUploading, setIsUploading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
 
     // For display, if you want to show the name of the selected source:
     const [popoverUnitInputValue, setPopoverUnitInputValue] = useState("");
@@ -81,18 +90,90 @@ const AddProduct: React.FC<AddProductProps> = ({ isOpen, setIsOpen, onProductCre
         setProductData({ ...productData, [e.target.name]: e.target.value });
     };
 
+
+    // Add this function to handle file upload
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
+
+        setIsUploading(true);
+        setUploadProgress(0);
+
+        try {
+            const formData = new FormData();
+            formData.append('files', files[0]);
+
+            // Simulate upload progress
+            const progressInterval = setInterval(() => {
+                setUploadProgress(prev => {
+                    const newProgress = prev + 5;
+                    return newProgress >= 90 ? 90 : newProgress;
+                });
+            }, 100);
+
+            const response = await fetch('/api/upload', {
+                method: 'POST',
+                body: formData,
+            });
+
+            clearInterval(progressInterval);
+
+            if (!response.ok) {
+                throw new Error('Failed to upload image');
+            }
+
+            const data = await response.json();
+            setUploadProgress(100);
+
+            if (data.fileUrls && data.fileUrls.length > 0) {
+                setImageUrl(data.fileUrls[0]);
+                toast({
+                    title: "Image uploaded successfully",
+                });
+            }
+
+        } catch (error) {
+            console.error('Error uploading image:', error);
+            toast({
+                title: "Failed to upload image",
+                variant: "destructive",
+            });
+        } finally {
+            setIsUploading(false);
+            // Reset file input
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
+        }
+    };
+
+    // Add this function to remove the uploaded image
+    const handleRemoveImage = () => {
+        setImageUrl(null);
+    };
+
+    // Update the handleSubmit function to include the imageUrl
     const handleSubmit = async () => {
         try {
             const payload = {
                 ...productData,
                 category: category || undefined,
                 unit: unit || undefined,
+                imageUrl: imageUrl || undefined, // Include the image URL
             };
 
             await axios.post('/api/products', payload);
+            toast({
+                title: "Product added successfully",
+            });
             setIsOpen(false);
+            onProductCreated();
         } catch (error) {
             console.error('Error adding product:', error);
+            toast({
+                title: "Failed to add product",
+                variant: "destructive",
+            });
         }
     };
 
@@ -107,8 +188,7 @@ const AddProduct: React.FC<AddProductProps> = ({ isOpen, setIsOpen, onProductCre
     }, []);
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogContent className='p-6 z-[100] h-fit  overflow-y-scroll scrollbar-hide m-auto'>
-
+            <DialogContent className='p-6 z-[100] h-fit max-h-screen  overflow-y-scroll scrollbar-hide m-auto'>
                 <DialogHeader>
                     <DialogTitle>Add Product</DialogTitle>
                 </DialogHeader>
@@ -193,6 +273,62 @@ const AddProduct: React.FC<AddProductProps> = ({ isOpen, setIsOpen, onProductCre
                         className="w-full p-2 rounded bg-transparent text-sm dark:text-white "
                         onChange={handleChange}
                     />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="product-image">Product Image</Label>
+                    {imageUrl ? (
+                        <div className="relative">
+                            <Card className="overflow-hidden">
+                                <CardContent className="p-0">
+                                    <div className="relative aspect-video w-full">
+                                        <img
+                                            src={imageUrl}
+                                            alt="Product"
+                                            className="object-cover w-full h-full"
+                                        />
+                                        <Button
+                                            variant="destructive"
+                                            size="sm"
+                                            className="absolute top-2 right-2 h-8 w-8 p-0"
+                                            onClick={handleRemoveImage}
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+                    ) : (
+                        <div>
+                            <input
+                                type="file"
+                                id="product-image"
+                                ref={fileInputRef}
+                                onChange={handleFileUpload}
+                                accept="image/*"
+                                className="hidden"
+                            />
+                            <div
+                                className="border-2 border-dashed rounded-md p-6 hover:border-primary/50 transition-colors cursor-pointer"
+                                onClick={() => fileInputRef.current?.click()}
+                            >
+                                <div className="flex flex-col items-center justify-center gap-2">
+                                    <ImageIcon className="h-8 w-8 text-muted-foreground" />
+                                    <p className="text-sm text-muted-foreground">
+                                        Click to upload a product image
+                                    </p>
+                                </div>
+                            </div>
+                            {isUploading && (
+                                <div className="mt-2">
+                                    <Progress value={uploadProgress} className="h-2" />
+                                    <p className="text-xs text-center mt-1">
+                                        {uploadProgress < 100 ? 'Uploading...' : 'Processing...'}
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
                 <Button onClick={handleSubmit}>Add Product</Button>
             </DialogContent>

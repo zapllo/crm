@@ -4,6 +4,9 @@ import "./globals.css";
 import NextTopLoader from 'nextjs-toploader';
 import { UserProvider } from "@/contexts/userContext";
 import { ThemeLayoutWrapper } from "@/components/theme-layout-wrapper";
+import { PermissionsProvider } from "@/contexts/permissionsContext";
+import { PreloadPermissions } from "@/components/preload-permissions";
+import Script from "next/script";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -28,10 +31,23 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <Script
+          src="https://checkout.razorpay.com/v1/checkout.js"
+          strategy="afterInteractive" // Ensures the script loads before your app's JavaScript
+          async
+        />
+      </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <ThemeLayoutWrapper>
           <NextTopLoader />
-          <UserProvider>{children}</UserProvider>
+          <UserProvider>
+            <PermissionsProvider>
+              {/* Add this component to preload permissions */}
+              <PreloadPermissions />
+              {children}
+            </PermissionsProvider>
+          </UserProvider>
         </ThemeLayoutWrapper>
       </body>
     </html>

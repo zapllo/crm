@@ -15,7 +15,7 @@ import {
 import CreatePipelineForm from "@/components/modals/pipelines/pipelineModal";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { CrossCircledIcon } from "@radix-ui/react-icons";
-import { Pencil, Trash2, Database, Tag, Users, Sparkles, Settings2, ListPlus, Plus, Filter } from "lucide-react";
+import { Pencil, Trash2, Database, Tag, Users, Sparkles, Settings2, ListPlus, Plus, Filter, Loader2 } from "lucide-react";
 import EditPipelineForm from "@/components/modals/pipelines/editPipelineModal";
 import AddFieldForm from "@/components/modals/pipelines/addFieldModal";
 import EditFieldForm from "@/components/modals/pipelines/editFieldModal";
@@ -36,6 +36,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
+import { usePermissions } from "@/hooks/use-permissions";
+import { NoPermissionFallback } from "@/components/ui/no-permission-fallback";
+import { canView, canAdd, canDelete, canEdit, usePermissionStatus } from "@/contexts/permissionsContext";
+
 
 interface CustomField {
     name: string;
@@ -117,6 +121,7 @@ export default function CustomizePage() {
     const [currentContactTag, setCurrentContactTag] = useState<ContactTag | null>(
         null
     );
+    const { isLoading: permissionsLoading, isInitialized } = usePermissions();
 
     // Add these to your state declarations
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -371,6 +376,29 @@ export default function CustomizePage() {
         tag.name.toLowerCase().includes(searchContactTag.toLowerCase())
     );
 
+
+    // Add permission check before rendering content
+    if (permissionsLoading) {
+        return (
+            <div className="flex items-center justify-center h-full">
+                <div className="flex flex-col items-center gap-2">
+                    <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                    <p className="text-sm text-muted-foreground">Loading permissions...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Check for view permission after permissions are loaded
+    if (isInitialized && !canView("Contacts")) {
+        return (
+            <NoPermissionFallback
+                title="No Access to Settings "
+                description="You don't have permission to view customize settings."
+            />
+        );
+    }
+
     return (
         <div className="min-h-screen p-6 space-y-8 container mx-auto max-w-7xl">
             <motion.div
@@ -436,12 +464,30 @@ export default function CustomizePage() {
                                     <CardDescription>Configure your sales processes and workflows</CardDescription>
                                 </div>
                                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                                    <DialogTrigger asChild>
-                                        <Button className="group flex gap-2">
-                                            <Sparkles className="h-4 w-4 group-hover:animate-pulse" />
-                                            Create Pipeline
-                                        </Button>
-                                    </DialogTrigger>
+                                    {canAdd("Settings") ? (
+
+                                        <DialogTrigger asChild>
+                                            <Button className="group flex gap-2">
+                                                <Sparkles className="h-4 w-4 group-hover:animate-pulse" />
+                                                Create Pipeline
+                                            </Button>
+
+                                        </DialogTrigger>
+                                    ) : (
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button className="group flex opacity-30 gap-2">
+                                                        <Sparkles className="h-4 w-4 group-hover:animate-pulse" />
+                                                        Create Pipeline
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    <p>You don't have permission to add companies</p>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                    )}
                                     <DialogContent className="z-[100] p-6 h-screen overflow-y-scroll scrollbar-hide max-w-lg w-full">
                                         <DialogHeader>
                                             <DialogTitle className="text-lg font-medium dark:text-white flex items-center gap-2">
@@ -513,9 +559,11 @@ export default function CustomizePage() {
                                                                     <TooltipProvider>
                                                                         <Tooltip>
                                                                             <TooltipTrigger asChild>
-                                                                                <Button variant="ghost" size="icon" onClick={() => openEditModal(pipeline)} className="h-8 w-8 text-blue-500">
-                                                                                    <Pencil className="h-4 w-4" />
-                                                                                </Button>
+                                                                                {canEdit("Settings") && (
+                                                                                    <Button variant="ghost" size="icon" onClick={() => openEditModal(pipeline)} className="h-8 w-8 text-blue-500">
+                                                                                        <Pencil className="h-4 w-4" />
+                                                                                    </Button>
+                                                                                )}
                                                                             </TooltipTrigger>
                                                                             <TooltipContent>Edit pipeline</TooltipContent>
                                                                         </Tooltip>
@@ -524,9 +572,11 @@ export default function CustomizePage() {
                                                                     <TooltipProvider>
                                                                         <Tooltip>
                                                                             <TooltipTrigger asChild>
-                                                                                <Button variant="ghost" size="icon" onClick={() => handleDeletePipeline(pipeline)} className="h-8 w-8 text-red-500">
-                                                                                    <Trash2 className="h-4 w-4" />
-                                                                                </Button>
+                                                                                {canDelete("Settings") && (
+                                                                                    <Button variant="ghost" size="icon" onClick={() => handleDeletePipeline(pipeline)} className="h-8 w-8 text-red-500">
+                                                                                        <Trash2 className="h-4 w-4" />
+                                                                                    </Button>
+                                                                                )}
                                                                             </TooltipTrigger>
                                                                             <TooltipContent>Delete pipeline</TooltipContent>
                                                                         </Tooltip>
@@ -586,13 +636,15 @@ export default function CustomizePage() {
                                     </CardTitle>
                                     <CardDescription>Define custom fields for your leads</CardDescription>
                                 </div>
-                                <Button
-                                    className="group flex gap-2"
-                                    onClick={() => setIsFieldDialogOpen(true)}
-                                >
-                                    <Plus className="h-4 w-4 group-hover:rotate-90 transition-transform" />
-                                    Add Field
-                                </Button>
+                                {canAdd("Settings") && (
+                                    <Button
+                                        className="group flex gap-2"
+                                        onClick={() => setIsFieldDialogOpen(true)}
+                                    >
+                                        <Plus className="h-4 w-4 group-hover:rotate-90 transition-transform" />
+                                        Add Field
+                                    </Button>
+                                )}
                             </CardHeader>
                             <CardContent className="p-0">
                                 <div className="p-4">
@@ -660,17 +712,19 @@ export default function CustomizePage() {
                                                                 <TooltipProvider>
                                                                     <Tooltip>
                                                                         <TooltipTrigger asChild>
-                                                                            <Button
-                                                                                variant="ghost"
-                                                                                size="icon"
-                                                                                onClick={() => {
-                                                                                    setSelectedPipeline(pipeline);
-                                                                                    handleEditField(field);
-                                                                                }}
-                                                                                className="h-8 w-8 text-blue-500"
-                                                                            >
-                                                                                <Pencil className="h-4 w-4" />
-                                                                            </Button>
+                                                                            {canEdit("Settings") && (
+                                                                                <Button
+                                                                                    variant="ghost"
+                                                                                    size="icon"
+                                                                                    onClick={() => {
+                                                                                        setSelectedPipeline(pipeline);
+                                                                                        handleEditField(field);
+                                                                                    }}
+                                                                                    className="h-8 w-8 text-blue-500"
+                                                                                >
+                                                                                    <Pencil className="h-4 w-4" />
+                                                                                </Button>
+                                                                            )}
                                                                         </TooltipTrigger>
                                                                         <TooltipContent>Edit field</TooltipContent>
                                                                     </Tooltip>
@@ -679,14 +733,16 @@ export default function CustomizePage() {
                                                                 <TooltipProvider>
                                                                     <Tooltip>
                                                                         <TooltipTrigger asChild>
-                                                                            <Button
-                                                                                variant="ghost"
-                                                                                size="icon"
-                                                                                onClick={() => handleDeleteField(index, pipeline, field.name)}
-                                                                                className="h-8 w-8 text-red-500"
-                                                                            >
-                                                                                <Trash2 className="h-4 w-4" />
-                                                                            </Button>
+                                                                            {canDelete("Settings") && (
+                                                                                <Button
+                                                                                    variant="ghost"
+                                                                                    size="icon"
+                                                                                    onClick={() => handleDeleteField(index, pipeline, field.name)}
+                                                                                    className="h-8 w-8 text-red-500"
+                                                                                >
+                                                                                    <Trash2 className="h-4 w-4" />
+                                                                                </Button>
+                                                                            )}
                                                                         </TooltipTrigger>
                                                                         <TooltipContent>Delete field</TooltipContent>
                                                                     </Tooltip>
@@ -717,13 +773,15 @@ export default function CustomizePage() {
                                     </CardTitle>
                                     <CardDescription>Manage tags for categorizing leads</CardDescription>
                                 </div>
-                                <Button
-                                    className="group flex gap-2"
-                                    onClick={() => setIsAddTagModalOpen(true)}
-                                >
-                                    <Plus className="h-4 w-4 group-hover:rotate-90 transition-transform" />
-                                    Add Tag
-                                </Button>
+                                {canAdd("Settings") && (
+                                    <Button
+                                        className="group flex gap-2"
+                                        onClick={() => setIsAddTagModalOpen(true)}
+                                    >
+                                        <Plus className="h-4 w-4 group-hover:rotate-90 transition-transform" />
+                                        Add Tag
+                                    </Button>
+                                )}
                             </CardHeader>
                             <CardContent className="p-0">
                                 <div className="p-4">
@@ -761,17 +819,19 @@ export default function CustomizePage() {
                                                             <TooltipProvider>
                                                                 <Tooltip>
                                                                     <TooltipTrigger asChild>
-                                                                        <Button
-                                                                            variant="ghost"
-                                                                            size="icon"
-                                                                            onClick={() => {
-                                                                                setCurrentTag(tag);
-                                                                                setIsEditTagModalOpen(true);
-                                                                            }}
-                                                                            className="h-8 w-8 text-blue-500"
-                                                                        >
-                                                                            <Pencil className="h-4 w-4" />
-                                                                        </Button>
+                                                                        {canEdit("Settings") && (
+                                                                            <Button
+                                                                                variant="ghost"
+                                                                                size="icon"
+                                                                                onClick={() => {
+                                                                                    setCurrentTag(tag);
+                                                                                    setIsEditTagModalOpen(true);
+                                                                                }}
+                                                                                className="h-8 w-8 text-blue-500"
+                                                                            >
+                                                                                <Pencil className="h-4 w-4" />
+                                                                            </Button>
+                                                                        )}
                                                                     </TooltipTrigger>
                                                                     <TooltipContent>Edit tag</TooltipContent>
                                                                 </Tooltip>
@@ -780,14 +840,16 @@ export default function CustomizePage() {
                                                             <TooltipProvider>
                                                                 <Tooltip>
                                                                     <TooltipTrigger asChild>
-                                                                        <Button
-                                                                            variant="ghost"
-                                                                            size="icon"
-                                                                            onClick={() => handleDeleteTag(tag)}
-                                                                            className="h-8 w-8 text-red-500"
-                                                                        >
-                                                                            <Trash2 className="h-4 w-4" />
-                                                                        </Button>
+                                                                        {canDelete("Settings") && (
+                                                                            <Button
+                                                                                variant="ghost"
+                                                                                size="icon"
+                                                                                onClick={() => handleDeleteTag(tag)}
+                                                                                className="h-8 w-8 text-red-500"
+                                                                            >
+                                                                                <Trash2 className="h-4 w-4" />
+                                                                            </Button>
+                                                                        )}
                                                                     </TooltipTrigger>
                                                                     <TooltipContent>Delete tag</TooltipContent>
                                                                 </Tooltip>
@@ -918,13 +980,15 @@ export default function CustomizePage() {
                                     </CardTitle>
                                     <CardDescription>Define custom fields for contacts</CardDescription>
                                 </div>
-                                <Button
-                                    className="group flex gap-2"
-                                    onClick={() => setIsAddOpen(true)}
-                                >
-                                    <Plus className="h-4 w-4 group-hover:rotate-90 transition-transform" />
-                                    Add Field
-                                </Button>
+                                {canAdd("Settings") && (
+                                    <Button
+                                        className="group flex gap-2"
+                                        onClick={() => setIsAddOpen(true)}
+                                    >
+                                        <Plus className="h-4 w-4 group-hover:rotate-90 transition-transform" />
+                                        Add Field
+                                    </Button>
+                                )}
                             </CardHeader>
                             <CardContent className="p-0">
                                 <div className="p-4">
@@ -979,17 +1043,19 @@ export default function CustomizePage() {
                                                         <TooltipProvider>
                                                             <Tooltip>
                                                                 <TooltipTrigger asChild>
-                                                                    <Button
-                                                                        variant="ghost"
-                                                                        size="icon"
-                                                                        onClick={() => {
-                                                                            setEditingField(field);
-                                                                            setIsEditOpen(true);
-                                                                        }}
-                                                                        className="h-8 w-8 text-blue-500"
-                                                                    >
-                                                                        <Pencil className="h-4 w-4" />
-                                                                    </Button>
+                                                                    {canEdit("Settings") && (
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="icon"
+                                                                            onClick={() => {
+                                                                                setEditingField(field);
+                                                                                setIsEditOpen(true);
+                                                                            }}
+                                                                            className="h-8 w-8 text-blue-500"
+                                                                        >
+                                                                            <Pencil className="h-4 w-4" />
+                                                                        </Button>
+                                                                    )}
                                                                 </TooltipTrigger>
                                                                 <TooltipContent>Edit field</TooltipContent>
                                                             </Tooltip>
@@ -998,14 +1064,16 @@ export default function CustomizePage() {
                                                         <TooltipProvider>
                                                             <Tooltip>
                                                                 <TooltipTrigger asChild>
-                                                                    <Button
-                                                                        variant="ghost"
-                                                                        size="icon"
-                                                                        onClick={() => handleDelete(field._id)}
-                                                                        className="h-8 w-8 text-red-500"
-                                                                    >
-                                                                        <Trash2 className="h-4 w-4" />
-                                                                    </Button>
+                                                                    {canDelete("Settings") && (
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="icon"
+                                                                            onClick={() => handleDelete(field._id)}
+                                                                            className="h-8 w-8 text-red-500"
+                                                                        >
+                                                                            <Trash2 className="h-4 w-4" />
+                                                                        </Button>
+                                                                    )}
                                                                 </TooltipTrigger>
                                                                 <TooltipContent>Delete field</TooltipContent>
                                                             </Tooltip>
@@ -1029,13 +1097,15 @@ export default function CustomizePage() {
                                     </CardTitle>
                                     <CardDescription>Manage tags for contacts</CardDescription>
                                 </div>
-                                <Button
-                                    className="group flex gap-2"
-                                    onClick={() => setIsAddContactTagOpen(true)}
-                                >
-                                    <Plus className="h-4 w-4 group-hover:rotate-90 transition-transform" />
-                                    Add Tag
-                                </Button>
+                                {canAdd("Settings") && (
+                                    <Button
+                                        className="group flex gap-2"
+                                        onClick={() => setIsAddContactTagOpen(true)}
+                                    >
+                                        <Plus className="h-4 w-4 group-hover:rotate-90 transition-transform" />
+                                        Add Tag
+                                    </Button>
+                                )}
                             </CardHeader>
                             <CardContent className="p-0">
                                 <div className="p-4">
@@ -1086,17 +1156,19 @@ export default function CustomizePage() {
                                                             <TooltipProvider>
                                                                 <Tooltip>
                                                                     <TooltipTrigger asChild>
-                                                                        <Button
-                                                                            variant="ghost"
-                                                                            size="icon"
-                                                                            onClick={() => {
-                                                                                setCurrentContactTag(tag);
-                                                                                setIsEditContactTagOpen(true);
-                                                                            }}
-                                                                            className="h-8 w-8 text-blue-500"
-                                                                        >
-                                                                            <Pencil className="h-4 w-4" />
-                                                                        </Button>
+                                                                        {canEdit("Settings") && (
+                                                                            <Button
+                                                                                variant="ghost"
+                                                                                size="icon"
+                                                                                onClick={() => {
+                                                                                    setCurrentContactTag(tag);
+                                                                                    setIsEditContactTagOpen(true);
+                                                                                }}
+                                                                                className="h-8 w-8 text-blue-500"
+                                                                            >
+                                                                                <Pencil className="h-4 w-4" />
+                                                                            </Button>
+                                                                        )}
                                                                     </TooltipTrigger>
                                                                     <TooltipContent>Edit tag</TooltipContent>
                                                                 </Tooltip>
@@ -1105,14 +1177,16 @@ export default function CustomizePage() {
                                                             <TooltipProvider>
                                                                 <Tooltip>
                                                                     <TooltipTrigger asChild>
-                                                                        <Button
-                                                                            variant="ghost"
-                                                                            size="icon"
-                                                                            onClick={() => handleDeleteContactTag(tag)}
-                                                                            className="h-8 w-8 text-red-500"
-                                                                        >
-                                                                            <Trash2 className="h-4 w-4" />
-                                                                        </Button>
+                                                                        {canDelete("Settings") && (
+                                                                            <Button
+                                                                                variant="ghost"
+                                                                                size="icon"
+                                                                                onClick={() => handleDeleteContactTag(tag)}
+                                                                                className="h-8 w-8 text-red-500"
+                                                                            >
+                                                                                <Trash2 className="h-4 w-4" />
+                                                                            </Button>
+                                                                        )}
                                                                     </TooltipTrigger>
                                                                     <TooltipContent>Delete tag</TooltipContent>
                                                                 </Tooltip>

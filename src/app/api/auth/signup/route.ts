@@ -40,9 +40,9 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Email already registered.' }, { status: 400 });
         }
 
-        // Set trial expiry to 14 days from now
+        // Set trial expiry to 7 days from now
         const trialExpires = new Date();
-        trialExpires.setDate(trialExpires.getDate() + 14);
+        trialExpires.setDate(trialExpires.getDate() + 7);
 
         // 1) Create Organization
         const organization = await Organization.create({

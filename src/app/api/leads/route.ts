@@ -134,7 +134,7 @@ export async function POST(request: Request) {
     try {
         await connectDB();
 
-        const { pipeline, stage, title, description, product, contact, assignedTo, estimateAmount, closeDate, source } = await request.json();
+        const { pipeline, stage, title, description, product, contact, assignedTo, estimateAmount, closeDate, source, files, audioRecordings, links } = await request.json();
 
         // 1. Get userId from token
         const userId = getDataFromToken(request);
@@ -189,7 +189,10 @@ export async function POST(request: Request) {
             amount: estimateAmount,
             organization: user.organization,
             closeDate,
-            source
+            source,
+            files: files || [],
+            audioRecordings: audioRecordings || [],
+            links: links || []
         });
 
         const savedLead = await newLead.save();

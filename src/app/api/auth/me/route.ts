@@ -1,8 +1,10 @@
 // /app/api/auth/me/route.ts
 import { NextResponse } from 'next/server';
 import { User } from '@/models/userModel';
+import { Organization } from '@/models/organizationModel';
 import connectDB from '@/lib/db';
 import { getDataFromToken } from '@/lib/getDataFromToken';
+import mongoose from 'mongoose';
 
 export async function GET(request: Request) {
   try {
@@ -14,13 +16,21 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Lookup user
+    // First, get the user
     const user = await User.findById(userId).select('-password');
+
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Return user info as needed
+    // Explicitly fetch the organization using the organization ID from the user
+    let organizationData = null;
+    if (user.organization) {
+      organizationData = await Organization.findById(user.organization)
+        .select('companyName trialExpires isPro subscribedPlan subscriptionExpires credits');
+    }
+
+    // Return user info with the organization data
     return NextResponse.json(
       {
         userId: user._id,
@@ -28,8 +38,10 @@ export async function GET(request: Request) {
         isOrgAdmin: user.isOrgAdmin,
         firstName: user.firstName,
         lastName: user.lastName,
-        organization: user.organization
-        // etc.
+        whatsappNo: user.whatsappNo,
+        profileImage: user.profileImage,
+        role: user.role,
+        organization: organizationData,
       },
       { status: 200 }
     );
