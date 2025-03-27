@@ -5,13 +5,14 @@ import { Types } from "mongoose";
 import { getDataFromToken } from "@/lib/getDataFromToken";
 import { User } from "@/models/userModel";
 
-export async function PATCH(
-  req: Request,
-  { params }: { params: { id: string } }
+export async function PATCH(req: Request,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const id = (await params).id
+
     await connectDB();
-    const { id } = params;
+
 
     if (!Types.ObjectId.isValid(id)) {
       return NextResponse.json({ error: "Invalid role ID" }, { status: 400 });
@@ -62,7 +63,7 @@ export async function PATCH(
     // Update role
     role.name = name;
     role.leadAccess = leadAccess;
-    
+
     // Update permissions
     if (pages) {
       role.pagePermissions = pages.map((p: any) => ({
@@ -89,13 +90,14 @@ export async function PATCH(
   }
 }
 
-export async function DELETE(
-  req: Request,
-  { params }: { params: { id: string } }
+export async function DELETE(req: Request,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const id = (await params).id
+
     await connectDB();
-    const { id } = params;
+
 
     if (!Types.ObjectId.isValid(id)) {
       return NextResponse.json({ error: "Invalid role ID" }, { status: 400 });
@@ -146,7 +148,7 @@ export async function DELETE(
     const usersWithRole = await User.countDocuments({ role: id });
     if (usersWithRole > 0) {
       return NextResponse.json(
-        { 
+        {
           error: "Role is assigned to users",
           message: "This role is currently assigned to one or more users. Please reassign these users before deleting the role."
         },

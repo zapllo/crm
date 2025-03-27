@@ -87,7 +87,7 @@ interface Member {
 export default function MembersPage() {
   const { user } = useUserContext();
   const { toast } = useToast();
-  const orgId = user?.organization ?? "";
+const orgId = user?.organization?.toString() ?? "";
 
   const [members, setMembers] = useState<Member[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
@@ -124,7 +124,7 @@ export default function MembersPage() {
 
   const handleDelete = async (id: string) => {
     try {
-      await axios.delete(`/api/members/${id}?orgId=${orgId}`);
+      await axios.delete(`/api/members/${id}`);
       fetchMembers();
       toast({
         title: "Member removed",

@@ -40,7 +40,7 @@ interface SalesTeam {
 
 export default function SalesTeamPage() {
   const { user } = useUserContext();
-  const orgId = user?.organization ?? "";
+  const orgId = user?.organization ? user.organization.toString() : "";
   const [team, setTeam] = useState<SalesTeam | null>(null);
   const [allUsers, setAllUsers] = useState<UserDoc[]>([]);
   const [allRoles, setAllRoles] = useState<{ _id: string; name: string }[]>([]);
@@ -220,7 +220,7 @@ export default function SalesTeamPage() {
       <AddSalesTeamMember
         isOpen={isAddDialogOpen}
         setIsOpen={setIsAddDialogOpen}
-        orgId={orgId}
+        orgId={orgId as string}
         availableUsers={allUsers.filter(
           (u) => !team?.members.find((m) => m._id === u._id)
         )}

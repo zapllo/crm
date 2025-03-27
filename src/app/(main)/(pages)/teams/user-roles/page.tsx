@@ -85,7 +85,7 @@ interface RoleDoc {
 
 export default function RolesPage() {
     const { user } = useUserContext();
-    const orgId = user?.organization ?? "";
+    const orgId = typeof user?.organization === 'string' ? user.organization : "";
     const { toast } = useToast();
 
     const [roles, setRoles] = useState<RoleDoc[]>([]);
@@ -448,7 +448,7 @@ export default function RolesPage() {
                 isOpen={isAddModalOpen}
                 setIsOpen={setIsAddModalOpen}
                 onAdded={fetchRoles}
-                orgId={orgId}
+                orgId={typeof orgId === 'string' ? orgId : ""}
             />
 
             {/* Edit Role Modal */}
@@ -457,7 +457,7 @@ export default function RolesPage() {
                 setIsOpen={setIsEditModalOpen}
                 onEdited={fetchRoles}
                 role={selectedRole}
-                orgId={orgId}
+                orgId={typeof orgId === 'string' ? orgId : ""}
             />
         </div>
     );
