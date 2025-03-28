@@ -15,9 +15,22 @@ export interface IOrganization extends Document {
   subscribedUserCount?: number;
   subscriptionExpires?: Date;
   trialExpires: Date;
+  
+  // Integration related fields
+  webhookSecret: string;
+  apiConfigurations: {
+    webhooksEnabled: boolean;
+    apiKeysEnabled: boolean;
+    allowedOrigins: string[]; // CORS origins
+    webhookCallbackBaseUrl?: string; // Base URL for callback URL
+    maxWebhooksAllowed: number;
+    maxApiKeysAllowed: number;
+  };
+  
   notifications?: {
     newLeadEmail: boolean;
     newLeadWhatsapp: boolean;
+    webhookFailure?: boolean; // Notify on webhook failures
     dailyReportTime?: string; // Store time in 24-hour format (HH:MM)
   };
 }
@@ -86,6 +99,10 @@ const organizationSchema = new Schema<IOrganization>(
     subscribedPlan: {
       type: String,
     },
+    webhookSecret: {
+      type: String,
+      default: () => require('crypto').randomBytes(32).toString('hex'), // Generate a default secret
+    },
     subscribedUserCount: {
       type: Number,
     },
@@ -96,6 +113,34 @@ const organizationSchema = new Schema<IOrganization>(
       type: Date,
       required: true,
     },
+    
+    // Enhanced API configuration
+    apiConfigurations: {
+      webhooksEnabled: {
+        type: Boolean,
+        default: true
+      },
+      apiKeysEnabled: {
+        type: Boolean,
+        default: true
+      },
+      allowedOrigins: {
+        type: [String],
+        default: ["*"] // Allow all origins by default
+      },
+      webhookCallbackBaseUrl: {
+        type: String
+      },
+      maxWebhooksAllowed: {
+        type: Number,
+        default: 10 // Default limit can be adjusted based on plan
+      },
+      maxApiKeysAllowed: {
+        type: Number,
+        default: 5 // Default limit can be adjusted based on plan
+      }
+    },
+    
     notifications: {
       newLeadEmail: {
         type: Boolean,
@@ -105,6 +150,10 @@ const organizationSchema = new Schema<IOrganization>(
         type: Boolean,
         default: false,
       },
+      webhookFailure: {
+        type: Boolean,
+        default: true,
+      },
       dailyReportTime: {
         type: String,
         default: "09:00" // Default to 9:00 AM
@@ -113,6 +162,15 @@ const organizationSchema = new Schema<IOrganization>(
   },
 { timestamps: true }
 );
+
+// Pre-save hook to ensure webhook secret exists
+organizationSchema.pre('save', function(next) {
+  // If webhook secret doesn't exist, generate one
+  if (!this.webhookSecret) {
+    this.webhookSecret = require('crypto').randomBytes(32).toString('hex');
+  }
+  next();
+});
 
 export const Organization: Model<IOrganization> =
   mongoose.models.Organization ||

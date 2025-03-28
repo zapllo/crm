@@ -3,18 +3,48 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/db";
 import Contact from "@/models/contactModel";
 import { Types } from "mongoose";
+import { getDataFromToken } from "@/lib/getDataFromToken";
+import { User } from "@/models/userModel";
+import companyModel from "@/models/companyModel";
 
 /**
- * GET  /api/contacts => fetch all contacts (populating company)
- * POST /api/contacts => create a contact (with a company reference)
+ * GET  /api/contacts => fetch all contacts (populating company) for the user's organization
+ * POST /api/contacts => create a contact (with a company reference) under the user's organization
  * DELETE /api/contacts => delete a contact by ID (sent in the body)
  */
 
-export async function GET() {
+export async function GET(request: Request) {
     try {
         await connectDB();
-        // Populate the "company" field so you can access companyName, etc.
-        const contacts = await Contact.find().populate("company").sort({ createdAt: -1 });
+
+        // 1. Get userId from token
+        const userId = getDataFromToken(request);
+        if (!userId) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        // 2. Fetch the user from DB
+        const user = await User.findById(userId);
+        if (!user) {
+            return NextResponse.json({ error: "User not found" }, { status: 404 });
+        }
+
+        if (!user.organization) {
+            return NextResponse.json({ error: "Missing orgId" }, { status: 400 });
+        }
+
+        // 3. Get all companies for this organization
+        const orgCompanies = await companyModel.find({ 
+            organization: user.organization 
+        });
+        
+        const companyIds = orgCompanies.map(company => company._id);
+
+        // 4. Find contacts that belong to the organization's companies
+        const contacts = await Contact.find({
+            company: { $in: companyIds }
+        }).populate("company").sort({ createdAt: -1 });
+
         return NextResponse.json(contacts, { status: 200 });
     } catch (error: any) {
         console.error("Error fetching contacts:", error);
@@ -25,9 +55,26 @@ export async function GET() {
 export async function POST(request: Request) {
     try {
         await connectDB();
+        
+        // 1. Get userId from token
+        const userId = getDataFromToken(request);
+        if (!userId) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        // 2. Fetch the user from DB
+        const user = await User.findById(userId);
+        if (!user) {
+            return NextResponse.json({ error: "User not found" }, { status: 404 });
+        }
+
+        if (!user.organization) {
+            return NextResponse.json({ error: "Missing orgId" }, { status: 400 });
+        }
+
         const data = await request.json();
         const {
-            companyId, // the _id of the company to reference
+            companyId,
             firstName,
             lastName,
             email,
@@ -54,6 +101,16 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: "Invalid company ID" }, { status: 400 });
         }
 
+        // 3. Verify the company belongs to the user's organization
+        const company = await companyModel.findById(companyId);
+        if (!company) {
+            return NextResponse.json({ error: "Company not found" }, { status: 404 });
+        }
+        
+        if (company.organization.toString() !== user.organization.toString()) {
+            return NextResponse.json({ error: "Company does not belong to your organization" }, { status: 403 });
+        }
+
         const newContact = new Contact({
             company: companyId,
             firstName,
@@ -74,48 +131,6 @@ export async function POST(request: Request) {
         return NextResponse.json(newContact, { status: 201 });
     } catch (error: any) {
         console.error("Error creating contact:", error);
-        return NextResponse.json({ error: "Server error" }, { status: 500 });
-    }
-}
-
-
-// PATCH endpoint for updating contacts
-export async function PATCH(request: Request) {
-    try {
-        await connectDB();
-        const { id, updates } = await request.json();
-
-        if (!id || !updates) {
-            return NextResponse.json({ error: "Missing contact ID or updates." }, { status: 400 });
-        }
-
-        const updatedContact = await Contact.findByIdAndUpdate(id, updates, { new: true }).populate("company");
-
-        if (!updatedContact) {
-            return NextResponse.json({ error: "Contact not found." }, { status: 404 });
-        }
-
-        return NextResponse.json(updatedContact, { status: 200 });
-    } catch (error) {
-        console.error("Error updating contact:", error);
-        return NextResponse.json({ error: "Server error" }, { status: 500 });
-    }
-}
-
-
-// We'll do a DELETE with the contact id in the request body:
-export async function DELETE(request: Request) {
-    try {
-        await connectDB();
-        const { id } = await request.json();
-        if (!id) {
-            return NextResponse.json({ error: "No contact ID provided" }, { status: 400 });
-        }
-
-        await Contact.findByIdAndDelete(id);
-        return NextResponse.json({ message: "Contact deleted" }, { status: 200 });
-    } catch (error: any) {
-        console.error("Error deleting contact:", error);
         return NextResponse.json({ error: "Server error" }, { status: 500 });
     }
 }

@@ -30,11 +30,15 @@ export default function LoginPage() {
     const [error, setError] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    // Add state to track when user has successfully logged in but is still seeing loader
+    const [isLoggingIn, setIsLoggingIn] = useState(false);
+
     useEffect(() => {
-        if (!loading && user) {
-            router.replace("/CRM/dashboard");
+        // If user exists and we're not in the "logging in" state, redirect to dashboard
+        if (!loading && user && !isLoggingIn) {
+            router.replace("/overview");
         }
-    }, [user, loading, router]);
+    }, [user, loading, router, isLoggingIn]);
 
     const handleLogin = async () => {
         // Basic checks
@@ -52,13 +56,22 @@ export default function LoginPage() {
             setIsSubmitting(true);
             const res = await axios.post("/api/auth/login", form);
             if (res.status === 200) {
+                // Set logging in state to true, which will prevent immediate redirect
+                setIsLoggingIn(true);
+                
+                // Fetch user data
                 await fetchUser();
+                
                 toast({
                     title: "Welcome back! 🎉",
-                    description: "Login successful. Redirecting to dashboard...",
+                    description: "Login successful. Preparing your dashboard...",
                     variant: "default",
                 });
-                router.push("/CRM/dashboard");
+                
+                // Set a timeout to delay the redirect
+                setTimeout(() => {
+                    setIsLoggingIn(false); // This will trigger the redirect in the useEffect
+                }, 3000); // 3-second delay
             }
         } catch (err: any) {
             const msg = err.response?.data?.error || "Invalid credentials";
@@ -72,7 +85,6 @@ export default function LoginPage() {
             setIsSubmitting(false);
         }
     };
-
     // If user is present or still loading
     if (loading || user) {
         return (
@@ -345,7 +357,7 @@ export default function LoginPage() {
                     <div className="pt-6">
                         <p className="text-white/60 flex items-center">
                             <CheckIcon className="h-4 w-4 mr-2 text-[#815bf5]" />
-                            Trusted by 2000+ businesses worldwide
+                            Trusted by 20,000+ businesses worldwide
                         </p>
                     </div>
                 </div>

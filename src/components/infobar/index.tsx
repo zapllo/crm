@@ -137,8 +137,8 @@ export default function InfoBar() {
     try {
       const response = await axios.get("/api/auth/logout");
       if (response.data.success) {
-        // Use client-side navigation to redirect
-        router.push('/login');
+        // Force a hard refresh to the login page instead of client navigation
+        window.location.href = '/login';
       }
     } catch (error: any) {
       console.error("Logout error:", error.message);
@@ -385,11 +385,11 @@ export default function InfoBar() {
                     <User2 className="mr-2 h-4 w-4" />
                     <span>Profile</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => router.push("/dashboard/settings")}>
+                  <DropdownMenuItem onClick={() => router.push("/settings/customize")}>
                     <Settings className="mr-2 h-4 w-4" />
                     <span>Settings</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => router.push("/dashboard/billing")}>
+                  <DropdownMenuItem onClick={() => router.push("/settings/billing")}>
                     <DollarSign className="mr-2 h-4 w-4" />
                     <span>Billing</span>
                   </DropdownMenuItem>
@@ -456,19 +456,19 @@ export default function InfoBar() {
           </CommandGroup>
           <CommandSeparator />
           <CommandGroup heading="Recent">
-            <CommandItem>
+            <CommandItem onClick={() => router.push("/CRM/leads")}>
               <LayoutDashboard className="mr-2 h-4 w-4" />
               <span>Dashboard</span>
             </CommandItem>
-            <CommandItem>
+            <CommandItem onClick={() => router.push("/CRM/contacts")}>
               <User2 className="mr-2 h-4 w-4" />
               <span>Contacts</span>
             </CommandItem>
-            <CommandItem>
+            {/* <CommandItem>
               <Phone className="mr-2 h-4 w-4" />
               <span>Call Log</span>
-            </CommandItem>
-            <CommandItem>
+            </CommandItem> */}
+            <CommandItem onClick={() => router.push("/settings/channels")}>
               <Mail className="mr-2 h-4 w-4" />
               <span>Email Templates</span>
             </CommandItem>

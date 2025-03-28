@@ -13,6 +13,7 @@ import clsx from 'clsx';
 import { Separator } from '@/components/ui/separator';
 import { LogOut } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import axios from 'axios';
 
 const MenuOptions = () => {
   const pathName = usePathname();
@@ -26,6 +27,19 @@ const MenuOptions = () => {
       return currentPath.startsWith("/CRM");
     }
     return currentPath === menuItem.href;
+  };
+
+  // Add the logout function
+  const logout = async () => {
+    try {
+      const response = await axios.get("/api/auth/logout");
+      if (response.data.success) {
+        // Force a hard refresh to the login page
+        window.location.href = '/login';
+      }
+    } catch (error: any) {
+      console.error("Logout error:", error.message);
+    }
   };
 
   return (
@@ -77,13 +91,13 @@ const MenuOptions = () => {
       {/* User Avatar and Logout */}
       <div className="mt-auto mb-4 flex flex-col items-center gap-4">
         <Separator className="w-10 bg-[#37384B]/60" />
-        
-       
+
+
 
         <TooltipProvider>
           <Tooltip delayDuration={300}>
             <TooltipTrigger asChild>
-              <button className="flex items-center justify-center h-9 w-9 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-colors">
+              <button onClick={logout} className="flex items-center justify-center h-9 w-9 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-colors">
                 <LogOut size={18} />
               </button>
             </TooltipTrigger>

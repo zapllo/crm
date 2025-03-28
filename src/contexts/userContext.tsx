@@ -20,7 +20,9 @@ interface IUser {
   whatsappNo?: string;
   profileImage?: string;
   organization?: Organization;
-  role: string;
+  role:{
+    name:string;
+  };
 }
 
 interface UserContextProps {

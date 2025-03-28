@@ -80,7 +80,7 @@ const PremiumTrialBanner = () => {
   };
 
   return (
-    <div className="bg-gradient-to-r from-primary/10 to-blue-100/5 dark:from-primary/20 dark:to-blue-900/5  border border-primary/20 py-2 px-4 w-full flex items-center justify-between text-sm">
+    <div className="bg-gradient-to-r from-primary to-blue-100 dark:from-primary dark:to-blue-900 border border-primary py-2 px-4 w-full flex items-center justify-between text-white text-sm">
       <div className="flex items-center gap-3">
         <div className="bg-indigo-600 text-white p-1 rounded-md">
           <Crown className="h-4 w-4" />

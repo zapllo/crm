@@ -142,7 +142,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-            <DialogContent className="max-w-3xl h-fit z-[100] p-0 gap-0 bg-background">
+            <DialogContent className=" h-fit z-[100] p-0 gap-0 bg-background">
                 {/* Header */}
                 <DialogHeader className="px-6 py-3 border-b sticky top-0 bg-background z-10">
                     <div className="flex justify-between items-center">

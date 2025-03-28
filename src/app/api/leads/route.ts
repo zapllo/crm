@@ -1,10 +1,14 @@
 import connectDB from '@/lib/db';
 import { getDataFromToken } from '@/lib/getDataFromToken';
 import Lead from '@/models/leadModel';
+import Contact from '@/models/contactModel';
+import Source from '@/models/sourceModel';
 import Pipeline from '@/models/pipelineModel';
 import { User } from '@/models/userModel';
 import { NextResponse } from 'next/server';
 import mongoose from 'mongoose';
+import { Organization } from '@/models/organizationModel';
+import { sendLeadAssignmentEmail } from '@/lib/emailTemplates';
 
 export async function GET(request: Request) {
     try {
@@ -196,6 +200,36 @@ export async function POST(request: Request) {
         });
 
         const savedLead = await newLead.save();
+        // Send email notification if there's an assignedTo user
+        if (assignedTo) {
+            // Get the assigned user's email
+            const assignedUser = await User.findById(assignedTo);
+            if (assignedUser) {
+                // Check organization notification settings
+                const organization = await Organization.findById(assignedUser.organization);
+
+                // Only send email if the notification setting is enabled
+                if (organization && organization.notifications?.newLeadEmail) {
+                    // Get contact and source details for the email
+                    const contactDetails = await Contact.findById(contact);
+                    const sourceDetails = await Source.findById(source);
+
+                    // Prepare and send email
+                    // Prepare and send email
+                    await sendLeadAssignmentEmail({
+                        to: assignedUser.email,
+                        firstName: assignedUser.firstName,
+                        leadDetails: {
+                            title,
+                            contactName: contactDetails ? `${contactDetails.firstName} ${contactDetails.lastName}` : 'Not provided',
+                            contactNumber: contactDetails?.whatsappNo || 'Not provided',
+                            sourceName: sourceDetails?.name || 'Not specified',
+                            leadId: savedLead._id // Include the leadId for the URL
+                        }
+                    });
+                }
+            }
+        }
 
         return NextResponse.json(savedLead, { status: 201 });
     } catch (error) {

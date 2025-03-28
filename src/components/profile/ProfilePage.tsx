@@ -2,23 +2,24 @@
 
 import { useUserContext } from '@/contexts/userContext';
 import { useState } from 'react';
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle
 } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { 
+import {
   UserRound,
   Settings,
   KeyRound,
   Ticket,
   BookOpen,
-  LogOut
+  LogOut,
+  Settings2
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
@@ -50,21 +51,21 @@ export function ProfilePage() {
   return (
     <div className="container mt-12  h-screen scrollbar-hide overflow-y-scroll mx-auto py-10 px-4 max-w-5xl">
       <h1 className="text-3xl font-bold mb-8 text-start">My Profile</h1>
-      
+
       <div className="grid md:grid-cols-[300px_1fr] gap-8">
         {/* Profile Sidebar */}
         <div className="space-y-6">
           {/* Profile Image Card */}
           <Card>
             <CardContent className="pt-6">
-              <ProfileImage 
+              <ProfileImage
                 profileImage={user.profileImage}
                 name={`${user.firstName} ${user.lastName}`}
                 email={user.email}
               />
             </CardContent>
           </Card>
-          
+
           {/* Quick Links */}
           <Card>
             <CardHeader>
@@ -83,6 +84,12 @@ export function ProfilePage() {
                   Tutorials
                 </Button>
               </Link>
+              <Link href="/settings/general">
+                <Button variant="ghost" className="w-full justify-start">
+                  <Settings2 className="mr-2 h-4 w-4" />
+                  Settings
+                </Button>
+              </Link>
               <Button variant="ghost" className="w-full justify-start text-red-500" onClick={logout}>
                 <LogOut className="mr-2 h-4 w-4" />
                 Logout
@@ -90,7 +97,7 @@ export function ProfilePage() {
             </CardContent>
           </Card>
         </div>
-        
+
         {/* Main Content */}
         <Card>
           <CardHeader>
@@ -113,15 +120,15 @@ export function ProfilePage() {
                   Password
                 </TabsTrigger>
               </TabsList>
-              
+
               <TabsContent value="information" className="pt-4">
                 <ProfileInformation user={user} />
               </TabsContent>
-              
+
               <TabsContent value="update" className="pt-4">
                 <UpdateProfileForm user={user} />
               </TabsContent>
-              
+
               <TabsContent value="password" className="pt-4">
                 <ChangePasswordForm />
               </TabsContent>
@@ -137,13 +144,13 @@ function ProfileSkeleton() {
   return (
     <div className="container mt-12 mx-auto py-10 px-4 max-w-5xl">
       <Skeleton className="h-10 w-[250px] mx-auto mb-8" />
-      
+
       <div className="grid md:grid-cols-[300px_1fr] gap-8">
         <div className="space-y-6">
           <Skeleton className="h-[300px] w-full rounded-md" />
           <Skeleton className="h-[200px] w-full rounded-md" />
         </div>
-        
+
         <Skeleton className="h-[500px] w-full rounded-md" />
       </div>
     </div>

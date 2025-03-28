@@ -625,7 +625,7 @@ export default function LeadsDashboard() {
             const fetchDropdownData = async () => {
                 try {
                     setIsLoading(true);
-                    const [productsRes, contactsRes, salesTeamRes, sourcesRes] = await Promise.all([
+                    const [productsRes, contactsRes, usersRes, sourcesRes] = await Promise.all([
                         axios.get("/api/products"),
                         axios.get("/api/contacts"),
                         axios.get("/api/team-sales"),
@@ -640,8 +640,9 @@ export default function LeadsDashboard() {
                         }))
                     );
 
-                    if (salesTeamRes.data && salesTeamRes.data.members) {
-                        const members = salesTeamRes.data.members?.map((u: any) => ({
+                    // Populate all users from the response as team members
+                    if (usersRes.data) {
+                        const members = usersRes.data?.map((u: any) => ({
                             _id: u._id,
                             firstName: u.firstName,
                             lastName: u.lastName,

@@ -12,7 +12,9 @@ import {
       lastName?: string;
       email: string;
       whatsappNo?: string;
-      role: string;
+      role:{
+        name:string;
+      };
       isOrgAdmin: boolean;
       organization?: {
         companyName: string;
@@ -43,7 +45,7 @@ import {
               <div className="flex justify-between items-center">
                 <div>
                   <p className="text-sm text-muted-foreground">Role</p>
-                  <p className="font-medium">{user.role || 'Standard User'}</p>
+                  <p className="font-medium">{user.role.name || 'Standard User'}</p>
                 </div>
                 {user.isOrgAdmin && (
                   <Badge className="bg-blue-600">Organization Admin</Badge>

@@ -192,7 +192,7 @@ const OverviewPage = () => {
 
     return (
         <div className="w-full pt-8 pb-16  px-4 mt-8 h-screen overflow-y-auto scrollbar-hide md:px-6 lg:px-8" ref={ref}>
-            <div className="max-w-7xl mx-auto mt-8 space-y-6">
+            <div className=" w- mt-8 space-y-6">
                
                 <div className="grid grid-cols-1 gap-6">
                     {/* Quick access section */}

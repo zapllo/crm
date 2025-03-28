@@ -17,7 +17,7 @@ export async function GET(request: Request) {
     }
 
     // First, get the user
-    const user = await User.findById(userId).select('-password');
+    const user = await User.findById(userId).select('-password').populate('role');
 
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });

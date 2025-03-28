@@ -21,8 +21,10 @@ const Layout = (props: Props) => {
 
 
     return (
-        <div className="flex flex-col overflow-hidden scrollbar-hide h-full w-full">
+        <div className="flex flex-col  h-full w-full">
+            <div className="sticky top-0 z-[100]">
             <PremiumTrialBanner />
+            </div>
             <div className="flex flex-grow overflow-hidden">
                 <MenuOptions />
                 <div className="w-full overflow-hidden h-screen">

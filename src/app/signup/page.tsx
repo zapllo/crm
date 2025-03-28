@@ -46,7 +46,7 @@ export default function SignupPage() {
     // If user is logged in, redirect to /CRM/dashboard
     useEffect(() => {
         if (!loading && user) {
-            router.replace("/CRM/dashboard");
+            router.replace("/overview");
         }
     }, [loading, user, router]);
 
@@ -155,7 +155,7 @@ export default function SignupPage() {
                     description: "Your account has been created successfully!",
                     variant: "default",
                 });
-                router.replace("/CRM/leads");
+                router.replace("/overview");
             }
         } catch (err: any) {
             const msg = err.response?.data?.error || "Signup failed";
