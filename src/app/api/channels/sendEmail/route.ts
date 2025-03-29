@@ -1,9 +1,10 @@
 // app/api/channels/sendEmail/route.ts
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/db";
-import { getDataFromToken } from "@/lib/getDataFromToken";
+import EmailAccount from "@/models/EmailAccount";
 import { User } from "@/models/userModel";
-import { sendEmail } from "@/lib/sendEmail"; // Import your updated sendEmail function
+import { getDataFromToken } from "@/lib/getDataFromToken";
+import { sendEmail } from "@/lib/sendEmail";
 import { fillTemplateVariables } from "@/utils/fillTemplateVariables";
 import Lead from "@/models/leadModel";
 import Contact from "@/models/contactModel";
@@ -17,8 +18,8 @@ export async function POST(request: Request) {
       templateId,
       leadId,
       to,
-      subjectOverride,
-      bodyOverride,
+      subject: subjectOverride,
+      body: bodyOverride,
     } = await request.json();
 
     // 1) Identify user
@@ -26,9 +27,17 @@ export async function POST(request: Request) {
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    
     const user = await User.findById(userId);
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
 
-    // 2) Build the data for placeholders
+    // Check if the user has a connected Google account
+    const emailAccount = await EmailAccount.findOne({ userId, provider: "google" });
+    console.log("Google account connected:", emailAccount ? "Yes" : "No");
+
+    // 2) Build the data for placeholders by fetching the lead & its contact/company
     let leadData = {};
     let contactData = {};
     let companyData = {};
@@ -80,78 +89,80 @@ export async function POST(request: Request) {
       }
     }
 
-    // 3) Get the email template and fill placeholders
+    // 3) Prepare subject and body - from template or from override
     let subject = subjectOverride || "";
     let body = bodyOverride || "";
-    let htmlContent = bodyOverride || "";
 
     if (templateId) {
-      // Get template content
-      const { subject: s, body: b } = await fillTemplateVariables(
-        templateId,
-        leadData,
-        contactData,
-        companyData
-      );
-      subject = s;
-      body = b;
-      htmlContent = b; // Assuming the body from fillTemplateVariables is HTML
+      try {
+        // Get template content and fill placeholders
+        const template = await EmailTemplate.findById(templateId);
+        if (!template) {
+          return NextResponse.json({ error: "Template not found" }, { status: 404 });
+        }
+        
+        // Use template content as base
+        subject = template.subject;
+        body = template.body;
+        
+        // Process template variables
+        subject = replacePlaceholders(subject, leadData, contactData, companyData);
+        body = replacePlaceholders(body, leadData, contactData, companyData);
+      } catch (error) {
+        console.error("Error processing template:", error);
+        return NextResponse.json({ error: "Failed to process template" }, { status: 500 });
+      }
+    } else if (subjectOverride || bodyOverride) {
+      // Direct input - still process any placeholders
+      subject = replacePlaceholders(subjectOverride || "", leadData, contactData, companyData);
+      body = replacePlaceholders(bodyOverride || "", leadData, contactData, companyData);
     } else {
-      // Process manually entered content
-      const { subject: s2, body: b2 } = customFillManual(subject, body, leadData, contactData, companyData);
-      subject = s2;
-      body = b2;
-      htmlContent = b2;
+      return NextResponse.json({ error: "No content provided" }, { status: 400 });
     }
 
-    // 4) Send the email using your updated sendEmail function
+    // 4) send email using the updated sendEmail function
+    console.log(`Sending email to ${to} with subject: ${subject}`);
+    
     await sendEmail({
       to,
       subject,
       text: body.replace(/<[^>]*>/g, ''), // Strip HTML for text version
-      html: htmlContent,
-      userId: userId.toString() // Pass the userId to use their connected account
+      html: body,
+      userId: userId.toString() // Pass userId to use connected account if available
     });
 
-    return NextResponse.json({ message: "Email sent successfully" }, { status: 200 });
+    return NextResponse.json({ 
+      success: true, 
+      message: "Email sent successfully",
+      provider: emailAccount ? "google" : "default",
+      fromAddress: emailAccount ? emailAccount.emailAddress : process.env.SMTP_USER
+    }, { status: 200 });
   } catch (error: any) {
     console.error("Error sending email:", error);
-    return NextResponse.json({ error: error.message || "Failed to send email" }, { status: 500 });
+    return NextResponse.json({ 
+      error: "Failed to send email", 
+      message: error.message,
+      details: error.response?.data || error.toString()
+    }, { status: 500 });
   }
 }
 
-// Keep your existing custom fill manual function
-function customFillManual(
-  subject: string,
-  body: string,
-  leadData: any,
-  contactData: any,
-  companyData: any
-) {
-  // Use your existing implementation
-  subject = replacePlaceholders(subject, leadData, contactData, companyData);
-  body = replacePlaceholders(body, leadData, contactData, companyData);
-  return { subject, body };
-}
-
-function replacePlaceholders(
-  text: string,
-  leadData: any,
-  contactData: any,
-  companyData: any
-) {
-  // Use your existing implementation
-  Object.entries(leadData).forEach(([k, v]) => {
-    const placeholder = `{{lead.${k}}}`;
-    text = text.replace(new RegExp(placeholder, "g"), String(v));
+// Helper function to replace placeholders with actual data
+function replacePlaceholders(text: string, leadData: any, contactData: any, companyData: any) {
+  // Replace lead data placeholders
+  Object.entries(leadData).forEach(([key, value]) => {
+    text = text.replace(new RegExp(`{{lead\\.${key}}}`, 'g'), String(value || ''));
   });
-  Object.entries(contactData).forEach(([k, v]) => {
-    const placeholder = `{{contact.${k}}}`;
-    text = text.replace(new RegExp(placeholder, "g"), String(v));
+  
+  // Replace contact data placeholders
+  Object.entries(contactData).forEach(([key, value]) => {
+    text = text.replace(new RegExp(`{{contact\\.${key}}}`, 'g'), String(value || ''));
   });
-  Object.entries(companyData).forEach(([k, v]) => {
-    const placeholder = `{{company.${k}}}`;
-    text = text.replace(new RegExp(placeholder, "g"), String(v));
+  
+  // Replace company data placeholders
+  Object.entries(companyData).forEach(([key, value]) => {
+    text = text.replace(new RegExp(`{{company\\.${key}}}`, 'g'), String(value || ''));
   });
+  
   return text;
 }

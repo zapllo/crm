@@ -1,14 +1,14 @@
 import nodemailer from 'nodemailer';
-import EmailAccount from '@/models/EmailAccount'; // Add this import
-import { getDataFromToken } from '@/lib/getDataFromToken'; // Add this import
+import { google } from 'googleapis';
+import EmailAccount from '@/models/EmailAccount';
 
 export interface SendEmailOptions {
     to: string;
-    cc?: string; // Optional cc field
+    cc?: string;
     subject: string;
     text: string;
     html: string;
-    userId?: string; // Add userId parameter to find the user's connected account
+    userId?: string;
 }
 
 export async function sendEmail({ to, cc, subject, text, html, userId }: SendEmailOptions): Promise<void> {
@@ -19,13 +19,43 @@ export async function sendEmail({ to, cc, subject, text, html, userId }: SendEma
     if (userId) {
         try {
             // Get user's connected Gmail account if available
-            const emailAccount = await EmailAccount.findOne({ 
-                userId, 
-                provider: 'google' 
+            const emailAccount = await EmailAccount.findOne({
+                userId,
+                provider: 'google'
             });
 
-            if (emailAccount) {
-                // Set up OAuth2 transporter for Gmail
+            if (emailAccount && emailAccount.accessToken) {
+                console.log(`Found connected Google account: ${emailAccount.emailAddress}`);
+
+                // Create OAuth2 client
+                const oauth2Client = new google.auth.OAuth2(
+                    process.env.GOOGLE_CLIENT_ID,
+                    process.env.GOOGLE_CLIENT_SECRET,
+                    process.env.NEXT_PUBLIC_APP_URL + '/api/channels/connect/google/callback'
+                );
+
+                // Set credentials
+                oauth2Client.setCredentials({
+                    access_token: emailAccount.accessToken,
+                    refresh_token: emailAccount.refreshToken
+                });
+
+                // Check and refresh the token if needed
+                try {
+                    console.log('Access token is expired, refreshing...');
+                    const { credentials } = await oauth2Client.refreshAccessToken();
+
+                    // Update the token in the database
+                    await EmailAccount.findByIdAndUpdate(emailAccount._id, {
+                        accessToken: credentials.access_token
+                    });
+
+                    console.log('Token refreshed successfully');
+                } catch (tokenError) {
+                    console.error('Error refreshing token:', tokenError);
+                }
+
+                // Create Gmail transporter with OAuth2
                 transporter = nodemailer.createTransport({
                     service: 'gmail',
                     auth: {
@@ -34,10 +64,10 @@ export async function sendEmail({ to, cc, subject, text, html, userId }: SendEma
                         clientId: process.env.GOOGLE_CLIENT_ID,
                         clientSecret: process.env.GOOGLE_CLIENT_SECRET,
                         refreshToken: emailAccount.refreshToken,
-                        accessToken: emailAccount.accessToken,
-                    },
+                        accessToken: emailAccount.accessToken
+                    }
                 });
-                
+
                 // Update the from address to use the user's Gmail
                 fromAddress = emailAccount.emailAddress;
                 console.log(`Using connected Gmail account: ${fromAddress}`);
@@ -72,10 +102,15 @@ export async function sendEmail({ to, cc, subject, text, html, userId }: SendEma
     };
 
     try {
+        // Verify connection configuration
+        await transporter.verify();
+        console.log('Transporter verified successfully');
+
+        // Send mail
         await transporter.sendMail(msg);
         console.log('Message sent successfully');
     } catch (error) {
         console.error('Error sending email:', error);
-        throw error; // Re-throw to allow handling by caller
+        throw error;
     }
 }
