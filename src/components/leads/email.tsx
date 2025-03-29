@@ -219,8 +219,8 @@ export default function EmailsTab({ leadId, contactEmail }: EmailsTabProps) {
       const payload = {
         leadId,
         to: recipient,
-        subjectOverride: subject,
-        bodyOverride: body,
+        subject: subject,
+        body: body,
         // placeholders for lead/contact/company data in the server
       };
 

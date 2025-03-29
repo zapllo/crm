@@ -17,11 +17,11 @@ export async function POST(request: Request) {
       templateId,
       leadId,
       to,
-      subject: subjectOverride,
-      body: bodyOverride,
+      subject,
+      body,
     } = await request.json();
     
-    console.log("Request payload:", { templateId, leadId, to, subjectOverride, bodyOverride });
+    console.log("Request payload:", { templateId, leadId, to, subject, body });
 
     // 1) Identify user
     const userId = getDataFromToken(request);
@@ -91,8 +91,8 @@ export async function POST(request: Request) {
     }
 
     // 3) Prepare subject and body
-    let subject = "";
-    let body = "";
+    let emailSubject = subject || "";  // Changed variable name to avoid conflict
+    let emailBody = body || "";        // Changed variable name to avoid conflict
 
     // Set from template if templateId is provided
     if (templateId) {
@@ -101,43 +101,39 @@ export async function POST(request: Request) {
         if (!template) {
           return NextResponse.json({ error: "Template not found" }, { status: 404 });
         }
-        subject = template.subject;
-        body = template.body;
-        console.log("Template found, subject:", subject.slice(0, 30), "body:", body.slice(0, 30));
+        emailSubject = template.subject;
+        emailBody = template.body;
+        console.log("Template found, subject:", emailSubject.slice(0, 30), "body:", emailBody.slice(0, 30));
       } catch (error) {
         console.error("Error processing template:", error);
         return NextResponse.json({ error: "Failed to process template" }, { status: 500 });
       }
     }
 
-    // Override with direct input if provided
-    if (subjectOverride) subject = subjectOverride;
-    if (bodyOverride) body = bodyOverride;
-    
-    console.log("Final content check - subject:", !!subject, "body:", !!body);
+    console.log("Final content check - subject:", !!emailSubject, "body:", !!emailBody);
     
     // Check if we have content to send
-    if (!subject || !body) {
+    if (!emailSubject || !emailBody) {
       return NextResponse.json({ 
         error: "No content provided", 
-        subjectPresent: !!subject,
-        bodyPresent: !!body,
+        subjectPresent: !!emailSubject,
+        bodyPresent: !!emailBody,
         templateId: templateId || "none" 
       }, { status: 400 });
     }
 
-    // Process any placeholders in the content
-    subject = replacePlaceholders(subject, leadData, contactData, companyData);
-    body = replacePlaceholders(body, leadData, contactData, companyData);
+     // Process any placeholders in the content
+     emailSubject = replacePlaceholders(emailSubject, leadData, contactData, companyData);
+     emailBody = replacePlaceholders(emailBody, leadData, contactData, companyData);
 
     // 4) send email using the updated sendEmail function
     console.log(`Sending email to ${to} with subject: ${subject}`);
     
     await sendEmail({
       to,
-      subject,
-      text: body.replace(/<[^>]*>/g, ''), // Strip HTML for text version
-      html: body,
+      subject: emailSubject,
+      text: emailBody.replace(/<[^>]*>/g, ''), // Strip HTML for text version
+      html: emailBody,
       userId: userId.toString() // Pass userId to use connected account if available
     });
 
