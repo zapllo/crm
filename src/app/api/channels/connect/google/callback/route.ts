@@ -3,81 +3,95 @@ import { NextResponse } from "next/server";
 import connectDB from "@/lib/db";
 import { User } from "@/models/userModel";
 import EmailAccount from "@/models/EmailAccount";
-import { getDataFromToken } from "@/lib/getDataFromToken"; // You need a way to know which user is connecting
+import { getDataFromToken } from "@/lib/getDataFromToken";
 import axios from "axios";
+import { cookies } from "next/headers";
 
 export async function GET(request: Request) {
   try {
     await connectDB();
 
-    // Google will redirect here with ?code=...
+    // Get the code from URL params
     const { searchParams } = new URL(request.url);
     const code = searchParams.get("code");
+    
     if (!code) {
-      // No code? Possibly user denied consent.
-      return NextResponse.redirect("https://crm.zapllo.com/settings/channels");
+      console.error("No code received from Google");
+      return NextResponse.redirect(new URL("/settings/integrations/google", request.url));
     }
 
-    // We need to know which user is connecting. If your app is purely token-based, you might store the user's token in a cookie. 
-    // We'll do a simpler approach: e.g., a custom cookie or you do the "getDataFromToken" from the request if you stored it that way.
-    // For illustration, let's do:
+    // Get the userId from the token
     const userId = getDataFromToken(request);
+    
     if (!userId) {
-      return NextResponse.redirect("https://crm.zapllo.com/settings/channels");
+      console.error("No user ID found in token");
+      return NextResponse.redirect(new URL("/settings/integrations/google", request.url));
     }
 
     const user = await User.findById(userId);
     if (!user) {
-      return NextResponse.redirect("https://crm.zapllo.com/settings/channels");
+      console.error("User not found");
+      return NextResponse.redirect(new URL("/settings/integrations/google", request.url));
     }
 
-    // Exchange code for tokens
-    const tokenRes = await axios.post(
+    // Set the correct redirect URI - MUST match what you have in Google Cloud Console
+    const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL || 'https://crm.zapllo.com'}/api/channels/connect/google/callback`;
+    
+    console.log(`Exchanging code for tokens with redirect: ${redirectUri}`);
+
+    // Exchange the code for tokens
+    const tokenResponse = await axios.post(
       "https://oauth2.googleapis.com/token",
       {
         code,
         client_id: process.env.GOOGLE_CLIENT_ID,
         client_secret: process.env.GOOGLE_CLIENT_SECRET,
-        redirect_uri: "https://crm.zapllo.com/api/channels/connect/google/callback",
+        redirect_uri: redirectUri,
         grant_type: "authorization_code",
       },
-      { headers: { "Content-Type": "application/json" } }
+      { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
     );
 
-    const { access_token, refresh_token, id_token, expires_in } = tokenRes.data;
+    const { access_token, refresh_token } = tokenResponse.data;
 
-    // If needed, fetch user info from Google to confirm email
-    const userInfoRes = await axios.get("https://www.googleapis.com/oauth2/v2/userinfo", {
-      headers: { Authorization: `Bearer ${access_token}` },
-    });
-    const googleEmail = userInfoRes.data.email;
+    if (!access_token) {
+      console.error("No access token received from Google");
+      return NextResponse.redirect(new URL("/settings/integrations/google", request.url));
+    }
 
-    console.log("Retrieved code:", code);
-    console.log("User ID from token:", userId);
-    console.log("Found user:", user);
-    console.log("Token response:", tokenRes.data);
-    console.log("Google user info:", userInfoRes.data);
-    // Store in DB
-    const account = await EmailAccount.findOneAndUpdate(
-      {
-        userId,
-        provider: "google",
-      },
+    // Get user's email from Google API
+    const userInfoResponse = await axios.get(
+      "https://www.googleapis.com/oauth2/v2/userinfo",
+      { headers: { Authorization: `Bearer ${access_token}` } }
+    );
+
+    const { email } = userInfoResponse.data;
+
+    if (!email) {
+      console.error("No email found in Google user info");
+      return NextResponse.redirect(new URL("/settings/integrations/google", request.url));
+    }
+
+    console.log(`Creating email account for user ${userId} with email ${email}`);
+
+    // Create or update the email account in the database
+    const emailAccount = await EmailAccount.findOneAndUpdate(
+      { userId, provider: "google" },
       {
         accessToken: access_token,
         refreshToken: refresh_token,
-        emailAddress: googleEmail,
+        emailAddress: email,
       },
       { upsert: true, new: true }
     );
-    // Add debugging to check if account was created
-    console.log("Created/Updated Email Account:", account);
 
+    console.log("Email account saved:", emailAccount._id);
 
-    // Redirect back to Channels page
-    return NextResponse.redirect("https://crm.zapllo.com/settings/channels");
+    // Redirect to the integrations page
+    return NextResponse.redirect(new URL("/settings/integrations/google", request.url));
   } catch (error) {
     console.error("Error in Google callback:", error);
-    return NextResponse.redirect("https://crm.zapllo.com/settings/channels");
+    // Redirect to the integrations page with error
+    return NextResponse.redirect(new URL("/settings/integrations/google?error=true", request.url));
   }
 }

@@ -10,35 +10,59 @@ export async function GET(request: Request) {
   try {
     await connectDB();
 
-    // 1) Extract user
+    // Extract user
     const userId = getDataFromToken(request);
     if (!userId) {
-      return NextResponse.json({}, { status: 200 }); // Not connected, or just return empty
+      return NextResponse.json({}, { status: 200 });
     }
 
-    // 2) Validate user
+    // Validate user
     const user = await User.findById(userId);
     if (!user) {
       return NextResponse.json({}, { status: 200 });
     }
 
-    // 3) Find existing account
+    // Find existing account
     const account = await EmailAccount.findOne({
       userId: userId,
       provider: "google",
-    }).lean();
+    });
 
     if (!account) {
-      return NextResponse.json({}, { status: 200 }); // no connected account
+      return NextResponse.json({}, { status: 200 });
     }
 
-    // Return minimal info to the Channels page
+    // Return email account info
     return NextResponse.json({
-      emailAddress: (account as any).email || (account as any).emailAddress || '',
-      createdAt: (account as any).createdAt || new Date(),
-    });
+      emailAddress: account.emailAddress,
+      createdAt: account.createdAt,
+    }, { status: 200 });
   } catch (error) {
     console.error("Error in GET /api/channels/connect:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
+
+// Add a DELETE endpoint to disconnect the account
+export async function DELETE(request: Request) {
+  try {
+    await connectDB();
+    
+    // Extract user
+    const userId = getDataFromToken(request);
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Find and delete the account
+    await EmailAccount.findOneAndDelete({
+      userId: userId,
+      provider: "google"
+    });
+
+    return NextResponse.json({ message: "Account disconnected successfully" }, { status: 200 });
+  } catch (error) {
+    console.error("Error disconnecting account:", error);
+    return NextResponse.json({ error: "Failed to disconnect account" }, { status: 500 });
   }
 }

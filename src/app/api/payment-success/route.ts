@@ -3,9 +3,9 @@ import crypto from 'crypto';
 import Order from '@/models/orderModel';
 import connectDB from '@/lib/db';
 import mongoose from 'mongoose';
-// import { sendEmail, SendEmailOptions } from '@/lib/sendEmail';
 import { User } from '@/models/userModel';
 import { Organization } from '@/models/organizationModel';
+import Integration from '@/models/integrationModel';
 
 const sendWebhookNotification = async (user: any, planName: string, organizationName: string, subscribedUserCount: string) => {
     const payload = {
@@ -83,7 +83,6 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Organization not found' }, { status: 404 });
         }
 
-
         if (planName === 'Recharge') {
             // GST rate (18%)
             const gstRate = 0.18;
@@ -129,12 +128,6 @@ export async function POST(request: NextRequest) {
                 subscriptionExpires,
             };
 
-            const organization = await Organization.findById(user.organization);
-            if (!organization) {
-                return NextResponse.json({ error: 'Organization not found' }, { status: 404 });
-            }
-
-
             if (planName !== 'Recharge') {
                 organizationUpdate.subscribedPlan = planName;
                 organizationUpdate.subscribedUserCount = subscribedUserCount;
@@ -168,67 +161,90 @@ export async function POST(request: NextRequest) {
 
         await newOrder.save();
 
-        // **Send Notifications in the Background**
-        Promise.allSettled([
-            (async () => {
-//                 const emailOptions: SendEmailOptions = {
-//                     to: user.email,
-//                     subject: 'Thank You for Your Purchase',
-//                     text: `Hi ${user.firstName},
-
-// 🎉 Thank you so much for your purchase.
-
-// We are excited to get you up and running soon.
-
-// One of our onboarding specialists will connect with you soon and get your workspace up and running.
-
-// Regards,
-// Zapllo Support Team`,
-//                     html: `<body style="margin: 0; padding: 0; font-family: Arial, sans-serif;">
-//           <div style="background-color: #f0f4f8; padding: 20px; ">
-//               <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">
-//                   <div style="padding: 20px; text-align: center; ">
-//                       <img src="https://res.cloudinary.com/dndzbt8al/image/upload/v1724000375/orjojzjia7vfiycfzfly.png" alt="Zapllo Logo" style="max-width: 150px; height: auto;">
-//                   </div>
-//                 <div style="background: linear-gradient(90deg, #7451F8, #F57E57); color: #ffffff; padding: 20px 40px; font-size: 16px; font-weight: bold; text-align: center; border-radius: 12px; margin: 20px auto; max-width: 80%;">
-//           <h1 style="margin: 0; font-size: 20px;">Thank You for Your Purchase</h1>
-//       </div>
-//                            <div style="padding: 20px; color:#000000;">
-//                             <p>Hi ${user.firstName},<br/>
-//                          <p style="margin-top:4px;">Thank you for subscribing to the ${planName} ! 🎉</p>
-//                            <p style="margin-top:4px;">We are excited to get you up and running soon. Here are your subscription details: </p>
-//                             <div style="border-radius:8px; margin-top:4px; color:#000000; padding:10px; background-color:#ECF1F6">
-//                           <p><strong>Company Name:</strong> ${organization.companyName}</p>
-//                           <p><strong>Total Users Subscribed:</strong> ${subscribedUserCount}</p>
-//                           <p><strong>Subscription Email ID:</strong> ${user.email}</p> 
-//                            </div>
-//                              <p style="margin-top:4px;">One of our onboarding specialists will connect with you soon and get your workspace up and running.</p>
-//                   Regards,</br>
-//                   <p style="margin-top:4px;">Zapllo Support Team </p>
-//                   </p>
-//                               <p style="margin-top: 20px; text-align:center; font-size: 12px; color: #888888;">This is an automated notification. Please do not reply.</p>
-//                           </div>
-//                       </div>
-//                   </div>
-//               </body>`,
-//                 };
-
-//                 await sendEmail(emailOptions);
-                console.log('Email sent successfully to', user.email);
-            })(),
-
-            sendWebhookNotification(user, planName, organization.companyName, subscribedUserCount),
-        ])
-            .then((results) => {
-                results.forEach((result, index) => {
-                    if (result.status === 'rejected') {
-                        console.error(`Notification ${index + 1} failed:`, result.reason);
-                    } else {
-                        console.log(`Notification ${index + 1} succeeded.`);
-                    }
+        // Check if this is an integration purchase
+        if (planName && planName.includes('Integration')) {
+            const platform = planName.replace(' Integration', '').toLowerCase();
+            
+            try {
+                // Find or create integration record
+                let integration = await Integration.findOne({
+                    organizationId: user.organization,
+                    platform
                 });
-            })
-            .catch((err) => console.error('Unexpected error in notifications:', err));
+
+                if (integration) {
+                    // Update existing integration
+                    integration = await Integration.findByIdAndUpdate(
+                        integration._id,
+                        {
+                            isPurchased: true,
+                            purchaseDate: new Date(),
+                            orderId: razorpay_order_id,
+                            paymentId: razorpay_payment_id,
+                            amount: amount,
+                            setupStatus: 'pending',
+                            userId: userId // Update with current user
+                        },
+                        { new: true }
+                    );
+                } else {
+                    // Create new integration record
+                    integration = new Integration({
+                        userId: new mongoose.Types.ObjectId(userId),
+                        organizationId: user.organization,
+                        platform,
+                        isPurchased: true,
+                        purchaseDate: new Date(),
+                        orderId: razorpay_order_id,
+                        paymentId: razorpay_payment_id,
+                        amount: amount,
+                        setupStatus: 'pending'
+                    });
+
+                    await integration.save();
+                }
+                
+                // Send notification to integration team
+                try {
+                    // You can implement email notification here
+                    // Example using your webhook notification:
+                    await sendWebhookNotification(
+                        user, 
+                        `${platform} Integration`, 
+                        organization.companyName || '',
+                        '1' // Integrations don't have user counts, so default to 1
+                    );
+                    
+                    console.log(`Integration purchase notification sent for ${platform}`);
+                } catch (notificationError) {
+                    console.error('Error sending integration purchase notification:', notificationError);
+                    // Don't fail the request if notification fails
+                }
+            } catch (integrationError) {
+                console.error('Error updating integration record:', integrationError);
+                // Don't fail the payment confirmation if integration record update fails
+            }
+        } else {
+            // **Send Notifications in the Background for regular subscriptions**
+            Promise.allSettled([
+                (async () => {
+                    // Email logic that you had commented out in your original code
+                    console.log('Email sent successfully to', user.email);
+                })(),
+
+                sendWebhookNotification(user, planName, organization.companyName || '', subscribedUserCount.toString()),
+            ])
+                .then((results) => {
+                    results.forEach((result, index) => {
+                        if (result.status === 'rejected') {
+                            console.error(`Notification ${index + 1} failed:`, result.reason);
+                        } else {
+                            console.log(`Notification ${index + 1} succeeded.`);
+                        }
+                    });
+                })
+                .catch((err) => console.error('Unexpected error in notifications:', err));
+        }
 
         return NextResponse.json({ success: true });
     } catch (error) {
@@ -239,4 +255,3 @@ export async function POST(request: NextRequest) {
         );
     }
 }
-

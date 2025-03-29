@@ -2,23 +2,31 @@
 import { NextResponse } from "next/server";
 
 export async function GET() {
-  // 1) Build the Google OAuth URL with your client_id, redirect_uri, scope, etc.
+  // Get base URL for redirect
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://crm.zapllo.com';
+  
+  // Build the Google OAuth URL
   const googleClientId = process.env.GOOGLE_CLIENT_ID;
   const redirectUri = encodeURIComponent(
-    "https://crm.zapllo.com/api/channels/connect/google/callback"
+    `${baseUrl}/api/channels/connect/google/callback`
   );
-  const scope = "https://www.googleapis.com/auth/userinfo.email https://mail.google.com/";
-  // Add offline access if you want refresh token
+  
+  // Request permissions for user info and Gmail API
+  const scope = encodeURIComponent(
+    "https://www.googleapis.com/auth/userinfo.email " +
+    "https://www.googleapis.com/auth/gmail.send"
+  );
 
-  // 2) Redirect user to Google’s consent screen
+  // Create the OAuth URL
   const oauthUrl =
     `https://accounts.google.com/o/oauth2/v2/auth?` +
     `client_id=${googleClientId}` +
     `&redirect_uri=${redirectUri}` +
     `&response_type=code` +
     `&scope=${scope}` +
-    `&access_type=offline` + // to get refresh token
-    `&prompt=consent`;       // force new token each time
+    `&access_type=offline` + 
+    `&prompt=consent` +
+    `&include_granted_scopes=true`;
 
   return NextResponse.redirect(oauthUrl);
 }

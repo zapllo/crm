@@ -11,12 +11,12 @@ const Layout = (props: Props) => {
     return (
         <div className='h-[calc(100vh-3rem)] mt-12 overflow-hidden'>
             <ResizablePanelGroup direction="horizontal">
-                <ResizablePanel defaultSize={25} minSize={20} maxSize={30}>
+                <ResizablePanel defaultSize={20} minSize={20} maxSize={30}>
                     <SettingsOptions />
                 </ResizablePanel>
                 <ResizableHandle withHandle />
                 <ResizablePanel defaultSize={75}>
-                    <div className="h-full overflow-auto p-6">
+                    <div className="h-full overflow-auto scrollbar-hide p-6">
                         <div className="mx-auto max-w-4xl">
                             {props.children}
                         </div>

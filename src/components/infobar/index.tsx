@@ -426,7 +426,7 @@ export default function InfoBar() {
                   <ModeToggle2 />
                 </div>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={logout} className="text-red-500 focus:text-red-500">
+                <DropdownMenuItem onClick={logout} className="text-red-500  hover:text-white">
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Log out</span>
                 </DropdownMenuItem>

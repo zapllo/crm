@@ -1,8 +1,9 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import axios from "axios";
 import {
   Search,
   Star,
@@ -21,8 +22,11 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import IntegrationStatusBadge from "@/components/integrations/IntegrationStatusBadge";
 
-// Updated type to include "All" category
+// Add a type for the integration status tracking
+type IntegrationStatus = 'free' | 'premium' | 'purchased' | 'connected' | 'pending';
+
 type IntegrationCategory =
   | "Featured"
   | "All"
@@ -40,154 +44,231 @@ type IntegrationInfo = {
   href: string;
   imageSrc: string;
   category: IntegrationCategory[];
+  status: IntegrationStatus;
   popular?: boolean;
 };
 
-const integrations: IntegrationInfo[] = [
-  {
-    name: "Zapllo Caller",
-    description: "Cloud calling solution with AI transcription",
-    href: "/settings/integrations/zapllo-caller",
-    imageSrc: "/integrations/zapllo-caller.png",
-    category: ["Communication"],
-    popular: true,
-  },
-  {
-    name: "IndiaMART",
-    description: "Connect your IndiaMART leads directly to your CRM",
-    href: "/settings/integrations/indiamart",
-    imageSrc: "/integrations/indiamart.png",
-    category: ["E-Commerce"],
-    popular: true,
-  },
-  {
-    name: "TradeIndia",
-    description: "Sync leads and inquiries from TradeIndia",
-    href: "/settings/integrations/tradeindia",
-    imageSrc: "/integrations/tradeindia.png",
-    category: ["E-Commerce"],
-    popular: true,
-  },
-  {
-    name: "Gmail",
-    description: "Automate email workflows and notifications",
-    href: "/settings/integrations/google",
-    imageSrc: "/integrations/gmail.png",
-    category: ["Communication"],
-    popular: true,
-  },
-  {
-    name: "Razorpay",
-    description: "Process payments and manage subscriptions",
-    href: "/settings/integrations/razorpay",
-    imageSrc: "/integrations/razorpay.png",
-    category: ["Payments"],
-    popular: true,
-  },
-  {
-    name: "PayU",
-    description: "Secure payment gateway for your business",
-    href: "/settings/integrations/payu",
-    imageSrc: "/integrations/payu.png",
-    category: ["Payments"],
-  },
-  {
-    name: "JustDial",
-    description: "Import leads and manage listings from JustDial",
-    href: "/settings/integrations/justdial",
-    imageSrc: "/integrations/justdial.png",
-    category: ["Marketing"],
-  },
-  {
-    name: "Shopify",
-    description: "Sync your Shopify store data and orders",
-    href: "/settings/integrations/shopify",
-    imageSrc: "/integrations/shopify.png",
-    category: ["E-Commerce"],
-  },
-  {
-    name: "Twilio",
-    description: "Send SMS notifications and alerts",
-    href: "/settings/integrations/twilio",
-    imageSrc: "/integrations/twilio.png",
-    category: ["Communication"],
-  },
-  {
-    name: "Stripe",
-    description: "Process global payments and subscriptions",
-    href: "/settings/integrations/stripe",
-    imageSrc: "/integrations/stripe.png",
-    category: ["Payments"],
-  
-  },
-  {
-    name: "Interakt",
-    description: "Engage customers through WhatsApp Business",
-    href: "/settings/integrations/interakt",
-    imageSrc: "/integrations/interakt.jpeg",
-    category: ["Communication", "Marketing"],
-    popular:true
-  },
-  {
-    name: "Zoho Inventory",
-    description: "Manage inventory and order fulfillment",
-    href: "/settings/integrations/zoho-inventory",
-    imageSrc: "/integrations/zoho-inventory.png",
-    category: ["E-Commerce", "Accounting"],
-  },
-  {
-    name: "Delhivery",
-    description: "Streamline logistics and shipping",
-    href: "/settings/integrations/delhivery",
-    imageSrc: "/integrations/delhivery.png",
-    category: ["Logistics"],
-  },
-  {
-    name: "Zoho Books",
-    description: "Automate accounting and financial reports",
-    href: "/settings/integrations/zoho-books",
-    imageSrc: "/integrations/zoho-books.png",
-    category: ["Accounting"],
-  },
-  {
-    name: "Tally",
-    description: "Sync accounting data from Tally ERP",
-    href: "/settings/integrations/tally",
-    imageSrc: "/integrations/tally.png",
-    category: ["Accounting"],
-  },
-  {
-    name: "Google Ads",
-    description: "Import leads directly from Google Ads campaigns",
-    href: "/settings/integrations/google-ads",
-    imageSrc: "/integrations/google-ads.png",
-    category: ["Marketing"],
-  },
-  {
-    name: "Facebook Remarketing",
-    description: "Retarget potential customers on Facebook",
-    href: "/settings/integrations/facebook",
-    imageSrc: "/integrations/facebook.png",
-    category: ["Marketing"],
-  },
-  {
-    name: "CallHippo",
-    description: "Virtual phone system for your business",
-    href: "/settings/integrations/callhippo",
-    imageSrc: "/integrations/callhippo.png",
-    category: ["Communication"],
-  },
-  {
-    name: "Zendesk",
-    description: "Customer support and ticketing system",
-    href: "/settings/integrations/zendesk",
-    imageSrc: "/integrations/zendesk.png",
-    category: ["CRM"],
-  },
+// Define which integrations are free
+const FREE_INTEGRATIONS = [
+  "indiamart",
+  "tradeindia",
+  "gmail",
+  "zapllo-caller",
 ];
 
 export default function IntegrationsPage() {
-  const [searchTerm, setSearchTerm] = React.useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [integrations, setIntegrations] = useState<IntegrationInfo[]>([]);
+  const [integrationStatus, setIntegrationStatus] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    // Load integrations data
+    const loadIntegrations = () => {
+      // Start with default integrations
+      const defaultIntegrations: IntegrationInfo[] = [
+        {
+          name: "Zapllo Caller",
+          description: "Cloud calling solution with AI transcription",
+          href: "/settings/integrations/zapllo-caller",
+          imageSrc: "/integrations/zapllo-caller.png",
+          category: ["Communication"],
+          status: "free",
+          popular: true,
+        },
+        {
+          name: "IndiaMART",
+          description: "Connect your IndiaMART leads directly to your CRM",
+          href: "/settings/integrations/indiamart",
+          imageSrc: "/integrations/indiamart.png",
+          category: ["E-Commerce"],
+          status: "free",
+          popular: true,
+        },
+        {
+          name: "TradeIndia",
+          description: "Sync leads and inquiries from TradeIndia",
+          href: "/settings/integrations/tradeindia",
+          imageSrc: "/integrations/tradeindia.png",
+          category: ["E-Commerce"],
+          status: "free",
+          popular: true,
+        },
+        {
+          name: "Gmail",
+          description: "Automate email workflows and notifications",
+          href: "/settings/integrations/google",
+          imageSrc: "/integrations/gmail.png",
+          category: ["Communication"],
+          status: "free",
+          popular: true,
+        },
+        {
+          name: "Razorpay",
+          description: "Process payments and manage subscriptions",
+          href: "/settings/integrations/razorpay",
+          imageSrc: "/integrations/razorpay.png",
+          category: ["Payments"],
+          status: "premium",
+          popular: true,
+        },
+        {
+          name: "PayU",
+          description: "Secure payment gateway for your business",
+          href: "/settings/integrations/payu",
+          imageSrc: "/integrations/payu.png",
+          category: ["Payments"],
+          status: "premium",
+        },
+        {
+          name: "JustDial",
+          description: "Import leads and manage listings from JustDial",
+          href: "/settings/integrations/justdial",
+          imageSrc: "/integrations/justdial.png",
+          category: ["Marketing"],
+          status: "premium",
+        },
+        {
+          name: "Shopify",
+          description: "Sync your Shopify store data and orders",
+          href: "/settings/integrations/shopify",
+          imageSrc: "/integrations/shopify.png",
+          category: ["E-Commerce"],
+          status: "premium",
+        },
+        {
+          name: "Twilio",
+          description: "Send SMS notifications and alerts",
+          href: "/settings/integrations/twilio",
+          imageSrc: "/integrations/twilio.png",
+          category: ["Communication"],
+          status: "premium",
+        },
+        {
+          name: "Stripe",
+          description: "Process global payments and subscriptions",
+          href: "/settings/integrations/stripe",
+          imageSrc: "/integrations/stripe.png",
+          category: ["Payments"],
+          status: "premium",
+        },
+        {
+          name: "Interakt",
+          description: "Engage customers through WhatsApp Business",
+          href: "/settings/integrations/interakt",
+          imageSrc: "/integrations/interakt.jpeg",
+          category: ["Communication", "Marketing"],
+          status: "premium",
+          popular: true
+        },
+        {
+          name: "Zoho Inventory",
+          description: "Manage inventory and order fulfillment",
+          href: "/settings/integrations/zoho-inventory",
+          imageSrc: "/integrations/zoho-inventory.png",
+          category: ["E-Commerce", "Accounting"],
+          status: "premium",
+        },
+        {
+          name: "Delhivery",
+          description: "Streamline logistics and shipping",
+          href: "/settings/integrations/delhivery",
+          imageSrc: "/integrations/delhivery.png",
+          category: ["Logistics"],
+          status: "premium",
+        },
+        {
+          name: "Zoho Books",
+          description: "Automate accounting and financial reports",
+          href: "/settings/integrations/zoho-books",
+          imageSrc: "/integrations/zoho-books.png",
+          category: ["Accounting"],
+          status: "premium",
+        },
+        {
+          name: "Tally",
+          description: "Sync accounting data from Tally ERP",
+          href: "/settings/integrations/tally",
+          imageSrc: "/integrations/tally.png",
+          category: ["Accounting"],
+          status: "premium",
+        },
+        {
+          name: "Google Ads",
+          description: "Import leads directly from Google Ads campaigns",
+          href: "/settings/integrations/google-ads",
+          imageSrc: "/integrations/google-ads.png",
+          category: ["Marketing"],
+          status: "premium",
+        },
+        {
+          name: "Facebook Remarketing",
+          description: "Retarget potential customers on Facebook",
+          href: "/settings/integrations/facebook",
+          imageSrc: "/integrations/facebook.png",
+          category: ["Marketing"],
+          status: "premium",
+        },
+        {
+          name: "CallHippo",
+          description: "Virtual phone system for your business",
+          href: "/settings/integrations/callhippo",
+          imageSrc: "/integrations/callhippo.png",
+          category: ["Communication"],
+          status: "premium",
+        },
+        {
+          name: "Zendesk",
+          description: "Customer support and ticketing system",
+          href: "/settings/integrations/zendesk",
+          imageSrc: "/integrations/zendesk.png",
+          category: ["CRM"],
+          status: "premium",
+        },
+      ];
+
+      // Set initial integration data
+      setIntegrations(defaultIntegrations);
+
+      // Then fetch active integrations from API
+      fetchIntegrationStatus();
+    };
+
+    loadIntegrations();
+  }, []);
+
+  // Fetch integration status from API
+  const fetchIntegrationStatus = async () => {
+    try {
+      const response = await axios.get('/api/integrations');
+      const activeIntegrations = response.data || [];
+
+      // Create a status map for active integrations
+      const statusMap: Record<string, string> = {};
+
+      activeIntegrations.forEach((integration: any) => {
+        const platform = integration.platform.toLowerCase();
+
+        if (integration.isPurchased) {
+          statusMap[platform] = 'purchased';
+        } else if (integration.apiKey) {
+          statusMap[platform] = 'connected';
+        }
+      });
+
+      setIntegrationStatus(statusMap);
+
+      // Update integrations with status
+      setIntegrations(prevIntegrations =>
+        prevIntegrations.map(integration => {
+          const platformKey = integration.name.toLowerCase().replace(/\s+/g, '-');
+          const status = statusMap[platformKey] as IntegrationStatus || integration.status;
+          return { ...integration, status };
+        })
+      );
+    } catch (error) {
+      console.error('Error fetching integration status:', error);
+    }
+  };
 
   const filteredIntegrations = integrations.filter(
     (integration) =>
@@ -195,6 +276,7 @@ export default function IntegrationsPage() {
       integration.description.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Add icon mapping for each category, including "All"
   // Add icon mapping for each category, including "All"
   const categoryIcons = {
     Featured: <Star className="h-4 w-4" />,
@@ -220,6 +302,19 @@ export default function IntegrationsPage() {
     "Accounting",
     "Logistics"
   ];
+
+  // Helper function to determine status badge type
+  const getStatusBadgeType = (integration: IntegrationInfo): IntegrationStatus => {
+    // Check if it's in our status map first (from the API)
+    const platformKey = integration.name.toLowerCase().replace(/\s+/g, '-');
+    if (integrationStatus[platformKey]) {
+      return integrationStatus[platformKey] as IntegrationStatus;
+    }
+
+    // Otherwise use the default status
+    const isFree = FREE_INTEGRATIONS.includes(platformKey);
+    return isFree ? 'free' : 'premium';
+  };
 
   return (
     <div className="p-6 space-y-6 max-w-7xl overflow-y-scroll h-screen scrollbar-hide mx-auto">
@@ -281,9 +376,17 @@ export default function IntegrationsPage() {
                               className="object-contain"
                             />
                           </div>
-                          {integration.popular && (
-                            <Badge variant="secondary" className="text-xs">Popular</Badge>
-                          )}
+                          <div className="flex items-center gap-2">
+                            {/* Display the status badge */}
+                            <IntegrationStatusBadge
+                              status={getStatusBadgeType(integration)}
+                              className="text-xs"
+                            />
+
+                            {integration.popular && (
+                              <Badge variant="secondary" className="text-xs">Popular</Badge>
+                            )}
+                          </div>
                         </div>
                         <CardTitle className="text-base">{integration.name}</CardTitle>
                         <CardDescription className="text-xs line-clamp-2">
@@ -322,6 +425,6 @@ export default function IntegrationsPage() {
           </TabsContent>
         ))}
       </Tabs>
-    </div >
+    </div>
   );
 }
