@@ -88,7 +88,7 @@ const PremiumTrialBanner = () => {
         <div className="font-medium">
           <span className="text-">Your 7-day Premium trial: </span>
           <span className="text- font-bold">{getDaysMessage()}</span>
-          <span className="text ml-1 text-xs">({timeLeft})</span>
+          <span className="text ml-1 text-xs">(7 days)</span>
         </div>
       </div>
 
@@ -109,7 +109,7 @@ const PremiumTrialBanner = () => {
         <Button
           size="sm"
           className="h-8 text-xs bg-indigo-600 hover:bg-indigo-700 text-white border-none"
-          onClick={() => window.location.href = "/plans"}
+          onClick={() => window.location.href = "/settings/billing"}
         >
           <Crown className="h-3 w-3 mr-1" />
           Upgrade Now

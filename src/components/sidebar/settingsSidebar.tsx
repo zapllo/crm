@@ -144,7 +144,7 @@ const SettingsSidebar: React.FC = () => {
 
   return (
     <TooltipProvider delayDuration={300}>
-      <ScrollArea className="h-screen border-r bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="h-screen border-r bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="px-4 py-6">
           {/* Settings Header */}
           <div className="mb-4 px-3 py-2 bg-gradient-to-r from-primary/10 to-blue-100/5 dark:from-primary/20 dark:to-blue-900/5 rounded-lg border border-primary/20">
@@ -271,7 +271,7 @@ const SettingsSidebar: React.FC = () => {
             </div>
           </div>
         </div>
-      </ScrollArea>
+      </div>
     </TooltipProvider>
   );
 };

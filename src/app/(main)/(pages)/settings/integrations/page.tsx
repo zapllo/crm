@@ -139,7 +139,7 @@ export default function IntegrationsPage() {
           name: "Twilio",
           description: "Send SMS notifications and alerts",
           href: "/settings/integrations/twilio",
-          imageSrc: "/integrations/twilio.png",
+          imageSrc: "/integrations/twilio.jpg",
           category: ["Communication"],
           status: "premium",
         },
@@ -180,7 +180,7 @@ export default function IntegrationsPage() {
           name: "Zoho Books",
           description: "Automate accounting and financial reports",
           href: "/settings/integrations/zoho-books",
-          imageSrc: "/integrations/zoho-books.png",
+          imageSrc: "/integrations/zohobooks.png",
           category: ["Accounting"],
           status: "premium",
         },
@@ -188,7 +188,7 @@ export default function IntegrationsPage() {
           name: "Tally",
           description: "Sync accounting data from Tally ERP",
           href: "/settings/integrations/tally",
-          imageSrc: "/integrations/tally.png",
+          imageSrc: "/integrations/tally.webp",
           category: ["Accounting"],
           status: "premium",
         },
@@ -204,7 +204,7 @@ export default function IntegrationsPage() {
           name: "Facebook Remarketing",
           description: "Retarget potential customers on Facebook",
           href: "/settings/integrations/facebook",
-          imageSrc: "/integrations/facebook.png",
+          imageSrc: "/integrations/facebook.webp",
           category: ["Marketing"],
           status: "premium",
         },
@@ -317,7 +317,7 @@ export default function IntegrationsPage() {
   };
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl overflow-y-scroll h-screen scrollbar-hide mx-auto">
+    <div className="p-6 space-y-6  overflow-y-scroll h-screen scrollbar-hide mx-auto">
       <div className="flex flex-col space-y-2">
         <h1 className="text-2xl font-bold tracking-tight">Zapllo Marketplace</h1>
         <p className="text-muted-foreground">

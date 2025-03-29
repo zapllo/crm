@@ -47,7 +47,7 @@ export default function IntegrationAppLayout({
   const currentTab = tabs.find((tab) => tab.id === activeTab);
 
   return (
-    <div className="p-6 space-y-6 h-screen overflow-y-scroll max-w-5xl mx-auto">
+    <div className="p-6 space-y-6 h-screen overflow-y-scroll scrollbar-hide  mx-auto">
       {/* Top Navigation: "Back to marketplace" */}
       <Link href={backHref} className="text-sm flex items-center gap-1 text-blue-600 hover:underline">
         <ArrowLeft className="h-4" /> Back to Marketplace

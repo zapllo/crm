@@ -218,10 +218,10 @@ export default function InfoBar() {
       transition={{ duration: 0.3 }}
       className="flex  justify-end"
     >
-      <div className="fixed w-[95%]  bg-background/95 backdrop-blur-sm border-b z-[10] shadow-sm">
+      <div className="fixed w-full justify-start  bg-background/95 backdrop-blur-sm border-b z-[10] shadow-sm">
         <div className="flex items-center justify-between h-16 px-4 md:px-6">
           {/* Left section with page title */}
-          <div className="flex items-center gap-2 md:gap-3">
+          <div className="flex items-center ml-20 gap-2 md:gap-3">
             <h1 className="font-semibold text-xl hidden md:block">{getPageTitle()}</h1>
             <Link href='/settings/billing'>
               <Badge variant="outline" className="hidden cursor-pointer md:flex items-center gap-1 py-1 bg-primary/5">
@@ -456,22 +456,29 @@ export default function InfoBar() {
           </CommandGroup>
           <CommandSeparator />
           <CommandGroup heading="Recent">
-            <CommandItem onClick={() => router.push("/CRM/leads")}>
-              <LayoutDashboard className="mr-2 h-4 w-4" />
-              <span>Dashboard</span>
-            </CommandItem>
-            <CommandItem onClick={() => router.push("/CRM/contacts")}>
+            <Link href='/CRM/leads'>
+              <CommandItem >
+                <LayoutDashboard className="mr-2 h-4 w-4" />
+                <span>Dashboard</span>
+              </CommandItem>
+            </Link>
+            <Link href='/CRM/contacts'>
+
+            <CommandItem>
               <User2 className="mr-2 h-4 w-4" />
               <span>Contacts</span>
             </CommandItem>
+            </Link>
             {/* <CommandItem>
               <Phone className="mr-2 h-4 w-4" />
               <span>Call Log</span>
             </CommandItem> */}
-            <CommandItem onClick={() => router.push("/settings/channels")}>
+            <Link href='/settings/channels'>
+            <CommandItem >
               <Mail className="mr-2 h-4 w-4" />
               <span>Email Templates</span>
             </CommandItem>
+            </Link>
           </CommandGroup>
           <CommandSeparator />
           <CommandGroup heading="Help">

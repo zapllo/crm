@@ -172,7 +172,7 @@ export default function BillingPage() {
         </p>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-8 max-w-6xl mx-auto">
+      <div className="grid md:grid-cols-2 gap-8 mx-auto">
         <Card className="overflow-hidden border-2 border-primary/20">
           <CardHeader className="bg-gradient-to-r from-purple-600/10 to-orange-500/10">
             <div className="flex justify-between items-center">

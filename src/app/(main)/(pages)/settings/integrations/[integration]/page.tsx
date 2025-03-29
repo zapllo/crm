@@ -218,7 +218,7 @@ export default function IntegrationPage() {
         ];
 
         return (
-            <div className="p-6 space-y-8 h-screen overflow-y-scroll max-w-6xl mx-auto">
+            <div className="p-6 space-y-8 h-screen overflow-y-scroll scrollbar-hide  mx-auto">
                 <Link
                     href="/settings/integrations"
                     className="flex items-center text-sm text-primary mb-4 hover:underline transition-colors duration-200"
@@ -383,7 +383,7 @@ export default function IntegrationPage() {
     // For premium integrations that have not been purchased yet
     if (!isFree) {
         const integrationDetails = {
-            price: 4999, // Default price
+            price: 699, // Default price
             features: [
                 `Full data synchronization with ${capitalizedName}`,
                 "Custom field mapping according to your requirements",
@@ -419,7 +419,7 @@ export default function IntegrationPage() {
         };
 
         return (
-            <div className="p-6 space-y-8 h-screen overflow-y-scroll max-w-6xl mx-auto">
+            <div className="p-6 space-y-8 h-screen overflow-y-scroll scrollbar-hide  mx-auto">
                 <Link
                     href="/settings/integrations"
                     className="flex items-center text-sm text-primary mb-4 hover:underline transition-colors duration-200"
@@ -772,7 +772,7 @@ export default function IntegrationPage() {
 
     // For free integrations (showing the "Coming Soon" message)
     return (
-        <div className="p-6 space-y-8 h-screen overflow-y-scroll max-w-5xl mx-auto">
+        <div className="p-6 space-y-8 h-screen overflow-y-scroll scrollbar-hide  mx-auto">
             <Link 
                 href="/settings/integrations" 
                 className="flex items-center text-sm text-primary mb-4 hover:underline transition-colors duration-200"

@@ -813,12 +813,12 @@ export default function ApiPage() {
               <div className="bg-muted p-4 rounded-md">
                 <div className="flex justify-between items-center">
                   <code className="text-sm font-mono">
-                    https://your-crm-domain.com/api/webhooks/incoming
+                    https://crm.zapllo.com/api/webhooks/incoming
                   </code>
                   <Button 
                     variant="ghost" 
                     size="icon"
-                    onClick={() => copyToClipboard("https://your-crm-domain.com/api/webhooks/incoming")}
+                    onClick={() => copyToClipboard("https://crm.zapllo.com/api/webhooks/incoming")}
                   >
                     <Copy className="h-4 w-4" />
                   </Button>
@@ -834,12 +834,12 @@ export default function ApiPage() {
               <div className="bg-muted p-4 rounded-md">
                 <div className="flex justify-between items-center">
                   <code className="text-sm font-mono">
-                    https://your-crm-domain.com/api/webhooks/contacts
+                    https://crm.zapllo.com/api/webhooks/contacts
                   </code>
                   <Button 
                     variant="ghost" 
                     size="icon"
-                    onClick={() => copyToClipboard("https://your-crm-domain.com/api/webhooks/contacts")}
+                    onClick={() => copyToClipboard("https://crm.zapllo.com/api/webhooks/contacts")}
                   >
                     <Copy className="h-4 w-4" />
                   </Button>
@@ -855,12 +855,12 @@ export default function ApiPage() {
               <div className="bg-muted p-4 rounded-md">
                 <div className="flex justify-between items-center">
                   <code className="text-sm font-mono">
-                    https://your-crm-domain.com/api/webhooks/leads
+                    https://crm.zapllo.com/api/webhooks/leads
                   </code>
                   <Button 
                     variant="ghost" 
                     size="icon"
-                    onClick={() => copyToClipboard("https://your-crm-domain.com/api/webhooks/leads")}
+                    onClick={() => copyToClipboard("https://crm.zapllo.com/api/webhooks/leads")}
                   >
                     <Copy className="h-4 w-4" />
                   </Button>
@@ -1247,7 +1247,7 @@ export default function ApiPage() {
                     variant="ghost" 
                     size="icon" 
                     className="h-7 w-7"
-                    onClick={() => copyToClipboard(`curl -X GET "https://your-crm-domain.com/api/contacts" \\
+                    onClick={() => copyToClipboard(`curl -X GET "https://crm.zapllo.com/api/contacts" \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json"`)}
                   >
@@ -1256,7 +1256,7 @@ export default function ApiPage() {
                 </div>
                 <div className="p-4 bg-black text-white dark:bg-zinc-950 overflow-x-auto">
                   <pre className="text-sm font-mono">
-{`curl -X GET "https://your-crm-domain.com/api/contacts" \\
+{`curl -X GET "https://crm.zapllo.com/api/contacts" \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json"`}
                   </pre>

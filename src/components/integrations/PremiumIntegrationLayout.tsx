@@ -147,7 +147,7 @@ export default function PremiumIntegrationLayout({
     };
 
     return (
-        <div className="p-6 space-y-8 h-screen overflow-y-scroll scrollbar-hide max-w-6xl mx-auto">
+        <div className="p-6 space-y-8 h-screen overflow-y-scroll scrollbar-hide mx-auto">
             <Link
                 href="/settings/integrations"
                 className="flex items-center text-sm text-primary mb-4 hover:underline transition-colors duration-200"

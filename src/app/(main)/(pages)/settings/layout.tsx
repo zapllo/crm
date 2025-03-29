@@ -17,7 +17,7 @@ const Layout = (props: Props) => {
                 <ResizableHandle withHandle />
                 <ResizablePanel defaultSize={75}>
                     <div className="h-full overflow-auto scrollbar-hide p-6">
-                        <div className="mx-auto max-w-4xl">
+                        <div className="mx-auto max">
                             {props.children}
                         </div>
                     </div>

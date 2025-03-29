@@ -488,7 +488,7 @@ export default function CustomizePage() {
                                             </Tooltip>
                                         </TooltipProvider>
                                     )}
-                                    <DialogContent className="z-[100] p-6 h-screen overflow-y-scroll scrollbar-hide max-w-lg w-full">
+                                    <DialogContent className="z-[100] p-6 h-fit max-h-screen m-auto overflow-y-scroll scrollbar-hide max-w-lg w-full">
                                         <DialogHeader>
                                             <DialogTitle className="text-lg font-medium dark:text-white flex items-center gap-2">
                                                 <Sparkles className="h-5 w-5 text-primary" />
