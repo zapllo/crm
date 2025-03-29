@@ -5,7 +5,6 @@ import EmailAccount from "@/models/EmailAccount";
 import { User } from "@/models/userModel";
 import { getDataFromToken } from "@/lib/getDataFromToken";
 import { sendEmail } from "@/lib/sendEmail";
-import { fillTemplateVariables } from "@/utils/fillTemplateVariables";
 import Lead from "@/models/leadModel";
 import Contact from "@/models/contactModel";
 import Company from "@/models/companyModel";
@@ -21,6 +20,8 @@ export async function POST(request: Request) {
       subject: subjectOverride,
       body: bodyOverride,
     } = await request.json();
+    
+    console.log("Request payload:", { templateId, leadId, to, subjectOverride, bodyOverride });
 
     // 1) Identify user
     const userId = getDataFromToken(request);
@@ -89,36 +90,45 @@ export async function POST(request: Request) {
       }
     }
 
-    // 3) Prepare subject and body - from template or from override
-    let subject = subjectOverride || "";
-    let body = bodyOverride || "";
+    // 3) Prepare subject and body
+    let subject = "";
+    let body = "";
 
+    // Set from template if templateId is provided
     if (templateId) {
       try {
-        // Get template content and fill placeholders
         const template = await EmailTemplate.findById(templateId);
         if (!template) {
           return NextResponse.json({ error: "Template not found" }, { status: 404 });
         }
-        
-        // Use template content as base
         subject = template.subject;
         body = template.body;
-        
-        // Process template variables
-        subject = replacePlaceholders(subject, leadData, contactData, companyData);
-        body = replacePlaceholders(body, leadData, contactData, companyData);
+        console.log("Template found, subject:", subject.slice(0, 30), "body:", body.slice(0, 30));
       } catch (error) {
         console.error("Error processing template:", error);
         return NextResponse.json({ error: "Failed to process template" }, { status: 500 });
       }
-    } else if (subjectOverride || bodyOverride) {
-      // Direct input - still process any placeholders
-      subject = replacePlaceholders(subjectOverride || "", leadData, contactData, companyData);
-      body = replacePlaceholders(bodyOverride || "", leadData, contactData, companyData);
-    } else {
-      return NextResponse.json({ error: "No content provided" }, { status: 400 });
     }
+
+    // Override with direct input if provided
+    if (subjectOverride) subject = subjectOverride;
+    if (bodyOverride) body = bodyOverride;
+    
+    console.log("Final content check - subject:", !!subject, "body:", !!body);
+    
+    // Check if we have content to send
+    if (!subject || !body) {
+      return NextResponse.json({ 
+        error: "No content provided", 
+        subjectPresent: !!subject,
+        bodyPresent: !!body,
+        templateId: templateId || "none" 
+      }, { status: 400 });
+    }
+
+    // Process any placeholders in the content
+    subject = replacePlaceholders(subject, leadData, contactData, companyData);
+    body = replacePlaceholders(body, leadData, contactData, companyData);
 
     // 4) send email using the updated sendEmail function
     console.log(`Sending email to ${to} with subject: ${subject}`);
@@ -149,6 +159,8 @@ export async function POST(request: Request) {
 
 // Helper function to replace placeholders with actual data
 function replacePlaceholders(text: string, leadData: any, contactData: any, companyData: any) {
+  if (!text) return "";
+  
   // Replace lead data placeholders
   Object.entries(leadData).forEach(([key, value]) => {
     text = text.replace(new RegExp(`{{lead\\.${key}}}`, 'g'), String(value || ''));
