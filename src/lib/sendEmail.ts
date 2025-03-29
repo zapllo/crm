@@ -1,6 +1,7 @@
 import nodemailer from 'nodemailer';
 import { google } from 'googleapis';
 import EmailAccount from '@/models/EmailAccount';
+import { SentMessageInfo } from 'nodemailer';
 
 export interface SendEmailOptions {
     to: string;
@@ -40,19 +41,23 @@ export async function sendEmail({ to, cc, subject, text, html, userId }: SendEma
                     refresh_token: emailAccount.refreshToken
                 });
 
-                // Check and refresh the token if needed
+                // Refresh the token to ensure it's valid
+                let accessToken = emailAccount.accessToken;
                 try {
-                    console.log('Access token is expired, refreshing...');
+                    console.log('Refreshing access token...');
                     const { credentials } = await oauth2Client.refreshAccessToken();
-
+                    
+                    accessToken = credentials.access_token;
+                    
                     // Update the token in the database
                     await EmailAccount.findByIdAndUpdate(emailAccount._id, {
                         accessToken: credentials.access_token
                     });
-
+                    
                     console.log('Token refreshed successfully');
                 } catch (tokenError) {
                     console.error('Error refreshing token:', tokenError);
+                    throw new Error('Failed to refresh Google OAuth token');
                 }
 
                 // Create Gmail transporter with OAuth2
@@ -64,7 +69,7 @@ export async function sendEmail({ to, cc, subject, text, html, userId }: SendEma
                         clientId: process.env.GOOGLE_CLIENT_ID,
                         clientSecret: process.env.GOOGLE_CLIENT_SECRET,
                         refreshToken: emailAccount.refreshToken,
-                        accessToken: emailAccount.accessToken
+                        accessToken: accessToken
                     }
                 });
 
@@ -102,11 +107,7 @@ export async function sendEmail({ to, cc, subject, text, html, userId }: SendEma
     };
 
     try {
-        // Verify connection configuration
-        await transporter.verify();
-        console.log('Transporter verified successfully');
-
-        // Send mail
+        // Send mail without verify step which can cause issues with Gmail
         await transporter.sendMail(msg);
         console.log('Message sent successfully');
     } catch (error) {
