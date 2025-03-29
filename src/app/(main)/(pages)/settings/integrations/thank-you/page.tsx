@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -9,7 +9,7 @@ import { CheckCircle, ArrowRight, CalendarClock, HelpCircle } from "lucide-react
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
-export default function IntegrationThankYouPage() {
+function ThankYouContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const integration = searchParams.get("integration") || "your";
@@ -106,6 +106,44 @@ export default function IntegrationThankYouPage() {
           </CardFooter>
         </Card>
       </motion.div>
+    </div>
+  );
+}
+
+// Loading fallback component
+function LoadingCard() {
+  return (
+    <div className="w-full">
+      <Card className="border shadow-md animate-pulse">
+        <CardHeader className="pb-4 text-center">
+          <div className="flex justify-center mb-4">
+            <div className="rounded-full p-3 bg-gray-200 dark:bg-gray-700 h-14 w-14"></div>
+          </div>
+          <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mx-auto mb-2"></div>
+          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mx-auto"></div>
+        </CardHeader>
+        <CardContent className="space-y-6 pb-6">
+          <div className="h-24 bg-gray-200 dark:bg-gray-700 rounded"></div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="h-32 bg-gray-200 dark:bg-gray-700 rounded"></div>
+            <div className="h-32 bg-gray-200 dark:bg-gray-700 rounded"></div>
+          </div>
+        </CardContent>
+        <CardFooter>
+          <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
+        </CardFooter>
+      </Card>
+    </div>
+  );
+}
+
+// Main component that wraps the content with Suspense
+export default function IntegrationThankYouPage() {
+  return (
+    <div className="p-6 space-y-6 max-w-3xl mx-auto h-screen overflow-y-scroll flex items-center justify-center">
+      <Suspense fallback={<LoadingCard />}>
+        <ThankYouContent />
+      </Suspense>
     </div>
   );
 }
