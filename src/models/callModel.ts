@@ -9,6 +9,7 @@ export interface ICall extends Document {
   twilioCallSid: string;
   twilioRecordingSid?: string;
   recordingUrl?: string;
+  phoneNumber?: string; // 
   duration: number; // in seconds
   direction: 'inbound' | 'outbound';
   status: 'queued' | 'initiated' | 'ringing' | 'in-progress' | 'completed' | 'failed' | 'busy' | 'no-answer' | 'canceled';
@@ -33,12 +34,13 @@ const callSchema = new Schema<ICall>(
     twilioCallSid: { type: String, required: true },
     twilioRecordingSid: { type: String },
     recordingUrl: { type: String },
+    phoneNumber: { type: String }, // Add this field
     duration: { type: Number, default: 0 },
     direction: { type: String, enum: ['inbound', 'outbound'], required: true },
-    status: { 
-      type: String, 
+    status: {
+      type: String,
       enum: ['queued', 'initiated', 'ringing', 'in-progress', 'completed', 'failed', 'busy', 'no-answer', 'canceled'],
-      required: true 
+      required: true
     },
     notes: { type: String },
     transcription: { type: String },

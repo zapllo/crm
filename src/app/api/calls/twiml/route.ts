@@ -122,11 +122,15 @@ export async function POST(req: NextRequest) {
     
     console.log("Final parameters for TwiML:", { callId, to });
     
-    // Update the call status if we found one
+    // Create TwiML response
+    const twiml = new twilio.twiml.VoiceResponse();
+
+    // Crucial fix: Check if this is a follow-up request for an already in-progress call
     if (callId) {
-      try {
-        const call = await Call.findById(callId);
-        if (call) {
+      const call = await Call.findById(callId);
+      if (call) {
+        // Only provide a Dial TwiML if the call is not already in-progress
+        if (call.status !== 'in-progress' || callSid === call.twilioCallSid) {
           call.status = 'in-progress';
           // If we found a phone number and it's not stored on the call, store it
           if (to && !call.phoneNumber) {
@@ -134,33 +138,42 @@ export async function POST(req: NextRequest) {
           }
           await call.save();
           console.log("Updated call status to in-progress");
+
+          // Only generate the Dial TwiML for initial connection
+          if (!to) {
+            // We couldn't find a destination number
+            twiml.say("We couldn't determine the destination for this call. Please try again.");
+            twiml.hangup();
+          } else {
+            // Connect the call
+            twiml.say({ voice: 'alice' }, 'Connecting your call now.');
+            
+            const dial = twiml.dial({
+              callerId: process.env.TWILIO_PHONE_NUMBER,
+              record: 'record-from-answer',
+              recordingStatusCallback: `${process.env.NEXT_PUBLIC_APP_URL}/api/calls/webhook?callId=${callId || 'unknown'}`,
+              recordingStatusCallbackMethod: 'POST',
+              recordingStatusCallbackEvent: ['completed'],
+              timeout: 30
+            });
+            
+            dial.number(to);
+          }
+        } else {
+          // Call is already in progress, just provide a simple response
+          // This prevents duplicate dial attempts
+          console.log("Call already in progress, not generating Dial TwiML");
+          twiml.say("Your call is already connected.");
         }
-      } catch (e) {
-        console.error("Error updating call status:", e);
+      } else {
+        // Call record not found
+        twiml.say("Call record not found.");
+        twiml.hangup();
       }
-    }
-    
-    // Create TwiML response
-    const twiml = new twilio.twiml.VoiceResponse();
-    
-    if (!to) {
-      // We couldn't find a destination number
-      twiml.say("We couldn't determine the destination for this call. Please try again.");
-      twiml.hangup();
     } else {
-      // Connect the call
-      twiml.say({ voice: 'alice' }, 'Connecting your call now.');
-      
-      const dial = twiml.dial({
-        callerId: process.env.TWILIO_PHONE_NUMBER,
-        record: 'record-from-answer',
-        recordingStatusCallback: `${process.env.NEXT_PUBLIC_APP_URL}/api/calls/webhook?callId=${callId || 'unknown'}`,
-        recordingStatusCallbackMethod: 'POST',
-        recordingStatusCallbackEvent: ['completed'],
-        timeout: 30
-      });
-      
-      dial.number(to);
+      // No callId found
+      twiml.say("Unable to identify the call. Please try again.");
+      twiml.hangup();
     }
     
     console.log("Generated TwiML:", twiml.toString());

@@ -38,23 +38,6 @@ export async function POST(req: NextRequest) {
                 { status: 403 }
             );
         }
-
-        // Create a new call record
-        const call = new Call({
-            organizationId: user.organization,
-            userId,
-            contactId,
-            leadId: leadId || null,
-            twilioCallSid: 'pending', // Will be updated when Twilio initiates call
-            duration: 0,
-            direction,
-            status: 'initiated',
-            cost: 0,
-            startTime: new Date(),
-        });
-
-        await call.save();
-
         // Format the phone number with correct country code
         let formattedPhoneNumber = phoneNumber;
 
@@ -66,6 +49,25 @@ export async function POST(req: NextRequest) {
         else if (phoneNumber.startsWith('+') && !phoneNumber.startsWith('+91')) {
             formattedPhoneNumber = '+91' + phoneNumber.substring(1);
         }
+
+
+        // Create a new call record
+        const call = new Call({
+            organizationId: user.organization,
+            userId,
+            contactId,
+            leadId: leadId || null,
+            twilioCallSid: 'pending', // Will be updated when Twilio initiates call
+            phoneNumber: formattedPhoneNumber, // 
+            duration: 0,
+            direction,
+            status: 'initiated',
+            cost: 0,
+            startTime: new Date(),
+        });
+
+        await call.save();
+
 
         // Initialize Twilio client
         if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN || !process.env.TWILIO_PHONE_NUMBER) {
