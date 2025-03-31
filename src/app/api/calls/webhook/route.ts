@@ -15,7 +15,10 @@ export async function POST(req: NextRequest) {
     const recordingUrl = formData.get('RecordingUrl') as string;
     const recordingSid = formData.get('RecordingSid') as string;
     const callDuration = Number(formData.get('CallDuration') || '0');
-    const callId = formData.get('CallId') as string; // Custom parameter we passed
+    
+    // Extract callId from URL if available
+    const url = new URL(req.url);
+    let callId = url.searchParams.get('callId');
     
     // Log the webhook data for debugging
     console.log('Twilio webhook received:', {
@@ -27,7 +30,19 @@ export async function POST(req: NextRequest) {
       callId
     });
     
-    // Only process if we have a call ID
+    // If callId is missing but we have callSid, look up the call record
+    if (!callId && callSid) {
+      await connectDB();
+      const existingCall = await Call.findOne({ twilioCallSid: callSid });
+      if (existingCall) {
+        callId = existingCall._id.toString();
+        console.log(`Found call record by Twilio CallSid: ${callId}`);
+      } else {
+        console.log(`Could not find call record for Twilio CallSid: ${callSid}`);
+      }
+    }
+    
+    // Process the call if we have identified it
     if (callId) {
       await connectDB();
       
@@ -35,7 +50,10 @@ export async function POST(req: NextRequest) {
       const call = await Call.findById(callId);
       
       if (call) {
-        call.twilioCallSid = callSid;
+        // Only update the call SID if it's still pending
+        if (call.twilioCallSid === 'pending') {
+          call.twilioCallSid = callSid;
+        }
         
         // Map Twilio call status to our statuses
         switch (callStatus) {
@@ -105,31 +123,23 @@ export async function POST(req: NextRequest) {
           }
         }
         
+        console.log(`Updating call ${callId} to status: ${call.status}`);
         await call.save();
+      } else {
+        console.log(`Call record not found for ID: ${callId}`);
       }
+    } else {
+      console.log('No call ID available, cannot update call record');
     }
     
-    // Return a TwiML response
+    // Return a simple TwiML response - avoid complex logic here
     const twiml = new twilio.twiml.VoiceResponse();
     
-    // You can customize the response based on your needs
-    if (callStatus === 'ringing' || callStatus === 'in-progress') {
-      // For initial call or in-progress call
-      twiml.say('Thank you for using ZaplloCRM calling. Your call is now being connected.');
-      
-      // Start recording if in-progress
-      if (callStatus === 'in-progress') {
-        twiml.record({
-          action: `/api/calls/webhook?callId=${callId}`,
-          transcribe: true,
-          transcribeCallback: `/api/calls/transcription?callId=${callId}`,
-          maxLength: 3600, // 1 hour max
-          playBeep: false
-        });
-      }
-    } else if (callStatus === 'completed') {
-      // For completed calls
-      twiml.say('Thank you for using ZaplloCRM calling. Your call has been completed.');
+    // For completed or failed calls, hangup to prevent repeat calls
+    if (['completed', 'failed', 'busy', 'no-answer', 'canceled'].includes(callStatus)) {
+      twiml.hangup();
+    } else {
+      twiml.say('Call event processed.');
     }
     
     return new NextResponse(twiml.toString(), {
@@ -143,6 +153,7 @@ export async function POST(req: NextRequest) {
     // Return a basic TwiML response even in case of error
     const twiml = new twilio.twiml.VoiceResponse();
     twiml.say('An error occurred processing your call.');
+    twiml.hangup();
     
     return new NextResponse(twiml.toString(), {
       headers: {
@@ -151,4 +162,3 @@ export async function POST(req: NextRequest) {
     });
   }
 }
-

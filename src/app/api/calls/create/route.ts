@@ -27,6 +27,20 @@ export async function POST(req: NextRequest) {
 
         await connectDB();
 
+        // Check if there's already an active call to this number
+        const activeCall = await Call.findOne({
+            phoneNumber: { $regex: phoneNumber.replace(/^\+/, '') }, // Remove + if present for flexible matching
+            status: { $in: ['initiated', 'ringing', 'in-progress'] },
+            endTime: { $exists: false }
+        });
+
+        if (activeCall) {
+            return NextResponse.json(
+                { error: 'There is already an active call to this number' },
+                { status: 409 }
+            );
+        }
+
         // Check wallet balance before creating call
         const wallet = await Wallet.findOne({
             organizationId: user.organization,
@@ -38,6 +52,7 @@ export async function POST(req: NextRequest) {
                 { status: 403 }
             );
         }
+        
         // Format the phone number with correct country code
         let formattedPhoneNumber = phoneNumber;
 
@@ -50,7 +65,6 @@ export async function POST(req: NextRequest) {
             formattedPhoneNumber = '+91' + phoneNumber.substring(1);
         }
 
-
         // Create a new call record
         const call = new Call({
             organizationId: user.organization,
@@ -58,7 +72,7 @@ export async function POST(req: NextRequest) {
             contactId,
             leadId: leadId || null,
             twilioCallSid: 'pending', // Will be updated when Twilio initiates call
-            phoneNumber: formattedPhoneNumber, // 
+            phoneNumber: formattedPhoneNumber,
             duration: 0,
             direction,
             status: 'initiated',
@@ -68,11 +82,11 @@ export async function POST(req: NextRequest) {
 
         await call.save();
 
-
         // Initialize Twilio client
         if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN || !process.env.TWILIO_PHONE_NUMBER) {
             throw new Error('Missing Twilio credentials in environment variables');
         }
+        
         const client = twilio(
             process.env.TWILIO_ACCOUNT_SID,
             process.env.TWILIO_AUTH_TOKEN
@@ -84,7 +98,8 @@ export async function POST(req: NextRequest) {
         console.log('Initiating Twilio call with parameters:', {
             to: formattedPhoneNumber,
             from: process.env.TWILIO_PHONE_NUMBER as string,
-            url: `${process.env.NEXT_PUBLIC_APP_URL}/api/calls/twiml?callId=${callId}&To=${encodeURIComponent(formattedPhoneNumber)}`,
+            url: `${process.env.NEXT_PUBLIC_APP_URL}/api/calls/twiml?callId=${callId}`,
+            statusCallback: `${process.env.NEXT_PUBLIC_APP_URL}/api/calls/webhook?callId=${callId}`,
         });
 
         // Initiate the actual call through Twilio
@@ -95,11 +110,14 @@ export async function POST(req: NextRequest) {
             statusCallback: `${process.env.NEXT_PUBLIC_APP_URL}/api/calls/webhook?callId=${callId}`,
             statusCallbackMethod: 'POST',
             statusCallbackEvent: ['initiated', 'ringing', 'answered', 'completed'],
+            record: true, // Enable call recording
         });
         
         // Update the call record with the Twilio SID
         call.twilioCallSid = twilioCall.sid;
         await call.save();
+
+        console.log(`Successfully initiated call with Twilio SID ${twilioCall.sid} and callId ${callId}`);
 
         return NextResponse.json({
             success: true,
