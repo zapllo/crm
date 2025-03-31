@@ -34,7 +34,7 @@ const contactSchema = new Schema<IContact>(
         lastName: { type: String, required: true },
         email: { type: String, required: true, unique: true },
         country: { type: String, required: true },
-        whatsappNumber: { type: String, required: true, unique: true },
+        whatsappNumber: { type: String, required: true },
         state: { type: String, required: true },
         city: { type: String, required: true },
         pincode: { type: String, required: true },

@@ -8,142 +8,116 @@ export async function POST(req: NextRequest) {
   try {
     console.log("TwiML endpoint received request");
     
-    // Find the most recent outbound call in our database
+    // Connect to database first
     await connectDB();
     
     let callId = null;
     let to = null;
+    let callSid = null;
     
-    try {
-      // First try to get CallSid from the request
-      let callSid = null;
+    // Extract URL parameters first - this doesn't consume the request body
+    const url = new URL(req.url);
+    callId = url.searchParams.get('callId');
+    to = url.searchParams.get('To');
+    
+    console.log("URL parameters:", { callId, to });
+    
+    // Only try to get form data if we need to
+    if (!callSid || !callId) {
       try {
-        const formData = await req.formData();
+        // Clone the request before consuming its body
+        const reqClone = req.clone();
+        const formData = await reqClone.formData();
         callSid = formData.get('CallSid') as string;
-        console.log("Found CallSid in request:", callSid);
+        
+        // If callId wasn't in URL, check form data
+        if (!callId) {
+          callId = formData.get('callId') as string;
+        }
+        
+        // If to wasn't in URL, check form data
+        if (!to) {
+          to = formData.get('To') as string;
+        }
+        
+        console.log("Form data:", { callSid, callId, to });
       } catch (e) {
-        console.log("Could not extract CallSid from form data");
+        console.log("Could not extract data from form data:", e);
       }
-      
-      // If we have a CallSid, try to find the call by it
-      if (callSid) {
-        const call = await Call.findOne({ twilioCallSid: callSid });
-        if (call) {
-          callId = call._id.toString();
-          console.log("Found call by CallSid:", callId);
-          
-          // Log call details for debugging
-          console.log("Call details:", JSON.stringify(call, null, 2));
-        }
+    }
+    
+    // If we have a CallSid, try to find the call by it
+    if (callSid && !callId) {
+      const call = await Call.findOne({ twilioCallSid: callSid });
+      if (call) {
+        callId = call._id.toString();
+        console.log("Found call by CallSid:", callId);
       }
+    }
+    
+    // If we don't have a callId yet, get the most recent call
+    if (!callId) {
+      const recentCall = await Call.findOne({
+        status: { $in: ['initiated', 'in-progress'] },
+        direction: 'outbound'
+      })
+      .sort({ startTime: -1 })
+      .limit(1);
       
-      // If we couldn't find by CallSid, get the most recent call
-      if (!callId) {
-        const recentCall = await Call.findOne({
-          status: { $in: ['initiated', 'in-progress'] },
-          direction: 'outbound'
-        })
-        .sort({ startTime: -1 })
-        .limit(1);
+      if (recentCall) {
+        callId = recentCall._id.toString();
+        console.log("Using most recent outbound call:", callId);
+      }
+    }
+    
+    // Now that we have a callId, let's find the destination number if we don't have it
+    if (callId && !to) {
+      console.log("Looking up call record by ID:", callId);
+      
+      const call = await Call.findById(callId);
+      if (call) {
+        console.log("Retrieved call for contact lookup:", JSON.stringify(call));
         
-        if (recentCall) {
-          callId = recentCall._id.toString();
-          console.log("Using most recent outbound call:", callId);
-          console.log("Recent call details:", JSON.stringify(recentCall, null, 2));
+        // Check if this call has a direct phoneNumber field
+        if (call.phoneNumber) {
+          to = call.phoneNumber;
+          console.log("Found phone number directly on call record:", to);
         }
-      }
-      
-      // Now that we have a callId, let's find the destination number
-      if (callId) {
-        // Query create/route.ts to see what request parameters were used
-        console.log("Looking up call record by ID:", callId);
         
-        // First, check if the call document already has a phoneNumber field
-        const call = await Call.findById(callId);
-        if (call) {
-          console.log("Retrieved call for contact lookup:", JSON.stringify(call));
-          
-          // Check if this call has a direct phoneNumber field
-          if (call.phoneNumber) {
-            to = call.phoneNumber;
-            console.log("Found phone number directly on call record:", to);
-          }
-          
-          // If not, check if it has a contactId and get the phone from there
-          if (!to && call.contactId) {
-            // Try to look up the contact directly
-            try {
-              const Contact = mongoose.model('Contact');
-              const contact = await Contact.findById(call.contactId);
+        // If not, check if it has a contactId and get the phone from there
+        if (!to && call.contactId) {
+          try {
+            const Contact = mongoose.model('Contact');
+            const contact = await Contact.findById(call.contactId);
+            
+            if (contact) {
+              console.log("Found contact:", JSON.stringify(contact, null, 2));
               
-              if (contact) {
-                console.log("Found contact:", JSON.stringify(contact, null, 2));
-                
-                if (contact.phoneNumber) {
-                  to = contact.phoneNumber;
-                  console.log("Found phone number from contact:", to);
-                } else if (contact.phone) {
-                  to = contact.phone;
-                  console.log("Found phone from contact:", to);
-                } else if (contact.mobile) {
-                  to = contact.mobile;
-                  console.log("Found mobile from contact:", to);
-                }
+              // Try all possible phone field names
+              if (contact.phoneNumber) {
+                to = contact.phoneNumber;
+              } else if (contact.phone) {
+                to = contact.phone;
+              } else if (contact.mobile) {
+                to = contact.mobile;
+              } else if (contact.whatsappNumber) { // Add this for whatsapp number
+                to = contact.whatsappNumber;
               }
-            } catch (e) {
-              console.error("Error looking up contact:", e);
               
-              // If direct contact lookup fails, try populating
-              try {
-                const populatedCall = await Call.findById(callId).populate('contactId');
-                console.log("Populated call:", JSON.stringify(populatedCall, null, 2));
-                
-                if (populatedCall?.contactId) {
-                  // Try different possible field names
-                  const contactObj = populatedCall.contactId;
-                  if (contactObj.phoneNumber) {
-                    to = contactObj.phoneNumber;
-                    console.log("Found phoneNumber in populated contact:", to);
-                  } else if (contactObj.phone) {
-                    to = contactObj.phone;
-                    console.log("Found phone in populated contact:", to);
-                  } else if (contactObj.mobile) {
-                    to = contactObj.mobile;
-                    console.log("Found mobile in populated contact:", to);
-                  }
+              // Format the number if found
+              if (to) {
+                // Make sure it has country code
+                if (!to.startsWith('+')) {
+                  to = '+91' + to; // Add India code by default
                 }
-              } catch (popError) {
-                console.error("Error populating contact:", popError);
+                console.log("Found phone number from contact:", to);
               }
             }
+          } catch (e) {
+            console.error("Error looking up contact:", e);
           }
         }
       }
-      
-      // As a last resort, try to get the phone number from the request URL or form data
-      if (!to) {
-        try {
-          // Check URL parameters
-          const url = new URL(req.url);
-          const urlTo = url.searchParams.get('To');
-          if (urlTo) {
-            to = urlTo;
-            console.log("Found 'To' in URL parameters:", to);
-          } else {
-            // Try form data
-            const formData = await req.formData();
-            const formTo = formData.get('To') as string;
-            if (formTo) {
-              to = formTo;
-              console.log("Found 'To' in form data:", to);
-            }
-          }
-        } catch (e) {
-          console.error("Error extracting 'To' from request:", e);
-        }
-      }
-    } catch (e) {
-      console.error("Error finding call:", e);
     }
     
     console.log("Final parameters for TwiML:", { callId, to });
@@ -154,6 +128,10 @@ export async function POST(req: NextRequest) {
         const call = await Call.findById(callId);
         if (call) {
           call.status = 'in-progress';
+          // If we found a phone number and it's not stored on the call, store it
+          if (to && !call.phoneNumber) {
+            call.phoneNumber = to;
+          }
           await call.save();
           console.log("Updated call status to in-progress");
         }
@@ -176,7 +154,7 @@ export async function POST(req: NextRequest) {
       const dial = twiml.dial({
         callerId: process.env.TWILIO_PHONE_NUMBER,
         record: 'record-from-answer',
-        recordingStatusCallback: `https://crm.zapllo.com/api/calls/webhook?callId=${callId || 'unknown'}`,
+        recordingStatusCallback: `${process.env.NEXT_PUBLIC_APP_URL}/api/calls/webhook?callId=${callId || 'unknown'}`,
         recordingStatusCallbackMethod: 'POST',
         recordingStatusCallbackEvent: ['completed'],
         timeout: 30
