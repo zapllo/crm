@@ -7,68 +7,29 @@ export async function POST(req: NextRequest) {
   try {
     console.log("TwiML endpoint received request");
     
-    await connectDB();
-    
-    // Get form data
-    const formData = await req.formData();
-    const callSid = formData.get('CallSid') as string;
-    
-    // Get URL parameters
+    // Get URL parameters (the only method we'll use)
     const url = new URL(req.url);
-    const callId = url.searchParams.get('callId');
     const to = url.searchParams.get('To');
     
-    console.log("Request parameters:", { callSid, callId, to });
+    console.log("Call destination:", to);
     
     // Create TwiML response
     const twiml = new twilio.twiml.VoiceResponse();
     
-    // Look up call record
-    const call = callId ? await Call.findById(callId) : null;
-    
-    // Check if this is a new call or a call in progress
-    if (call && callSid) {
-      // If the call is already in progress with a different CallSid, just return a simple response
-      if (call.status === 'in-progress' && call.twilioCallSid && call.twilioCallSid !== callSid) {
-        console.log("Call already in progress with different CallSid, not creating a new dial");
-        twiml.say("Call is already in progress");
-        return new NextResponse(twiml.toString(), {
-          headers: { 'Content-Type': 'text/xml' },
-        });
-      }
-      
-      // Update the call with the Twilio CallSid if it's not set yet
-      if (!call.twilioCallSid || call.twilioCallSid === 'pending') {
-        call.twilioCallSid = callSid;
-        await call.save();
-      }
-      
-      // Update call status
-      if (call.status !== 'in-progress') {
-        call.status = 'in-progress';
-        await call.save();
-        console.log("Updated call status to in-progress");
-      }
-    }
-    
-    // For new calls or the first request for a call, provide dial instructions
     if (to) {
-      console.log("Providing dial instructions to:", to);
-      twiml.say({ voice: 'alice' }, 'Connecting your call now.');
+      console.log("Connecting call to:", to);
+      
+      // Simple approach: just say we're connecting and dial the number
+      twiml.say({ voice: 'alice' }, 'Connecting your call.');
       
       const dial = twiml.dial({
         callerId: process.env.TWILIO_PHONE_NUMBER,
-        record: 'record-from-answer',
-        recordingStatusCallback: `${process.env.NEXT_PUBLIC_APP_URL}/api/calls/webhook?callId=${callId || 'unknown'}`,
-        recordingStatusCallbackMethod: 'POST',
-        recordingStatusCallbackEvent: ['completed'],
         timeout: 30
       });
       
       dial.number(to);
     } else {
-      // No destination found
-      twiml.say("We couldn't determine the destination for this call. Please try again.");
+      twiml.say("No destination number provided.");
       twiml.hangup();
     }
     
