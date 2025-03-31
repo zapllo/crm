@@ -43,21 +43,25 @@ export default function PhoneDialer({
   setIsOpen
 }: PhoneDialerProps) {
   const { toast } = useToast();
-  
+
+  let phoneNumber = contactPhone;
+  if (!phoneNumber.startsWith("+")) {
+    phoneNumber = "+91" + phoneNumber;
+  }
   // Basic UI states
-  const [status, setStatus] = useState<"idle"|"connecting"|"in-progress"|"completed"|"failed">("idle");
+  const [status, setStatus] = useState<"idle" | "connecting" | "in-progress" | "completed" | "failed">("idle");
   const [callDuration, setCallDuration] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
   const [isCallEnded, setIsCallEnded] = useState(false);
   const [connection, setConnection] = useState<any>(null);
-  const [device, setDevice] = useState<Device|null>(null);
+  const [device, setDevice] = useState<Device | null>(null);
 
   // Others
   const [callId, setCallId] = useState("");
-  const [callRecording, setCallRecording] = useState<string|null>(null);
-  const [callTranscript, setCallTranscript] = useState<string|null>(null);
+  const [callRecording, setCallRecording] = useState<string | null>(null);
+  const [callTranscript, setCallTranscript] = useState<string | null>(null);
   const [callCost, setCallCost] = useState<number>(0);
-  
+
   // Notes
   const [showNotes, setShowNotes] = useState(false);
   const [callNotes, setCallNotes] = useState("");
@@ -67,8 +71,8 @@ export default function PhoneDialer({
   const [isLowBalance, setIsLowBalance] = useState(false);
 
   // Timer references
-  const durationIntervalRef = useRef<NodeJS.Timeout|null>(null);
-  const costIntervalRef = useRef<NodeJS.Timeout|null>(null);
+  const durationIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const costIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // ─────────────────────────────────────────────────────────────
   // Effects
@@ -180,7 +184,7 @@ export default function PhoneDialer({
       const resp = await axios.post("/api/calls/create", {
         contactId,
         leadId,
-        phoneNumber: contactPhone,
+        phoneNumber,
         direction: "outbound"
       });
       const createdCall = resp.data.call;
@@ -189,7 +193,7 @@ export default function PhoneDialer({
       // (2) Connect from Twilio Device to your TwiML, passing the same callId and the phone number we want to dial
       const conn = device.connect({
         callId: createdCall._id,
-        To: contactPhone
+        To: phoneNumber
       });
 
       // Event: accept
@@ -201,7 +205,7 @@ export default function PhoneDialer({
         }, 1000);
         // Start cost example (₹1/min)
         costIntervalRef.current = setInterval(() => {
-          const costPerSecond = 1/60; // ₹1 per minute
+          const costPerSecond = 1 / 60; // ₹1 per minute
           setCallCost(prev => prev + costPerSecond);
         }, 1000);
       });
@@ -273,7 +277,7 @@ export default function PhoneDialer({
   // Helpers
   // ─────────────────────────────────────────────────────────────
   function formatDuration(sec: number): string {
-    const mins = Math.floor(sec/60);
+    const mins = Math.floor(sec / 60);
     const secs = sec % 60;
     return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
   }
@@ -284,7 +288,7 @@ export default function PhoneDialer({
       .map(n => n[0])
       .join("")
       .toUpperCase()
-      .substring(0,2);
+      .substring(0, 2);
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -348,7 +352,7 @@ export default function PhoneDialer({
             )}
             <div className="absolute right-0 top-0">
               <Badge variant="outline" className="bg-muted">
-                Balance: ₹{(walletBalance/100).toFixed(2)}
+                Balance: ₹{(walletBalance / 100).toFixed(2)}
               </Badge>
             </div>
           </DialogTitle>
@@ -518,7 +522,7 @@ export default function PhoneDialer({
           <div className="p-4 space-y-4">
             <h2 className="font-semibold text-lg">Low Balance Alert</h2>
             <p className="text-sm">
-              Your calling balance is low (₹{(walletBalance/100).toFixed(2)}). 
+              Your calling balance is low (₹{(walletBalance / 100).toFixed(2)}).
               Please top up soon for uninterrupted service.
             </p>
             <div className="flex justify-end gap-2">
