@@ -91,12 +91,12 @@ export async function POST(req: NextRequest) {
         const twilioCall = await client.calls.create({
             to: formattedPhoneNumber,
             from: process.env.TWILIO_PHONE_NUMBER,
-            url: `${process.env.NEXT_PUBLIC_APP_URL}/api/calls/twiml?callId=${callId}&To=${encodeURIComponent(formattedPhoneNumber)}`,
+            url: `${process.env.NEXT_PUBLIC_APP_URL}/api/calls/twiml?callId=${callId}`,
             statusCallback: `${process.env.NEXT_PUBLIC_APP_URL}/api/calls/webhook?callId=${callId}`,
             statusCallbackMethod: 'POST',
             statusCallbackEvent: ['initiated', 'ringing', 'answered', 'completed'],
         });
-
+        
         // Update the call record with the Twilio SID
         call.twilioCallSid = twilioCall.sid;
         await call.save();
