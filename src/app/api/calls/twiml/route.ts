@@ -3,111 +3,84 @@ import twilio from 'twilio';
 import connectDB from '@/lib/db';
 import Call from '@/models/callModel';
 
+// TwiML for bridging the "client" (browser) to the phone number
 export async function POST(req: NextRequest) {
   try {
     console.log("TwiML endpoint received request");
-    
-    // Extract callId from URL
-    const url = new URL(req.url);
-    const callId = url.searchParams.get('callId');
-    
-    console.log("Call ID from URL:", callId);
-    
-    // Attempt to get the Twilio CallSid from form data
-    let twilioCallSid = null;
-    try {
-      const formData = await req.clone().formData();
-      twilioCallSid = formData.get('CallSid') as string;
-      console.log("Twilio CallSid from request:", twilioCallSid);
-    } catch (e) {
-      console.log("Could not extract CallSid from form data:", e);
-    }
-    
-    // Create a TwiML response
+
+    // Read form data from Twilio
+    const formData = await req.formData();
+    const callSid = formData.get('CallSid') as string;
+    const toNumber = formData.get('To') as string;   // We pass "To" from device.connect({ params: { To, callId }})
+    const callIdParam = formData.get('callId') as string; // Also from device.connect
+    console.log("Form Data => CallSid:", callSid, "To:", toNumber, "callId:", callIdParam);
+
     const twiml = new twilio.twiml.VoiceResponse();
 
-    // Connect to database
+    // Connect to DB and find the call record by callId or callSid
     await connectDB();
-    
-    // Look up the call record
     let call = null;
-    
-    if (callId) {
-      call = await Call.findById(callId);
-      if (call) console.log(`Found call record by ID: ${callId}`);
+
+    if (callIdParam) {
+      call = await Call.findById(callIdParam);
+      if (call) console.log("Found call by ID:", callIdParam);
     }
-    
-    if (!call && twilioCallSid) {
-      call = await Call.findOne({ twilioCallSid });
-      if (call) console.log(`Found call record by Twilio CallSid: ${twilioCallSid}`);
+    if (!call && callSid) {
+      call = await Call.findOne({ twilioCallSid: callSid });
+      if (call) console.log("Found call by Twilio CallSid:", callSid);
     }
-    
+
     if (!call) {
-      console.log("Call record not found", { callId, twilioCallSid });
-      twiml.say("No call record found. Please try again later.");
-      return new NextResponse(twiml.toString(), {
-        headers: { 'Content-Type': 'text/xml' },
-      });
-    }
-
-    // If already completed/failed, end
-    if (['completed', 'failed', 'busy', 'no-answer', 'canceled'].includes(call.status)) {
-      console.log(`Call is already ${call.status}.`);
-      twiml.say(`This call has already been ${call.status}. Goodbye.`);
+      console.log("Call record not found. Hanging up.");
+      twiml.say("No call record found.");
       twiml.hangup();
-      return new NextResponse(twiml.toString(), {
-        headers: { 'Content-Type': 'text/xml' },
-      });
+      return new NextResponse(twiml.toString(), { headers: { 'Content-Type': 'text/xml' }});
     }
 
-    // Check for duplicate Twilio SID
-    if (
-      twilioCallSid &&
-      call.twilioCallSid &&
-      twilioCallSid !== call.twilioCallSid &&
-      call.twilioCallSid !== 'pending'
-    ) {
-      console.log("Duplicate Twilio call for the same call record, ignoring.");
-      twiml.say("Call is already being processed. Goodbye.");
+    // If the callSid in DB is still 'pending', update it
+    if (callSid && (!call.twilioCallSid || call.twilioCallSid === 'pending')) {
+      call.twilioCallSid = callSid;
+      await call.save();
+    }
+
+    // If we don't have a 'toNumber' from the Twilio request, error out
+    if (!toNumber) {
+      twiml.say("No destination number provided.");
       twiml.hangup();
-      return new NextResponse(twiml.toString(), {
-        headers: { 'Content-Type': 'text/xml' },
-      });
+      return new NextResponse(twiml.toString(), { headers: { 'Content-Type': 'text/xml' }});
     }
 
-    // Update the call SID if needed (when it was 'pending')
-    if (twilioCallSid && (!call.twilioCallSid || call.twilioCallSid === 'pending')) {
-      call.twilioCallSid = twilioCallSid;
-      await call.save();
-      console.log(`Updated call with Twilio CallSid: ${twilioCallSid}`);
-    }
-
-    // If status is still 'initiated' or 'ringing', move it to 'in-progress'
-    if (call.status === 'initiated' || call.status === 'ringing') {
-      call.status = 'in-progress';
-      await call.save();
-      console.log("Updated call status to in-progress");
-    }
-
-    // Since we removed <Dial>, we won't create a second call leg.
-    // You can optionally play a short message, or even do nothing.
-    twiml.say("Thank you. Your call is being connected now.");
-
-    // Optionally just return or hang up if you do not want any audio:
-    // twiml.hangup();
+    // This <Dial> will create the second leg out to the phone number
+    // bridging them with the inbound client call automatically
+    const dial = twiml.dial({
+      // The CallerID can be your Twilio number
+      callerId: process.env.TWILIO_PHONE_NUMBER,
+      record: 'record-from-answer', // If you want to record
+      timeLimit: 3600,  // max 1 hour
+      // after the dial finishes, Twilio will do an HTTP request to your statusCallback
+      action: `${process.env.NEXT_PUBLIC_APP_URL}/api/calls/webhook?callId=${call._id}`,
+    });
+    dial.number(
+      {
+        // optional: you can track events for the <Number> as well
+        statusCallbackEvent: ['initiated','ringing','answered','completed'],
+        statusCallback: `${process.env.NEXT_PUBLIC_APP_URL}/api/calls/webhook?callId=${call._id}`,
+        statusCallbackMethod: 'POST',
+      },
+      toNumber
+    );
 
     return new NextResponse(twiml.toString(), {
       headers: { 'Content-Type': 'text/xml' },
     });
 
-  } catch (error) {
-    console.error("Error in TwiML endpoint:", error);
+  } catch (err) {
+    console.error("Error in TwiML endpoint:", err);
     const twiml = new twilio.twiml.VoiceResponse();
-    twiml.say("An error occurred while processing your call.");
+    twiml.say("An error occurred.");
     twiml.hangup();
-    
     return new NextResponse(twiml.toString(), {
-      headers: { 'Content-Type': 'text/xml' },
+      headers: { 'Content-Type': 'text/xml' }
     });
   }
 }
