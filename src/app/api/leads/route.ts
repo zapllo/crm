@@ -10,6 +10,41 @@ import mongoose from 'mongoose';
 import { Organization } from '@/models/organizationModel';
 import { sendLeadAssignmentEmail } from '@/lib/emailTemplates';
 
+
+const sendWebhookNotification = async (
+    phoneNumber: string,
+    country: string,
+    templateName: string,
+    bodyVariables: string[]
+) => {
+    const payload = {
+        phoneNumber,
+        country,
+        bodyVariables,
+        templateName,
+    };
+    console.log(payload, 'payload');
+    try {
+        const response = await fetch('https://zapllo.com/api/webhook', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+            const responseData = await response.json();
+            throw new Error(`Webhook API error: ${responseData.message}`);
+        }
+        console.log('Webhook notification sent successfully:', payload);
+    } catch (error) {
+        console.error('Error sending webhook notification:', error);
+        throw new Error('Failed to send webhook notification');
+    }
+};
+
+
 export async function GET(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
@@ -222,11 +257,30 @@ export async function POST(request: Request) {
                         leadDetails: {
                             title,
                             contactName: contactDetails ? `${contactDetails.firstName} ${contactDetails.lastName}` : 'Not provided',
-                            contactNumber: contactDetails?.whatsappNo || 'Not provided',
+                            contactNumber: contactDetails?.whatsappNumber || 'Not provided',
                             sourceName: sourceDetails?.name || 'Not specified',
                             leadId: savedLead._id // Include the leadId for the URL
                         }
                     });
+                    if (organization?.notifications?.newLeadWhatsapp) {
+                        const creatorUser = await User.findById(userId);
+                        const creatorName = creatorUser ? creatorUser.firstName : "Admin";
+
+                        try {
+                            const today = new Date().toLocaleDateString('en-GB', {
+                                day: '2-digit',
+                                month: 'short',
+                                year: '2-digit'
+                            })
+                            const templateName = 'loginsuccessmember2';
+                            const bodyVariables = [`${assignedUser.firstName}`, creatorName, title, `${contactDetails.firstName} ${contactDetails.lastName}`, `${contactDetails?.whatsappNumber}`, `${sourceDetails?.name}`,today, "crm.zapllo.com" ]
+                            await sendWebhookNotification(`${assignedUser.whatsappNo}`, "IN", templateName, bodyVariables);
+                            console.log("Lead assignment WhatsApp notification sent successfully");
+                        } catch (error) {
+                            console.error("Error sending lead WhatsApp notification:", error);
+                            // Continue execution, don't fail the API response
+                        }
+                    }
                 }
             }
         }

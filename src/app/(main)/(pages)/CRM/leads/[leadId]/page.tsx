@@ -16,7 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { format, formatDistanceToNow } from 'date-fns';
-import { ArrowLeft, Clock, Loader2, Mail, MoreHorizontal, Plus } from 'lucide-react';
+import { ArrowLeft, Clock, Eye, Loader2, Mail, MoreHorizontal, Plus } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import MoveLeadDialog from '@/components/modals/leads/moveLeads';
 import AddNoteDialog from '@/components/modals/leads/addNotes';
@@ -175,7 +175,7 @@ export default function LeadDetails() {
     };
 
     return (
-        <div className="space-y-6 pb-6">
+        <div className="space-y-6 pb-6 mt-6">
             {/* ---- HEADER ---- */}
             <div className="flex justify-between items-center p-6 border-b bg-card sticky top-0 z-10">
                 <div className="flex items-center gap-4">
@@ -448,9 +448,10 @@ export default function LeadDetails() {
                                         <FaEnvelope className="mr-2 h-3 w-3" />
                                         Email
                                     </Button>
-                                    <Button variant="outline" size="sm" className="w-[48%]">
-                                        <FaPhoneAlt className="mr-2 h-3 w-3" />
-                                        Call
+
+                                    <Button onClick={()=> router.push(`/CRM/contacts/${leadDetails.contact?.id}`)} variant="outline" size="sm" className="w-[48%]">
+                                        <Eye className="mr-2 h-3 w-3" />
+                                        View
                                     </Button>
                                 </div>
                             </CardContent>

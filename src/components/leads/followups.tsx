@@ -446,19 +446,7 @@ export default function FollowupSection({ leadId }: { leadId: string }) {
                                     ? "No pending follow-ups found."
                                     : "No closed follow-ups found."}
                         </p>
-                        <Button
-                            onClick={() => {
-                                // Find the NewFollowupDialog button and click it
-                                const addButton = document.querySelector('[data-testid="new-followup-button"]');
-                                if (addButton instanceof HTMLElement) {
-                                    addButton.click();
-                                }
-                            }}
-                            className="gap-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
-                        >
-                            <PlusCircle className="h-4 w-4" />
-                            Schedule Follow-up
-                        </Button>
+                      
                     </div>
                 ) : (
                     <AnimatePresence>

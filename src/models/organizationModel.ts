@@ -148,7 +148,7 @@ const organizationSchema = new Schema<IOrganization>(
       },
       newLeadWhatsapp: {
         type: Boolean,
-        default: false,
+        default: true,
       },
       webhookFailure: {
         type: Boolean,

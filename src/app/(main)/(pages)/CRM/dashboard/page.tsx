@@ -287,7 +287,7 @@ export default function Dashboard() {
         // ... existing code ...
 
         // In the main Dashboard component
-        <div className="container mx-auto h-screen overflow-y-scroll p-4 space-y-6">
+        <div className="container mx-auto h-full max-h-screen scrollbar-hide overflow-y-scroll p-4 space-y-6">
             <div className="flex flex-col mt-2 md:flex-row md:items-center justify-between gap-3 mb-6">
                 <div>
                     <h1 className="text-xl font-medium">👋 Welcome Back, {user?.firstName} </h1>
@@ -744,7 +744,7 @@ export default function Dashboard() {
                             </CardHeader>
                             <CardContent>
                                 <div className="text-center space-y-4">
-                                    <div className="text-5xl font-bold text-primary">
+                                    <div className="text-3xl font-bold text-primary">
                                         {formatPercentage(dashboardData?.conversionRates?.overall || 0)}
                                     </div>
                                     <p className="text-muted-foreground">
@@ -801,7 +801,7 @@ export default function Dashboard() {
                             </CardHeader>
                             <CardContent>
                                 <div className="text-center space-y-4">
-                                    <div className="text-5xl font-bold text-primary">
+                                    <div className="text-3xl font-bold text-primary">
                                         {/* This would require additional data calculation */}
                                         30 Days
                                     </div>

@@ -77,7 +77,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
 import { Avatar } from '@/components/ui/avatar'
 import { NotionLogoIcon } from '@radix-ui/react-icons'
-import { FaGoogleDrive, FaShopify, FaSlack, FaWhatsapp } from 'react-icons/fa'
+import { FaGoogleDrive, FaInstagram, FaShopify, FaSlack, FaWhatsapp } from 'react-icons/fa'
 import { IconBrandZapier } from '@tabler/icons-react'
 
 // Define the webhook form schema
@@ -1401,9 +1401,45 @@ export default function ApiPage() {
   );
 }
 const IntegrationSection = () => {
-    const [isGeneratingZapierKey, setIsGeneratingZapierKey] = useState(false);
-    const [zapierApiKey, setZapierApiKey] = useState<string | null>(null);
-    const { toast } = useToast();
+  const [isGeneratingZapierKey, setIsGeneratingZapierKey] = useState(false);
+  const [isGeneratingPabblyKey, setIsGeneratingPabblyKey] = useState(false);
+  const [zapierApiKey, setZapierApiKey] = useState<string | null>(null);
+  const [pabblyApiKey, setPabblyApiKey] = useState<string | null>(null);
+  const [loadingIntegrations, setLoadingIntegrations] = useState(true);
+  const { toast } = useToast();
+
+    // Fetch existing integration keys when component mounts
+    useEffect(() => {
+      const fetchIntegrationKeys = async () => {
+        try {
+          setLoadingIntegrations(true);
+          
+          // Check if Zapier integration exists
+          const zapierResponse = await fetch('/api/integrations/zapier/key/check');
+          if (zapierResponse.ok) {
+            const data = await zapierResponse.json();
+            if (data.connected) {
+              setZapierApiKey('connected'); // We just need to know it exists, not the actual key
+            }
+          }
+          
+          // Check if Pabbly integration exists
+          const pabblyResponse = await fetch('/api/integrations/pabbly/key/check');
+          if (pabblyResponse.ok) {
+            const data = await pabblyResponse.json();
+            if (data.connected) {
+              setPabblyApiKey('connected');
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching integration status:', error);
+        } finally {
+          setLoadingIntegrations(false);
+        }
+      };
+      
+      fetchIntegrationKeys();
+    }, []);
   
     const generateZapierApiKey = async () => {
       try {
@@ -1436,7 +1472,50 @@ const IntegrationSection = () => {
         setIsGeneratingZapierKey(false);
       }
     };
+    const generatePabblyApiKey = async () => {
+      try {
+        setIsGeneratingPabblyKey(true);
+        const response = await fetch('/api/integrations/pabbly/key', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
   
+        if (!response.ok) {
+          throw new Error('Failed to generate Pabbly API key');
+        }
+  
+        const data = await response.json();
+        setPabblyApiKey(data.apiKey);
+        
+        toast({
+          title: "API key generated",
+          description: "Your Pabbly integration API key has been created successfully",
+        });
+      } catch (error) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: error instanceof Error ? error.message : "An error occurred",
+        });
+      } finally {
+        setIsGeneratingPabblyKey(false);
+      }
+    };
+  
+    if (loadingIntegrations) {
+      return (
+        <Card className="mt-6">
+          <CardContent className="py-6">
+            <div className="flex justify-center">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            </div>
+          </CardContent>
+        </Card>
+      );
+    }
+
     return (
       <Card className="mt-6">
         <CardHeader>
@@ -1458,8 +1537,8 @@ const IntegrationSection = () => {
           <div className="bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-950/30 dark:to-purple-950/30 rounded-lg border border-violet-200 dark:border-violet-800 overflow-hidden">
             <div className="p-6">
               <div className="flex items-start">
-                <div className="h-12 w-12 rounded-md bg-white p-2 shadow-sm mr-4 flex items-center justify-center">
-                  <IconBrandZapier className="h-8 w-8" />
+                <div className="h-12 w-12 rounded-md bg-white object-cover shadow-sm mr-4 flex items-center justify-center">
+                  <img src='/brands/zapier.png' className="h-8 w-8" />
                 </div>
                 <div className="flex-1">
                   <h3 className="text-lg font-medium">Connect with Zapier</h3>
@@ -1525,7 +1604,7 @@ const IntegrationSection = () => {
                 )}
               </div>
   
-              {zapierApiKey && (
+              {zapierApiKey === 'connected' && zapierApiKey && (
                 <div className="mt-4 bg-violet-100/50 dark:bg-violet-900/20 p-4 rounded-md border border-violet-200 dark:border-violet-800">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
@@ -1638,6 +1717,204 @@ const IntegrationSection = () => {
               )}
             </div>
           </div>
+{/* Pabbly Integration */}
+<div className="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 rounded-lg border border-emerald-200 dark:border-emerald-800 overflow-hidden">
+            <div className="p-6">
+              <div className="flex items-start">
+                <div className="h-12 w-12 rounded-md bg-white object-cover  shadow-sm mr-4 flex items-center justify-center">
+                  <img 
+                    src="/brands/pabbly.svg" 
+                    alt="Pabbly" 
+                    className="h-8 w-8" 
+                  />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-medium">Integrate with Pabbly Connect</h3>
+                  <p className="text-muted-foreground mt-1">
+                    Build workflows with Pabbly's simple and powerful automation platform
+                  </p>
+                  
+                  <div className="flex gap-2 mt-4">
+                    <Avatar className="h-8 w-8">
+                    <NotionLogoIcon className="h-5 w-5 mr-2" />
+                    </Avatar>
+                    <Avatar className="h-8 w-8">
+                    <FaSlack className="h-5 w-5 mr-2" />
+
+                    </Avatar>
+                    <Avatar className="h-8 w-8">
+                    <FaShopify className="h-4 w-4 mr-2 text-blue-600" />
+                    </Avatar>
+                    <Avatar className="h-8 w-8">
+                    <FaWhatsapp className="h-4 w-4 mr-2 text-green-600" />
+                    </Avatar>
+                    <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-xs font-medium">
+                      +500
+                    </div>
+                  </div>
+                </div>
+  
+                {pabblyApiKey ? (
+                  <div className="ml-4 flex flex-col items-end">
+                    <Badge variant="outline" className="mb-2 bg-green-50 text-green-700 border-green-200">
+                      <div className="flex items-center">
+                        <Check className="h-3 w-3 mr-1" />
+                        Connected
+                      </div>
+                    </Badge>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="text-emerald-600 border-emerald-200"
+                      onClick={() => window.open('https://connect.pabbly.com/workflow/', '_blank')}
+                    >
+                      Open Pabbly
+                      <ExternalLink className="h-3.5 w-3.5 ml-1" />
+                    </Button>
+                  </div>
+                ) : (
+                  <Button 
+                    className="ml-4 bg-emerald-600 hover:bg-emerald-700 text-white" 
+                    onClick={generatePabblyApiKey}
+                    disabled={isGeneratingPabblyKey}
+                  >
+                    {isGeneratingPabblyKey ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Connecting...
+                      </>
+                    ) : (
+                      <>Connect</>
+                    )}
+                  </Button>
+                )}
+              </div>
+  
+              {pabblyApiKey && pabblyApiKey !== 'connected' && (
+                <div className="mt-4 bg-emerald-100/50 dark:bg-emerald-900/20 p-4 rounded-md border border-emerald-200 dark:border-emerald-800">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                      <h4 className="font-medium text-sm">Your Pabbly API Key</h4>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Use this API key to connect Pabbly with your CRM
+                      </p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <code className="bg-white dark:bg-black py-1.5 px-3 rounded border text-xs font-mono">
+                        {pabblyApiKey.substring(0, 10)}•••••••••{pabblyApiKey.substring(pabblyApiKey.length - 5)}
+                      </code>
+                      <Button 
+                        variant="outline" 
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => {
+                          navigator.clipboard.writeText(pabblyApiKey);
+                          toast({
+                            title: "API key copied",
+                            description: "Your Pabbly API key has been copied to clipboard",
+                          });
+                        }}
+                      >
+                        <Copy className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button 
+                            variant="outline" 
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => {
+                              setPabblyApiKey(null);
+                              toast({
+                                title: "API key reset",
+                                description: "Your Pabbly API key has been reset",
+                              });
+                            }}
+                          >
+                            <RefreshCw className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </div>
+  
+                      <Separator className="my-4" />
+  
+                      <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
+                        <div className="p-3 bg-white dark:bg-black rounded border">
+                          <div className="flex items-start">
+                            <div className="h-7 w-7 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center mr-3 mt-0.5">
+                              <span className="text-emerald-700 dark:text-emerald-300 text-xs font-bold">1</span>
+                            </div>
+                            <div>
+                              <h5 className="font-medium text-sm">Create a workflow</h5>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Sign in to Pabbly and start creating a new workflow
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="p-3 bg-white dark:bg-black rounded border">
+                          <div className="flex items-start">
+                            <div className="h-7 w-7 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center mr-3 mt-0.5">
+                              <span className="text-emerald-700 dark:text-emerald-300 text-xs font-bold">2</span>
+                            </div>
+                            <div>
+                              <h5 className="font-medium text-sm">Add Zapllo CRM</h5>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Search for "Zapllo CRM" in the app selection
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="p-3 bg-white dark:bg-black rounded border">
+                          <div className="flex items-start">
+                            <div className="h-7 w-7 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center mr-3 mt-0.5">
+                              <span className="text-emerald-700 dark:text-emerald-300 text-xs font-bold">3</span>
+                            </div>
+                            <div>
+                              <h5 className="font-medium text-sm">Use your API key</h5>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Connect using the API key shown above
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+  
+                      <div className="mt-4 pt-4 border-t">
+                        <h4 className="font-medium text-sm mb-2">Example workflows you can build</h4>
+                        <div className="grid gap-2 grid-cols-1 sm:grid-cols-2">
+                          <div className="flex items-center p-2 rounded border bg-white/50 dark:bg-black/20">
+                            <img src="/integrations/gmail.png" alt="Gmail" className="h-4 w-4 mr-2" />
+                            <span className="text-xs">Send email notifications for new leads</span>
+                          </div>
+                          <div className="flex items-center p-2 rounded border bg-white/50 dark:bg-black/20">
+                            <img src="/brands/sheets.png" alt="Sheets" className="h-4 w-4 mr-2" />
+                            <span className="text-xs">Sync contacts to Google Sheets</span>
+                          </div>
+                          <div className="flex items-center p-2 rounded border bg-white/50 dark:bg-black/20">
+                            <FaInstagram className='h-4 w-4 mr-2' />
+                            <span className="text-xs">Track Instagram leads in your CRM</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {pabblyApiKey === 'connected' && (
+                    <div className="mt-4 bg-emerald-100/50 dark:bg-emerald-900/20 p-4 rounded-md border border-emerald-200 dark:border-emerald-800">
+                      <p className="text-sm">
+                        Your Pabbly Connect integration is ready. Build powerful automation workflows with Zapllo CRM.
+                      </p>
+                      <Button 
+                        variant="link" 
+                        className="h-8 p-0 mt-2 text-emerald-700"
+                        onClick={() => window.open('https://connect.pabbly.com/workflow/', '_blank')}
+                      >
+                        Create workflows with Zapllo CRM
+                        <ExternalLink className="h-3.5 w-3.5 ml-1" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
   
           {/* Text explaining other ways to integrate */}
           <div className="px-4 py-3 bg-muted rounded-md border text-center">

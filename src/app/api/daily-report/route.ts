@@ -7,6 +7,7 @@ import Followup from '@/models/followupModel';
 import Pipeline from '@/models/pipelineModel';
 import { NextResponse } from 'next/server';
 
+
 export async function GET(request: Request) {
     try {
         await connectDB();
@@ -65,6 +66,7 @@ export async function GET(request: Request) {
                     stage: 'Open'
                 }).populate('lead', 'title');
 
+
                 // Format followup data for the email
                 const formattedFollowups = pendingFollowups.map(followup => ({
                     description: followup.description,
@@ -73,17 +75,77 @@ export async function GET(request: Request) {
                     leadTitle: followup.lead ? (followup.lead as any).title : 'Unknown Lead'
                 }));
 
-                // Send email to the user
-                await sendDailyReportEmail({
-                    to: user.email,
-                    firstName: user.firstName,
-                    reportData: {
-                        totalLeads,
-                        openLeads,
-                        wonLeads,
-                        lostLeads,
-                        pendingFollowups: formattedFollowups
+                // Prepare the report data object
+                const reportData = {
+                    totalLeads,
+                    openLeads,
+                    wonLeads,
+                    lostLeads,
+                    pendingFollowups: formattedFollowups
+                };
+
+                // Send notifications based on user preferences
+                const promises = [];
+
+                // Email notification
+                if (organization.notifications?.dailyReportTime) {
+                    promises.push(sendDailyReportEmail({
+                        to: user.email,
+                        firstName: user.firstName,
+                        reportData
+                    }));
+                }
+
+                // Send WhatsApp notification for daily report
+                if (organization.notifications?.dailyReportTime && user.whatsappNo) {
+                    try {
+                        // Format today's date for the message
+                        const today = new Date();
+                        const formattedDate = today.toLocaleDateString('en-GB', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: '2-digit'
+                        });
+
+                        // Prepare the webhook payload
+                        const webhookPayload = {
+                            phoneNumber: user.whatsappNo,
+                            country: "IN", // Default to India if not specified
+                            templateName: "crmdailyreport", // Name of your Interakt template
+                            bodyVariables: [
+                                user.firstName, // User's name
+                                formattedDate, // Today's date
+                                totalLeads.toString(), // Total leads count
+                                openLeads.toString(), // Open leads count
+                                wonLeads.toString(), // Won leads count
+                                lostLeads.toString(), // Lost leads count
+                                pendingFollowups.length.toString(), // Pending followups count
+                                "crm.zapllo.com" // CRM URL
+                            ]
+                        };
+                        console.log(webhookPayload, 'webhook payload');
+                        // Send the webhook request
+                        const response = await fetch("https://zapllo.com/api/webhook", {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                            },
+                            body: JSON.stringify(webhookPayload)
+                        });
+
+                        if (!response.ok) {
+                            throw new Error(`Webhook API error: ${response.status}`);
+                        }
+
+                        console.log(`Daily report WhatsApp notification sent successfully to ${user.whatsappNo}`);
+                    } catch (error) {
+                        console.error(`Error sending daily report WhatsApp to ${user.whatsappNo}:`, error);
+                        // Continue execution, don't fail for this user
                     }
+                }
+                // Execute all notifications in parallel
+                await Promise.all(promises).catch(error => {
+                    console.error(`Error sending notifications to user ${user.email}:`, error);
                 });
 
                 console.log(`Sent daily report to ${user.email}`);
