@@ -36,6 +36,7 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import ReactCountryFlag from "react-country-flag";
 import { countries } from "countries-list";
+import { toast } from "@/hooks/use-toast";
 
 interface Company {
   _id: string;
@@ -163,6 +164,12 @@ const AddContact: React.FC<AddContactProps> = ({ isOpen, setIsOpen }) => {
 
       // POST to /api/contacts with the form data
       await axios.post("/api/contacts", dataToSend);
+
+      // Add success toast notification
+      toast({
+        title: "Contact created successfully",
+        description: `${formattedData.firstName} ${formattedData.lastName} has been added to your contacts.`,
+      });
 
       // Reset form fields
       setContactData({
@@ -331,34 +338,34 @@ const AddContact: React.FC<AddContactProps> = ({ isOpen, setIsOpen }) => {
             <TabsContent value="additional" className="space-y-4 mt-0">
               {/* Address Information */}
               <div className="space-y-2">
-  <Label htmlFor="country">Country</Label>
-  <Select 
-    value={contactData.country} 
-    onValueChange={(val) => handleInputChange('country', val)}
-  >
-    <SelectTrigger className="w-full">
-      <SelectValue placeholder="Select Country" />
-    </SelectTrigger>
-    <SelectContent className="max-h-[200px] z-[100]">
-      {countryOptions.map((country) => (
-        <SelectItem className="hover:bg-accent" key={country.code} value={country.name}>
-          <div className="flex items-center">
-            <ReactCountryFlag
-              countryCode={country.code}
-              svg
-              style={{
-                width: '1.2em',
-                height: '1.2em',
-                marginRight: '0.7em',
-              }}
-            />
-            {country.name}
-          </div>
-        </SelectItem>
-      ))}
-    </SelectContent>
-  </Select>
-</div>
+                <Label htmlFor="country">Country</Label>
+                <Select
+                  value={contactData.country}
+                  onValueChange={(val) => handleInputChange('country', val)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select Country" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[200px] z-[100]">
+                    {countryOptions.map((country) => (
+                      <SelectItem className="hover:bg-accent" key={country.code} value={country.name}>
+                        <div className="flex items-center">
+                          <ReactCountryFlag
+                            countryCode={country.code}
+                            svg
+                            style={{
+                              width: '1.2em',
+                              height: '1.2em',
+                              marginRight: '0.7em',
+                            }}
+                          />
+                          {country.name}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">

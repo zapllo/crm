@@ -20,6 +20,7 @@ import {
   Crown,
   ExternalLink,
   Globe,
+  Wallet,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
@@ -94,6 +95,26 @@ export default function InfoBar() {
   const [open, setOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+
+  // Add wallet balance state
+  const [walletBalance, setWalletBalance] = useState(0);
+
+  // Fetch wallet balance
+  useEffect(() => {
+    const fetchWalletBalance = async () => {
+      try {
+        const response = await axios.get("/api/wallet/balance");
+        setWalletBalance(response.data.balance);
+      } catch (err) {
+        console.error("Error fetching wallet balance:", err);
+      }
+    };
+
+    fetchWalletBalance();
+    // Set up a refresh interval (every 5 minutes)
+    const interval = setInterval(fetchWalletBalance, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -248,6 +269,18 @@ export default function InfoBar() {
 
           {/* Right section with notifications and user menu */}
           <div className="flex items-center gap-3">
+            {/* Add wallet balance display */}
+            <Link href="/settings/wallet">
+              <Button
+                variant="outline"
+                size="sm"
+                className="hidden md:flex items-center gap-1.5 rounded-full"
+              >
+                <Wallet className="h-4 w-4 text-primary" />
+                <span>₹{(walletBalance / 100).toFixed(2)}</span>
+              </Button>
+            </Link>
+
             {/* Help button with tooltip */}
             <TooltipProvider>
               <Tooltip>
@@ -456,29 +489,38 @@ export default function InfoBar() {
           </CommandGroup>
           <CommandSeparator />
           <CommandGroup heading="Recent">
-            <Link href='/CRM/leads'>
-              <CommandItem >
-                <LayoutDashboard className="mr-2 h-4 w-4" />
-                <span>Dashboard</span>
-              </CommandItem>
-            </Link>
-            <Link href='/CRM/contacts'>
-
-            <CommandItem>
+            <CommandItem
+              onSelect={() => {
+                router.push('/CRM/leads');
+                setSearchOpen(false);
+              }}
+            >
+              <LayoutDashboard className="mr-2 h-4 w-4" />
+              <span>Dashboard</span>
+            </CommandItem>
+            <CommandItem
+              onSelect={() => {
+                router.push('/CRM/contacts');
+                setSearchOpen(false);
+              }}
+            >
               <User2 className="mr-2 h-4 w-4" />
               <span>Contacts</span>
             </CommandItem>
-            </Link>
+
             {/* <CommandItem>
               <Phone className="mr-2 h-4 w-4" />
               <span>Call Log</span>
             </CommandItem> */}
-            <Link href='/settings/channels'>
-            <CommandItem >
+            <CommandItem
+              onSelect={() => {
+                router.push('/settings/channels');
+                setSearchOpen(false);
+              }}
+            >
               <Mail className="mr-2 h-4 w-4" />
               <span>Email Templates</span>
             </CommandItem>
-            </Link>
           </CommandGroup>
           <CommandSeparator />
           <CommandGroup heading="Help">

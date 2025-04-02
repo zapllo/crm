@@ -33,193 +33,151 @@ export async function sendLeadAssignmentEmail({
                 font-family: 'Inter', sans-serif;
                 line-height: 1.6;
                 color: #333;
-                background-color: #f5f7fa;
+                background-color: #f0f4f8;
                 margin: 0;
                 padding: 0;
             }
             .container {
-                max-width: 560px;
+                max-width: 600px;
                 margin: 20px auto;
-                padding: 24px;
+                padding: 0;
                 background-color: #ffffff;
-                border-radius: 10px;
-                box-shadow: 0 3px 16px rgba(0, 0, 0, 0.06);
+                border-radius: 8px;
+                overflow: hidden;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             }
             .header {
                 text-align: center;
-                padding: 18px 0;
-                margin: -24px -24px 16px -24px;
-                border-radius: 10px 10px 0 0;
-               background: linear-gradient(90deg, #7451F8, #F57E57);
-                border-bottom: 1px solid rgba(128, 93, 244, 0.3);
+                padding: 20px;
             }
             .logo {
-                max-width: 130px;
+                max-width: 150px;
                 height: auto;
-                margin: 0 auto;
             }
-            .title {
-                color: #805DF4;
-                font-size: 22px;
-                font-weight: 600;
-                margin: 24px 0 4px;
-                text-align: center;
-            }
-            .subtitle {
-                color: #5d6778;
-                font-size: 14px;
-                text-align: center;
-                margin-bottom: 24px;
-            }
-            .greeting {
+            .banner {
+                background: linear-gradient(90deg, #7451F8, #F57E57);
+                color: #ffffff;
+                padding: 20px 40px;
                 font-size: 16px;
-                font-weight: 500;
-                color: #1a2b3c;
+                font-weight: bold;
+                text-align: center;
+                border-radius: 12px;
+                margin: 0 auto 20px;
+                max-width: 80%;
+            }
+            .banner h1 {
+                margin: 0;
+                font-size: 20px;
             }
             .content {
-                padding: 0;
+                padding: 20px;
+                text-align: left;
             }
             .lead-details {
                 background-color: #f8faff;
                 padding: 16px;
                 border-radius: 8px;
                 margin: 20px 0;
-                border-left: 3px solid #805DF4;
+                border-left: 3px solid #7451F8;
             }
-            .detail-item {
-                margin-bottom: 12px;
-                display: flex;
-                align-items: center;
+            .detail-row {
+                margin-bottom: 10px;
             }
-            .detail-item:last-child {
-                margin-bottom: 0;
-            }
-            .label {
+            .detail-label {
                 font-weight: 500;
                 color: #5d6778;
-                width: 110px;
-                font-size: 13px;
+                font-size: 14px;
             }
-            .value {
+            .detail-value {
                 color: #1D193F;
                 font-size: 14px;
                 font-weight: 500;
-                flex: 1;
             }
             .cta-container {
                 text-align: center;
-                margin: 24px 0;
+                margin: 30px 0;
             }
             .cta-button {
-                display: inline-block;
-                background-image: linear-gradient(to right, #805DF4, #5F41E5);
-                color: white !important;
+                background-color: #0C874B;
+                color: #ffffff;
+                padding: 12px 24px;
+                font-size: 16px;
                 text-decoration: none;
-                padding: 10px 24px;
-                border-radius: 6px;
-                font-weight: 500;
-                font-size: 14px;
-                transition: all 0.2s ease;
-                box-shadow: 0 2px 8px rgba(128, 93, 244, 0.25);
-            }
-            .cta-button:hover {
-                transform: translateY(-1px);
-                box-shadow: 0 4px 12px rgba(128, 93, 244, 0.3);
+                border-radius: 5px;
+                font-weight: bold;
             }
             .tip-container {
-                background-color: rgba(128, 93, 244, 0.07);
-                border-radius: 6px;
-                padding: 12px 16px;
+                background-color: #f8faff;
+                border-radius: 8px;
+                padding: 16px;
                 margin: 20px 0;
-                border-left: 3px solid #805DF4;
-                font-size: 13px;
+                border-left: 3px solid #7451F8;
             }
             .tip-title {
-                color: #805DF4;
+                color: #7451F8;
                 font-weight: 600;
-                margin-bottom: 4px;
-                display: flex;
-                align-items: center;
-                font-size: 13px;
-            }
-            .tip-title::before {
-                content: "💡";
-                margin-right: 6px;
+                margin-bottom: 10px;
+                font-size: 14px;
             }
             .footer {
+                padding: 20px;
+                font-size: 12px;
+                color: #888888;
                 text-align: center;
-                color: #9da3af;
-                font-size: 12px;
-                margin-top: 30px;
-                padding-top: 16px;
-                border-top: 1px solid #eee;
-            }
-            .social-links {
-                display: flex;
-                justify-content: center;
-                margin: 12px 0;
-            }
-            .social-link {
-                display: inline-block;
-                margin: 0 8px;
-                color: #805DF4;
-                font-size: 12px;
-                text-decoration: none;
-            }
-            p {
-                margin: 12px 0;
-                font-size: 14px;
             }
         </style>
     </head>
     <body>
         <div class="container">
             <div class="header">
-                <img src="https://www.zapllo.com/logo.png" alt="Zapllo Logo" class="logo">
+                <img src="https://res.cloudinary.com/dndzbt8al/image/upload/v1724000375/orjojzjia7vfiycfzfly.png" alt="Zapllo Logo" class="logo">
             </div>
             
-            <div class="title">New Lead Assigned</div>
-            <div class="subtitle">A new opportunity is waiting for you</div>
+            <div class="banner">
+                <h1>New Lead Assigned</h1>
+            </div>
             
             <div class="content">
-                <p class="greeting">Hi ${firstName},</p>
-                <p>A new lead has just been assigned to you in Zapllo CRM. Here are the details:</p>
+                <p>Dear <strong>${firstName},</strong></p>
+                <p>A new lead has been assigned to your account in the CRM system.</p>
                 
                 <div class="lead-details">
-                    <div class="detail-item">
-                        <span class="label">Lead title</span>
-                        <span class="value">${leadDetails.title}</span>
+                    <div class="detail-row">
+                        <div class="detail-label">Lead Title:</div>
+                        <div class="detail-value">${leadDetails.title}</div>
                     </div>
-                    <div class="detail-item">
-                        <span class="label">Contact name</span>
-                        <span class="value">${leadDetails.contactName}</span>
+                    <div class="detail-row">
+                        <div class="detail-label">Contact Name:</div>
+                        <div class="detail-value">${leadDetails.contactName}</div>
                     </div>
-                    <div class="detail-item">
-                        <span class="label">Contact number</span>
-                        <span class="value">${leadDetails.contactNumber}</span>
+                    <div class="detail-row">
+                        <div class="detail-label">Contact Number:</div>
+                        <div class="detail-value">${leadDetails.contactNumber}</div>
                     </div>
-                    <div class="detail-item">
-                        <span class="label">Source</span>
-                        <span class="value">${leadDetails.sourceName}</span>
+                    <div class="detail-row">
+                        <div class="detail-label">Source:</div>
+                        <div class="detail-value">${leadDetails.sourceName}</div>
                     </div>
                 </div>
+                
+                <p>Please review this lead and take appropriate action to boost your conversion rates.</p>
                 
                 <div class="cta-container">
                     <a href="https://crm.zapllo.com/CRM/leads/${leadDetails.leadId}" class="cta-button">View Lead Details</a>
                 </div>
                 
                 <div class="tip-container">
-                    <div class="tip-title">Pro Tip</div>
-                    <p style="margin: 0; font-size: 13px;">Reaching out within the first hour can increase your conversion rate significantly. Seize this opportunity!</p>
+                    <div class="tip-title">💡 Pro Tip</div>
+                    <p>Responding to new leads within the first hour can increase your chances of conversion by up to 7x!</p>
                 </div>
                 
+                <p>If you have any questions, please contact your administrator.</p>
                 <p>Best regards,<br>The Zapllo Team</p>
             </div>
             
             <div class="footer">
-               
-                <p style="margin: 8px 0; font-size: 12px;">© 2025 Zapllo. All rights reserved.</p>
-                        <p style="margin: 8px 0; font-size: 12px;">This is an automated notification. Please do not reply</p>
+                <p>This is an automated notification. Please do not reply.</p>
+                <p>© 2025 Zapllo. All rights reserved.</p>
             </div>
         </div>
     </body>
@@ -272,7 +230,7 @@ interface DailyReportEmailProps {
     };
   }
 
-export async function sendDailyReportEmail({
+  export async function sendDailyReportEmail({
     to,
     firstName,
     reportData
@@ -304,7 +262,7 @@ export async function sendDailyReportEmail({
       <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Daily Lead Report</title>
+        <title>Daily CRM Report</title>
         <style>
           @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
           
@@ -312,58 +270,45 @@ export async function sendDailyReportEmail({
             font-family: 'Inter', sans-serif;
             line-height: 1.6;
             color: #333;
-            background-color: #f5f7fa;
+            background-color: #f0f4f8;
             margin: 0;
             padding: 0;
           }
           .container {
-            max-width: 560px;
+            max-width: 600px;
             margin: 20px auto;
-            padding: 24px;
+            padding: 0;
             background-color: #ffffff;
-            border-radius: 10px;
-            box-shadow: 0 3px 16px rgba(0, 0, 0, 0.06);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
           }
           .header {
             text-align: center;
-            padding: 18px 0;
-            margin: -24px -24px 16px -24px;
-            border-radius: 10px 10px 0 0;
-            background: linear-gradient(90deg, #7451F8, #F57E57);
-            border-bottom: 1px solid rgba(128, 93, 244, 0.3);
+            padding: 20px;
           }
           .logo {
-            max-width: 130px;
+            max-width: 150px;
             height: auto;
-            margin: 0 auto;
           }
-          .title {
-            color: #805DF4;
-            font-size: 22px;
-            font-weight: 600;
-            margin: 24px 0 4px;
-            text-align: center;
-          }
-          .subtitle {
-            color: #5d6778;
-            font-size: 14px;
-            text-align: center;
-            margin-bottom: 24px;
-          }
-          .greeting {
+          .banner {
+            background: linear-gradient(90deg, #7451F8, #F57E57);
+            color: #ffffff;
+            padding: 20px 40px;
             font-size: 16px;
-            font-weight: 500;
-            color: #1a2b3c;
+            font-weight: bold;
+            text-align: center;
+            border-radius: 12px;
+            margin: 0 auto 20px;
+            max-width: 80%;
+          }
+          .banner h1 {
+            margin: 0;
+            font-size: 20px;
           }
           .content {
-            padding: 0;
-          }
-          .date {
-            color: #5d6778;
-            font-size: 14px;
-            text-align: center;
-            margin-bottom: 24px;
-            font-style: italic;
+            padding: 20px;
+            text-align: left;
           }
           .stat-cards {
             display: flex;
@@ -377,7 +322,7 @@ export async function sendDailyReportEmail({
             padding: 16px;
             border-radius: 8px;
             text-align: center;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.07);
             background-color: #ffffff;
             border-left: 3px solid;
           }
@@ -392,7 +337,7 @@ export async function sendDailyReportEmail({
             font-weight: 600;
             color: #1D193F;
           }
-          .total { border-color: #805DF4; }
+          .total { border-color: #7451F8; }
           .open { border-color: #FFB547; }
           .won { border-color: #28C76F; }
           .lost { border-color: #EA5455; }
@@ -402,16 +347,14 @@ export async function sendDailyReportEmail({
             padding: 20px;
             border-radius: 8px;
             margin: 24px 0;
-            border-left: 3px solid #805DF4;
+            border-left: 3px solid #7451F8;
           }
           
           .follow-ups-title {
-            color: #805DF4;
+            color: #7451F8;
             font-weight: 600;
             margin-bottom: 15px;
             font-size: 16px;
-            display: flex;
-            align-items: center;
           }
           
           table {
@@ -421,7 +364,7 @@ export async function sendDailyReportEmail({
           }
           
           th {
-            background-color: rgba(128, 93, 244, 0.07);
+            background-color: rgba(116, 81, 248, 0.07);
             color: #5d6778;
             padding: 12px;
             text-align: left;
@@ -437,49 +380,40 @@ export async function sendDailyReportEmail({
           
           .cta-container {
             text-align: center;
-            margin: 24px 0;
+            margin: 30px 0;
           }
           
           .cta-button {
-            display: inline-block;
-            background-image: linear-gradient(to right, #805DF4, #5F41E5);
-            color: white !important;
+            background-color: #0C874B;
+            color: #ffffff;
+            padding: 12px 24px;
+            font-size: 16px;
             text-decoration: none;
-            padding: 10px 24px;
-            border-radius: 6px;
-            font-weight: 500;
-            font-size: 14px;
-            transition: all 0.2s ease;
-            box-shadow: 0 2px 8px rgba(128, 93, 244, 0.25);
-          }
-          
-          .cta-button:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(128, 93, 244, 0.3);
+            border-radius: 5px;
+            font-weight: bold;
           }
           
           .footer {
-            text-align: center;
-            color: #9da3af;
+            padding: 20px;
             font-size: 12px;
-            margin-top: 30px;
-            padding-top: 16px;
-            border-top: 1px solid #eee;
+            color: #888888;
+            text-align: center;
           }
         </style>
       </head>
       <body>
         <div class="container">
           <div class="header">
-            <img src="https://www.zapllo.com/logo.png" alt="Zapllo Logo" class="logo">
+            <img src="https://res.cloudinary.com/dndzbt8al/image/upload/v1724000375/orjojzjia7vfiycfzfly.png" alt="Zapllo Logo" class="logo">
           </div>
           
-          <div class="title">Your Daily Lead Report</div>
-          <div class="subtitle">Performance summary and pending follow-ups</div>
+          <div class="banner">
+            <h1>Your Daily CRM Report</h1>
+          </div>
           
           <div class="content">
-            <p class="greeting">Hi ${firstName},</p>
-            <p>Here's your daily lead activity report for ${formattedDate}:</p>
+            <p>Dear <strong>${firstName},</strong></p>
+            <p>Here's your daily CRM activity report for ${formattedDate}:</p>
             
             <div class="stat-cards">
               <div class="stat-card total">
@@ -524,13 +458,13 @@ export async function sendDailyReportEmail({
               <a href="https://crm.zapllo.com/CRM/dashboard" class="cta-button">Go to Dashboard</a>
             </div>
             
-            <p>Stay productive and keep closing those deals!</p>
+            <p>Review your leads and follow-ups to improve conversion rates!</p>
             <p>Best regards,<br>The Zapllo Team</p>
           </div>
           
           <div class="footer">
-            <p style="margin: 8px 0; font-size: 12px;">This is an automated notification. Please do not reply.</p>
-            <p style="margin: 8px 0; font-size: 12px;">© 2025 Zapllo. All rights reserved.</p>
+            <p>This is an automated notification. Please do not reply.</p>
+            <p>© 2025 Zapllo. All rights reserved.</p>
           </div>
         </div>
       </body>

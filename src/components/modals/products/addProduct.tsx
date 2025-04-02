@@ -163,8 +163,10 @@ const AddProduct: React.FC<AddProductProps> = ({ isOpen, setIsOpen, onProductCre
             };
 
             await axios.post('/api/products', payload);
+            // Add success toast notification with more specific message
             toast({
-                title: "Product added successfully",
+                title: "Product created successfully",
+                description: `${productData.productName} has been added to your products.`,
             });
             setIsOpen(false);
             onProductCreated();

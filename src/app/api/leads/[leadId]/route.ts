@@ -15,7 +15,8 @@ export async function PATCH(req: Request,
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const { remark } = await req.json();
+        const { stage, action, remark } = await req.json();
+        
         if (!remark) {
             return NextResponse.json({ error: "Remark is required" }, { status: 400 });
         }
@@ -25,9 +26,10 @@ export async function PATCH(req: Request,
             return NextResponse.json({ error: "Lead not found" }, { status: 404 });
         }
 
+        // Create timeline entry using the stage provided
         const timelineEntry = {
-            stage: "Followup Closed",
-            action: "Closed",
+            stage: stage || "Update", // Default to "Update" if no stage provided
+            action: action || "Updated",
             remark,
             movedBy: userId,
             timestamp: new Date(),

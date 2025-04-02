@@ -362,10 +362,16 @@ export default function CallHistory({ contactId, limit = 5 }: { contactId?: stri
                                             variant="outline"
                                             size="sm"
                                             className="w-full mt-2 gap-2"
-                                            onClick={() => window.open(selectedCall.recordingUrl, '_blank')}
                                         >
-                                            <Download className="h-4 w-4" />
-                                            Download Recording
+                                            <a
+                                                href={selectedCall.recordingUrl}
+                                                download={`ZC_Recording_${selectedCall._id}.mp3`}
+                                                className="w-full mt-2 gap-2 inline-flex items-center justify-center px-4 py-2 border rounded-md text-sm font-medium bg-white text-black hover:bg-gray-100 transition-colors"
+                                            >
+                                                <Download className="h-4 w-4" />
+                                                Download Recording
+                                            </a>
+
                                         </Button>
                                     </div>
                                 </div>

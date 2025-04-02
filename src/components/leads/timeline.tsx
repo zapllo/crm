@@ -15,7 +15,8 @@ import {
     Milestone,
     Star,
     User,
-    Flag
+    Flag,
+    CheckCircle
 } from "lucide-react";
 import {
     FaSyncAlt,
@@ -24,7 +25,8 @@ import {
     FaStickyNote,
     FaClock,
     FaCheck,
-    FaExclamationTriangle
+    FaExclamationTriangle,
+    FaWhatsapp
 } from "react-icons/fa";
 import { IconArrowsLeftRight } from "@tabler/icons-react";
 
@@ -101,61 +103,88 @@ export default function LeadTimeline({ leadId, onlyStages = false }: { leadId: s
     });
 
     // Map event type to icons and colors
-    const getTimelineItemProps = (type: string, followupType?: string) => {
-        switch (type) {
-            case "stage":
+    // ... existing code ...
+
+    // Map event type to icons and colors
+    // Map event type to icons and colors
+    // Map event type to icons and colors
+    const getTimelineItemProps = (type: string, followupType?: string, entry?: any) => {
+        // If type is available, use it, otherwise check stage name for backward compatibility
+        if (type === "stage") {
+            return {
+                icon: <IconArrowsLeftRight className="h-5 w-5" />,
+                color: "text-blue-500",
+                bgColor: "bg-blue-100 dark:bg-blue-900/30",
+                borderColor: "border-blue-300 dark:border-blue-700",
+                label: "Stage Change"
+            };
+        }
+
+        if (type === "followup" || (entry && entry.stage === "Followup")) {
+            if (followupType === "Call" || (entry && entry.action && entry.action.includes("Call"))) {
                 return {
-                    icon: <IconArrowsLeftRight className="h-5 w-5" />,
-                    color: "text-blue-500",
-                    bgColor: "bg-blue-100 dark:bg-blue-900/30",
-                    borderColor: "border-blue-300 dark:border-blue-700",
-                    label: "Stage Change"
+                    icon: <FaPhone className="h-4 w-4" />,
+                    color: "text-green-500",
+                    bgColor: "bg-green-100 dark:bg-green-900/30",
+                    borderColor: "border-green-300 dark:border-green-700",
+                    label: "Call Followup"
                 };
-            case "followup":
-                if (followupType === "Call") {
-                    return {
-                        icon: <FaPhone className="h-4 w-4" />,
-                        color: "text-green-500",
-                        bgColor: "bg-green-100 dark:bg-green-900/30",
-                        borderColor: "border-green-300 dark:border-green-700",
-                        label: "Call Followup"
-                    };
-                }
-                if (followupType === "Email") {
-                    return {
-                        icon: <MessageSquare className="h-5 w-5" />,
-                        color: "text-amber-500",
-                        bgColor: "bg-amber-100 dark:bg-amber-900/30",
-                        borderColor: "border-amber-300 dark:border-amber-700",
-                        label: "Email Followup"
-                    };
-                }
+            }
+            if (followupType === "Email" || (entry && entry.action && entry.action.includes("Email"))) {
                 return {
-                    icon: <FaComment className="h-4 w-4" />,
-                    color: "text-purple-500",
-                    bgColor: "bg-purple-100 dark:bg-purple-900/30",
-                    borderColor: "border-purple-300 dark:border-purple-700",
-                    label: "Followup"
-                };
-            case "note":
-                return {
-                    icon: <FaStickyNote className="h-4 w-4" />,
+                    icon: <MessageSquare className="h-5 w-5" />,
                     color: "text-amber-500",
                     bgColor: "bg-amber-100 dark:bg-amber-900/30",
                     borderColor: "border-amber-300 dark:border-amber-700",
-                    label: "Note Added"
+                    label: "Email Followup"
                 };
-            default:
+            }
+            if (followupType === "Closed" || (entry && entry.action && entry.action.includes("Closed"))) {
                 return {
-                    icon: <FaClock className="h-4 w-4" />,
-                    color: "text-gray-500",
-                    bgColor: "bg-gray-100 dark:bg-gray-800",
-                    borderColor: "border-gray-300 dark:border-gray-700",
-                    label: "Activity"
+                    icon: <FaCheck className="h-4 w-4" />,
+                    color: "text-green-600",
+                    bgColor: "bg-green-100 dark:bg-green-900/30",
+                    borderColor: "border-green-300 dark:border-green-700",
+                    label: "Followup Closed"
                 };
+            }
+            if (followupType === "WhatsApp" || (entry && entry.action && entry.action.includes("WhatsApp"))) {
+                return {
+                    icon: <FaWhatsapp className="h-4 w-4" />,
+                    color: "text-green-500",
+                    bgColor: "bg-green-100 dark:bg-green-900/30",
+                    borderColor: "border-green-300 dark:border-green-700",
+                    label: "WhatsApp Followup"
+                };
+            }
+            return {
+                icon: <FaComment className="h-4 w-4" />,
+                color: "text-purple-500",
+                bgColor: "bg-purple-100 dark:bg-purple-900/30",
+                borderColor: "border-purple-300 dark:border-purple-700",
+                label: "Followup"
+            };
         }
-    };
 
+        if (type === "note" || (entry && entry.stage === "Note")) {
+            return {
+                icon: <FaStickyNote className="h-4 w-4" />,
+                color: "text-amber-500",
+                bgColor: "bg-amber-100 dark:bg-amber-900/30",
+                borderColor: "border-amber-300 dark:border-amber-700",
+                label: "Note Added"
+            };
+        }
+
+        // Default case
+        return {
+            icon: <FaClock className="h-4 w-4" />,
+            color: "text-gray-500",
+            bgColor: "bg-gray-100 dark:bg-gray-800",
+            borderColor: "border-gray-300 dark:border-gray-700",
+            label: "Activity"
+        };
+    }
     return (
         <Card className="border-blue-100 dark:border-blue-900 shadow-sm ">
             <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-b px-6 py-4">
@@ -251,13 +280,14 @@ export default function LeadTimeline({ leadId, onlyStages = false }: { leadId: s
 
                                 <AnimatePresence>
                                     {filteredTimeline.map((entry, index) => {
-                                        const {
-                                            icon,
-                                            color,
-                                            bgColor,
-                                            borderColor,
-                                            label
-                                        } = getTimelineItemProps(entry.type, entry.followupType);
+                                        const itemProps = getTimelineItemProps(entry.type, entry.followupType, entry) || {
+                                            icon: <FaExclamationTriangle className="h-4 w-4" />,
+                                            color: "text-gray-500",
+                                            bgColor: "bg-gray-100 dark:bg-gray-900/30",
+                                            borderColor: "border-gray-300 dark:border-gray-700",
+                                            label: "Unknown Activity"
+                                        };
+                                        const { icon, color, bgColor, borderColor, label } = itemProps;
 
                                         const formattedDate = format(
                                             new Date(entry.timestamp),

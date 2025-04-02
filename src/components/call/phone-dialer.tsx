@@ -350,11 +350,7 @@ export default function PhoneDialer({
                 </Badge>
               </div>
             )}
-            <div className="absolute right-0 top-0">
-              <Badge variant="outline" className="bg-muted">
-                Balance: ₹{(walletBalance / 100).toFixed(2)}
-              </Badge>
-            </div>
+          
           </DialogTitle>
         </DialogHeader>
 

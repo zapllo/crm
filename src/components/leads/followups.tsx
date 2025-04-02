@@ -200,6 +200,7 @@ export default function FollowupSection({ leadId }: { leadId: string }) {
     };
 
     // Function to close a followup
+    // Function to close a followup
     const handleCloseFollowup = async () => {
         if (!closingFollowupId || !remark.trim()) return;
 
@@ -213,13 +214,16 @@ export default function FollowupSection({ leadId }: { leadId: string }) {
                 timestamp: new Date().toISOString(),
             };
 
+            // Update the followup status to Closed
             await axios.patch(`/api/followups/${closingFollowupId}`, {
                 stage: "Closed",
                 $push: { remarks: closingRemark },
             });
 
-            // Push to lead's timeline
+            // Add to lead timeline with a stage that indicates this is a followup
             await axios.patch(`/api/leads/${followup.lead._id}`, {
+                stage: "Followup", // Use a special stage name to indicate this is a followup
+                action: `Closed ${followup.type} Followup`,
                 remark: closingRemark.text,
             });
 

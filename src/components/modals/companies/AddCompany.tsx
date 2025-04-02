@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/tabs";
 import ReactCountryFlag from "react-country-flag";
 import { countries } from "countries-list";
+import { toast } from "@/hooks/use-toast";
 
 interface CompanyData {
   companyName: string;
@@ -82,7 +83,11 @@ const AddCompany: React.FC<AddCompanyProps> = ({
     try {
       setIsSubmitting(true);
       await axios.post("/api/companies", companyData);
-      
+      // Add success toast notification
+      toast({
+        title: "Company created successfully",
+        description: `${companyData.companyName} has been added to your companies.`,
+      });
       // Clear form
       setCompanyData({
         companyName: "",
@@ -96,7 +101,7 @@ const AddCompany: React.FC<AddCompanyProps> = ({
         website: "",
         pincode: "",
       });
-      
+
       onCompanyCreated(); // Refresh companies list
       setIsOpen(false);
     } catch (error) {

@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import Razorpay from 'razorpay';
 import connectDB from '@/lib/db';
 import Wallet from '@/models/walletModel';
 import { getDataFromToken } from '@/lib/getDataFromToken';
 import { User } from '@/models/userModel';
+import { Organization } from '@/models/organizationModel';
 
 export async function POST(req: NextRequest) {
     try {
@@ -25,43 +27,53 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        // const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-        //     apiVersion: '2023-10-16',
-        // });
+        await connectDB();
 
-        // Create a Stripe checkout session
-        // const checkoutSession = await stripe.checkout.sessions.create({
-        //     payment_method_types: ['card'],
-        //     line_items: [
-        //         {
-        //             price_data: {
-        //                 currency: 'inr',
-        //                 product_data: {
-        //                     name: 'ZaplloCRM Call Credits',
-        //                     description: 'Add credits to your calling wallet',
-        //                 },
-        //                 unit_amount: amount * 100, // Convert to smallest currency unit (paise)
-        //             },
-        //             quantity: 1,
-        //         },
-        //     ],
-        //     mode: 'payment',
-        //     success_url: `${process.env.NEXT_PUBLIC_APP_URL}/settings/wallet?success=true&session_id={CHECKOUT_SESSION_ID}`,
-        //     cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/settings/wallet?canceled=true`,
-        //     metadata: {
-        //         organizationId: user.organization,
-        //         userId: user.id,
-        //     },
-        // });
+        // Initialize Razorpay
+        const razorpay = new Razorpay({
+            key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID as string,
+            key_secret: process.env.RAZORPAY_KEY_SECRET as string,
+        });
 
+        // Get organization details
+        const organization = await Organization.findById(user.organization);
+        if (!organization) {
+            return NextResponse.json({ error: 'Organization not found' }, { status: 404 });
+        }
+
+        // Create a Razorpay order
+        const orderOptions = {
+            amount: amount * 100, // Razorpay amount is in paise
+            currency: 'INR',
+            receipt: `wallet-topup-${Date.now()}`,
+            notes: {
+                userId: userId,
+                organizationId: user.organization.toString(),
+                purpose: 'wallet_topup'
+            }
+        };
+
+        const order = await razorpay.orders.create(orderOptions);
+
+        // Return the order details to the client
         return NextResponse.json({
-            // sessionId: checkoutSession.id,
-            // url: checkoutSession.url,
+            orderId: order.id,
+            amount: order.amount,
+            currency: order.currency,
+            notes: order.notes,
+            user: {
+                name: `${user.firstName} ${user.lastName}`,
+                email: user.email,
+                contact: user.whatsappNo || ''
+            },
+            organization: {
+                name: organization.companyName || 'Your Organization'
+            }
         });
     } catch (error) {
-        console.error('Error creating checkout session:', error);
+        console.error('Error creating Razorpay order for wallet topup:', error);
         return NextResponse.json(
-            { error: 'Failed to create checkout session' },
+            { error: 'Failed to create payment order' },
             { status: 500 }
         );
     }

@@ -21,7 +21,8 @@ import {
     ChevronLeft,
     ChevronsLeft,
     ChevronsRight,
-    Lock
+    Lock,
+    Mail
 } from "lucide-react";
 
 import {
@@ -112,6 +113,8 @@ import { usePermissions } from "@/hooks/use-permissions";
 import { NoPermissionFallback } from "@/components/ui/no-permission-fallback";
 import { canView, canAdd, canDelete, canEdit, usePermissionStatus } from "@/contexts/permissionsContext";
 import MediaAttachments from "@/components/MediaAttachments";
+import { Checkbox } from "@/components/ui/checkbox";
+import BulkEmailDialog from "@/components/leads/bulkEmail";
 
 
 /* ---------------- TYPES ---------------- */
@@ -221,6 +224,7 @@ export default function LeadsDashboard() {
     const [selectedPipeline, setSelectedPipeline] = useState<string | null>(null);
     const { user } = useUserContext();
     const [stages, setStages] = useState<Stage[]>([]);
+    const [showCheckboxes, setShowCheckboxes] = useState(false);
 
     // Searching & Filtering
     const [searchTerm, setSearchTerm] = useState("");
@@ -230,6 +234,21 @@ export default function LeadsDashboard() {
         tags: [],
         companies: [],
     });
+
+    // Add to your LeadsDashboard component state:
+    const [selectedLeads, setSelectedLeads] = useState<Lead[]>([]);
+    const [showSendEmailButton, setShowSendEmailButton] = useState(false);
+    const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
+
+
+    // Add this function inside LeadsDashboard component:
+    const toggleLeadSelection = (lead: Lead, isSelected: boolean) => {
+        if (isSelected) {
+            setSelectedLeads(prev => [...prev, lead]);
+        } else {
+            setSelectedLeads(prev => prev.filter(l => l._id !== lead._id));
+        }
+    };
     const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
 
     // Pagination
@@ -1324,7 +1343,7 @@ export default function LeadsDashboard() {
                                 </Tooltip>
                             </TooltipProvider>
                         )}
-
+                      
 
                         {/* Filter button */}
                         <Button
@@ -1491,6 +1510,26 @@ export default function LeadsDashboard() {
                     onClear={clearFilters}
                 />
 
+                {selectedLeads.length > 0 && (
+                    <div className="mb-4 flex items-center justify-between bg-muted/50 p-2 rounded-lg border">
+                        <div className="flex items-center gap-2">
+                            <Checkbox
+                                checked={selectedLeads.length > 0}
+                                onCheckedChange={() => setSelectedLeads([])}
+                            />
+                            <span className="text-sm font-medium">{selectedLeads.length} leads selected</span>
+                        </div>
+                        <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => setIsEmailDialogOpen(true)}
+                            className="gap-2"
+                        >
+                            <Mail className="h-4 w-4" />
+                            Send Email to Selected
+                        </Button>
+                    </div>
+                )}
                 {/* Horizontal scroll controls for pipeline */}
                 <div className="flex justify-between items-center mb-3">
                     <div>
@@ -1504,6 +1543,24 @@ export default function LeadsDashboard() {
                     </div>
 
                     <div className="flex gap-2">
+                          {/* Add the Select Mode Toggle button here */}
+                          <Button
+                            variant="outline"
+                            onClick={() => setShowCheckboxes(!showCheckboxes)}
+                            className="gap-1"
+                        >
+                            {showCheckboxes ? (
+                                <>
+                                    <EyeOff className="h-4 w-4 mr-2" />
+                                    Exit Selection
+                                </>
+                            ) : (
+                                <>
+                                    <Eye className="h-4 w-4 mr-2" />
+                                    Select Leads
+                                </>
+                            )}
+                        </Button>
                         <Button variant="outline" size="icon" onClick={handleScrollLeft}>
                             <ArrowLeft className="h-4 w-4" />
                         </Button>
@@ -1523,28 +1580,33 @@ export default function LeadsDashboard() {
                         ref={scrollContainerRef}
                         className="w-full overflow-x-auto scrollbar-hide h-[calc(100vh-380px)]" // Adjusted height for sleeker cards
                     >
+                        
                         <div className="flex gap-4 p-2 mb-12 min-w-max">
+                            
                             {stages?.map((stage) => (
                                 <DroppableStage
-                                    key={stage._id || stage.name}
-                                    stage={stage}
-                                    onAddLead={canAdd("Leads") ? handleAddLeadToStage : undefined}
-                                    onEditStage={canEdit("Leads") ? handleEditStage : undefined}
-                                    onDeleteStage={canDelete("Leads") ? handleDeleteStage : undefined}
-                                    onBulkDeleteToggle={canDelete("Leads") ? handleBulkDeleteToggle : undefined}
-                                    isBulkDeleteEnabled={isBulkDeleteEnabled && canDelete("Leads")}
-                                    canAddLead={canAdd("Leads")}
-                                    canEditStage={canEdit("Leads")}
-                                    canDeleteStage={canDelete("Leads")}
-                                >
+                                key={stage._id || stage.name}
+                                stage={stage}
+                                onAddLead={canAdd("Leads") ? handleAddLeadToStage : undefined}
+                                onEditStage={canEdit("Leads") ? handleEditStage : undefined}
+                                onDeleteStage={canDelete("Leads") ? handleDeleteStage : undefined}
+                                onBulkDeleteToggle={canDelete("Leads") ? handleBulkDeleteToggle : undefined}
+                                isBulkDeleteEnabled={isBulkDeleteEnabled && canDelete("Leads")}
+                                canAddLead={canAdd("Leads")}
+                                canEditStage={canEdit("Leads")}
+                                canDeleteStage={canDelete("Leads")}
+                                showCheckboxes={showCheckboxes} // Add this prop
+                            >
                                     {stage.leads?.map((lead) => (
-                                        <DraggableLead
-                                            key={lead._id}
-                                            lead={lead}
-                                            setDraggedLead={setDraggedLead}
-                                            canDrag={canEdit("Leads")}
-                                            canView={canView("Leads")}
-                                        />
+                                       <DraggableLead
+                                       key={lead._id}
+                                       lead={lead}
+                                       setDraggedLead={setDraggedLead}
+                                       canDrag={canEdit("Leads")}
+                                       canView={canView("Leads")}
+                                       onSelectChange={toggleLeadSelection}
+                                       showCheckboxes={showCheckboxes} // Pass it to each lead
+                                   />
                                     ))}
                                 </DroppableStage>
                             ))}
@@ -1578,6 +1640,11 @@ export default function LeadsDashboard() {
                         ) : null}
                     </DragOverlay>
                 </DndContext>
+                <BulkEmailDialog
+                    isOpen={isEmailDialogOpen}
+                    onClose={() => setIsEmailDialogOpen(false)}
+                    selectedLeads={selectedLeads}
+                />
 
                 {/* Add Lead Dialog */}
                 <Dialog
@@ -2060,6 +2127,7 @@ export default function LeadsDashboard() {
 
                         <div className="py-4">
                             <div className="flex items-center justify-between mb-4">
+                                
                                 <div className="flex items-center gap-2">
                                     <Badge
                                         className="px-3 py-1"
@@ -2155,18 +2223,25 @@ function isDarkColor(hexColor?: string): boolean {
 }
 
 /* ---------------- Draggable Lead Component ---------------- */
+// ... existing code ...
+
 function DraggableLead({
     lead,
     setDraggedLead,
     canDrag = true,
     canView = true,
+    onSelectChange, // Add this prop
+    showCheckboxes = false, // Add this prop with default false
 }: {
     lead: Lead;
     setDraggedLead: React.Dispatch<React.SetStateAction<Lead | null>>;
     canDrag?: boolean;
     canView?: boolean;
+    onSelectChange?: (lead: Lead, isSelected: boolean) => void; // Add this
+    showCheckboxes?: boolean; // 
 }) {
     const router = useRouter();
+    const [isSelected, setIsSelected] = useState(false);
     const { attributes, listeners, setNodeRef } = useDraggable({
         id: lead._id,
         data: {
@@ -2181,6 +2256,21 @@ function DraggableLead({
         router.push(`/CRM/leads/${lead._id}`);
     };
 
+    const toggleSelection = () => {
+        const newState = !isSelected;
+        setIsSelected(newState);
+        if (onSelectChange) {
+            onSelectChange(lead, newState);
+        }
+    };
+
+    const handleCheckboxChange = (checked: boolean | string) => {
+        const isChecked = !!checked;
+        setIsSelected(isChecked);
+        if (onSelectChange) {
+            onSelectChange(lead, isChecked);
+        }
+    };
     return (
         <Card
             className="mt-3 border hover:border-primary hover:shadow-md transition-all duration-200 cursor-pointer"
@@ -2193,11 +2283,28 @@ function DraggableLead({
                 onClick={canView ? handleNavigate : undefined}
             >
                 <div className="flex justify-between items-start">
+                    {showCheckboxes && (
+                        <Checkbox
+                            checked={isSelected}
+                            onCheckedChange={handleCheckboxChange}
+                            onClick={(e) => e.stopPropagation()} // Prevent card click when clicking checkbox
+                            className="h-4 w-4"
+                        />
+                    )}
                     <h3 className="font-medium text-sm line-clamp-2">{lead.title}</h3>
-                    <Badge variant="outline" className="text-xs h-5">
-                        {lead.leadId}
-                    </Badge>
+                    <div className="flex items-center gap-1">
+                        <Badge variant="outline" className="text-xs h-5">
+                            {lead.leadId}
+                        </Badge>
+                      
+                    </div>
                 </div>
+
+                {isSelected && (
+                    <div className="mt-1 mb-2">
+                        <Badge variant="secondary" className="text-xs">Selected</Badge>
+                    </div>
+                )}
 
                 <Separator className="my-2" />
 
@@ -2213,6 +2320,7 @@ function DraggableLead({
                         </span>
                     </div>
 
+                    {/* Rest of the card content remains unchanged */}
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1.5">
                             <IndianRupee className="h-3 w-3 text-muted-foreground" />
@@ -2240,6 +2348,7 @@ function DraggableLead({
                         </TooltipProvider>
                     </div>
 
+                    {/* Rest of your existing lead card content */}
                     {lead.assignedTo && (
                         <div className="flex items-center gap-1.5 mt-2">
                             <Avatar className="h-5 w-5">
@@ -2264,6 +2373,7 @@ function DraggableLead({
     );
 }
 
+// ... rest of your code
 /* ---------------- Droppable Stage Component ---------------- */
 function DroppableStage({
     stage,
@@ -2276,6 +2386,7 @@ function DroppableStage({
     canAddLead = true,
     canEditStage = true,
     canDeleteStage = true,
+    showCheckboxes = false, // Add this prop
 }: {
     stage: Stage;
     children: React.ReactNode;
@@ -2287,6 +2398,7 @@ function DroppableStage({
     canAddLead?: boolean;
     canEditStage?: boolean;
     canDeleteStage?: boolean;
+    showCheckboxes?: boolean; // 
 }) {
     const { setNodeRef, isOver } = useDroppable({
         id: stage.name,

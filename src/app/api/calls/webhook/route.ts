@@ -94,8 +94,8 @@ export async function POST(req: NextRequest) {
             // Set end time if not already set
             call.endTime = new Date();
             
-            // Calculate call cost (₹1.5 per minute)
-            const costPerMinute = 150; // 150 paise = ₹1.50
+            // Calculate call cost (₹5 per minute)
+            const costPerMinute = 500; // 500 paise = ₹5.00
             const durationInMinutes = callDuration / 60;
             const callCost = Math.ceil(durationInMinutes * costPerMinute);
             

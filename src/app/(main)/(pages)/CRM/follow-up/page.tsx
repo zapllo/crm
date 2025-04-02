@@ -203,22 +203,25 @@ export default function FollowupPage() {
         try {
             const followup = followups.find(f => f._id === closingFollowupId);
             if (!followup || !followup.lead?._id) return;
-
+    
             const closingRemark = {
                 text: `Closed - ${remark}`,
                 timestamp: new Date(),
             };
-
+    
+            // Update the followup status to Closed
             await axios.patch(`/api/followups/${closingFollowupId}`, {
                 stage: "Closed",
                 $push: { remarks: closingRemark },
             });
-
-            // Push to lead's timeline
+    
+            // Add to lead timeline with a stage that indicates this is a followup
             await axios.patch(`/api/leads/${followup.lead._id}`, {
+                stage: "Followup", // Use a special stage name to indicate this is a followup
+                action: `Closed ${followup.type} Followup`,
                 remark: closingRemark.text,
             });
-
+    
             fetchFollowups();
             setRemark("");
             setClosingFollowupId(null);

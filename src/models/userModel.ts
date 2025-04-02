@@ -8,6 +8,7 @@ export interface IUser extends Document {
   firstName: string;
   lastName: string;
   whatsappNo?: string;
+  country?: string;
   isOrgAdmin: boolean;
   organization: mongoose.Types.ObjectId;
   profileImage?: string;
@@ -25,6 +26,7 @@ const userSchema = new Schema<IUser>(
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
     whatsappNo: { type: String },
+    country: { type: String, default:"IN"},
     profileImage: { type: String },
     isOrgAdmin: { type: Boolean, default: false },
     organization: {

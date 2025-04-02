@@ -139,7 +139,7 @@ export default function Dashboard() {
 
                 // Calculate percentage changes
                 if (prevData.summary) {
-const calcPercentChange = (current: number, previous: number): number => {
+                    const calcPercentChange = (current: number, previous: number): number => {
                         if (previous === 0) return current > 0 ? 100 : 0;
                         return ((current - previous) / previous) * 100;
                     };
@@ -165,15 +165,15 @@ const calcPercentChange = (current: number, previous: number): number => {
         fetchDashboardData();
     }, [filters]);
 
-const handleDateRangeChange = (range: { from: Date | undefined; to: Date | undefined }) => {
-    setFilters({
-        ...filters,
-        dateRange: {
-            from: range.from || subMonths(new Date(), 1),
-            to: range.to || new Date()
-        }
-    });
-};
+    const handleDateRangeChange = (range: { from: Date | undefined; to: Date | undefined }) => {
+        setFilters({
+            ...filters,
+            dateRange: {
+                from: range.from || subMonths(new Date(), 1),
+                to: range.to || new Date()
+            }
+        });
+    };
 
     // For the time-based reports, transform the data for charts
     const timeSeriesData = useMemo(() => {
@@ -184,7 +184,7 @@ const handleDateRangeChange = (range: { from: Date | undefined; to: Date | undef
             yearly: []
         };
 
-const formatDate = (dateStr: string | null, period: string): string => {
+        const formatDate = (dateStr: string | null, period: string): string => {
             if (!dateStr) return '';
 
             try {
@@ -284,20 +284,24 @@ const formatDate = (dateStr: string | null, period: string): string => {
     };
 
     return (
-        <div className="container mx-auto h-screen overflow-y-scroll p-6 space-y-8">
-            <div className="flex flex-col mt-4 md:flex-row md:items-center justify-between gap-4 mb-8">
+        // ... existing code ...
+
+        // In the main Dashboard component
+        <div className="container mx-auto h-screen overflow-y-scroll p-4 space-y-6">
+            <div className="flex flex-col mt-2 md:flex-row md:items-center justify-between gap-3 mb-6">
                 <div>
-                    <h1 className="text-2xl font-medium">👋 Welcome Back, {user?.firstName} </h1>
-                    <p className="text-muted-foreground">
+                    <h1 className="text-xl font-medium">👋 Welcome Back, {user?.firstName} </h1>
+                    <p className="text-xs text-muted-foreground">
                         Analytics and insights for your sales pipeline
                     </p>
                 </div>
-<DateRangePicker
-    value={filters.dateRange}
-    onChange={handleDateRangeChange as any}
-    className="w-full md:w-auto"
-/>
+                <DateRangePicker
+                    value={filters.dateRange}
+                    onChange={handleDateRangeChange as any}
+                    className="w-full md:w-auto"
+                />
             </div>
+
 
             {/* Filters Section */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
@@ -410,23 +414,24 @@ const formatDate = (dateStr: string | null, period: string): string => {
             </div>
 
             {/* Additional Key Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <Card>
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium">Conversion Rate</CardTitle>
-                        <CardDescription>Won leads as percentage of total</CardDescription>
+                    <CardHeader className="pb-1">
+                        <CardTitle className="text-xs font-medium">Conversion Rate</CardTitle>
+                        <CardDescription className="text-xs">Won leads as percentage of total</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <div className="flex items-center gap-2">
-                            <div className="text-3xl font-bold">{formatPercentage(conversionRate)}</div>
-                            <div className={`text-xs px-2 py-1 rounded-full flex items-center ${comparisons.wonCount >= 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                            <div className="text-2xl font-bold">{formatPercentage(conversionRate)}</div>
+                            <div className={`text-xs px-1.5 py-0.5 rounded-full flex items-center ${comparisons.wonCount >= 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                                 {comparisons.wonCount >= 0 ? <ArrowUpIcon className="h-3 w-3 mr-1" /> : <ArrowDownIcon className="h-3 w-3 mr-1" />}
                                 {Math.abs(comparisons.wonCount).toFixed(1)}%
                             </div>
                         </div>
-                        <Progress value={conversionRate} className="h-2 mt-2" />
+                        <Progress value={conversionRate} className="h-1.5 mt-2" />
                     </CardContent>
                 </Card>
+
 
                 <Card>
                     <CardHeader className="pb-2">
@@ -472,22 +477,21 @@ const formatDate = (dateStr: string | null, period: string): string => {
             </div>
 
             {/* Main Dashboard Tabs */}
-            <Tabs defaultValue="leads" className="space-y-6">
-                <TabsList className="grid grid-cols-3 bg-accent  w-full gap-4 max-w-md">
-                    <TabsTrigger value="leads" className="flex border-none items-center gap-2">
-                        <BarChart2 className="h-4 w-4" />
+            <Tabs defaultValue="leads" className="space-y-4">
+                <TabsList className="grid grid-cols-3 bg-accent w-full gap-3 max-w-md">
+                    <TabsTrigger value="leads" className="flex border-none items-center gap-1 text-xs">
+                        <BarChart2 className="h-3 w-3" />
                         Lead Reports
                     </TabsTrigger>
-                    <TabsTrigger value="conversion" className="flex border-none items-center gap-2">
-                        <TrendingUp className="h-4 w-4" />
+                    <TabsTrigger value="conversion" className="flex border-none items-center gap-1 text-xs">
+                        <TrendingUp className="h-3 w-3" />
                         Conversion Rates
                     </TabsTrigger>
-                    <TabsTrigger value="followup" className="flex border-none items-center gap-2">
-                        <Calendar className="h-4 w-4" />
+                    <TabsTrigger value="followup" className="flex border-none items-center gap-1 text-xs">
+                        <Calendar className="h-3 w-3" />
                         Followup Reports
                     </TabsTrigger>
                 </TabsList>
-
                 {/* Lead Reports Tab */}
                 <TabsContent value="leads" className="space-y-6">
                     {/* Time-based Lead Reports */}
@@ -763,7 +767,7 @@ const formatDate = (dateStr: string | null, period: string): string => {
                             </CardHeader>
                             <CardContent>
                                 <div className="text-center space-y-4">
-                                    <div className="text-5xl font-bold text-primary">
+                                    <div className="text-3xl font-bold text-primary">
                                         {formatCurrency(dashboardData?.summary?.openAmount || 0)}
                                     </div>
                                     <p className="text-muted-foreground">
@@ -861,7 +865,7 @@ const formatDate = (dateStr: string | null, period: string): string => {
                                         <TableBody>
                                             {dashboardData?.conversionRates?.bySource?.map((item: any) => {
                                                 // Find the corresponding source data to get counts
-const sourceData = dashboardData?.sourceWiseReports?.find((s: any) => s._id === item._id);
+                                                const sourceData = dashboardData?.sourceWiseReports?.find((s: any) => s._id === item._id);
                                                 return (
                                                     <TableRow key={item._id}>
                                                         <TableCell className="font-medium">{item.name || 'Unknown'}</TableCell>
@@ -918,7 +922,7 @@ const sourceData = dashboardData?.sourceWiseReports?.find((s: any) => s._id === 
                                         <TableBody>
                                             {dashboardData?.conversionRates?.byPipeline?.map((item: any) => {
                                                 // Find the corresponding pipeline data to get counts
-const pipelineData = dashboardData?.pipelineWiseReports?.find((p: { _id: string; wonCount?: number; totalCount?: number }) => p._id === item._id);
+                                                const pipelineData = dashboardData?.pipelineWiseReports?.find((p: { _id: string; wonCount?: number; totalCount?: number }) => p._id === item._id);
                                                 return (
                                                     <TableRow key={item._id}>
                                                         <TableCell className="font-medium">{item.name || 'Unknown'}</TableCell>
@@ -1282,7 +1286,7 @@ const pipelineData = dashboardData?.pipelineWiseReports?.find((p: { _id: string;
     );
 }
 
-// Helper component for metric cards
+// Helper component for metric cards (updated)
 function MetricCard({
     title,
     value,
@@ -1311,40 +1315,41 @@ function MetricCard({
             <Tooltip>
                 <TooltipTrigger asChild>
                     <Card className={`${bgColorClass} border shadow-sm hover:shadow-md transition-all duration-200`}>
-                        <CardHeader className="pb-2">
+                        <CardHeader className="pb-1 px-4 pt-4">
                             <div className="flex justify-between items-center">
-                                <CardTitle className={`text-sm font-medium ${textColorClass}`}>{title}</CardTitle>
+                                <CardTitle className={`text-xs font-medium ${textColorClass}`}>{title}</CardTitle>
                                 <div className={textColorClass}>{icon}</div>
                             </div>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="px-4 py-2">
                             <div className="flex items-baseline justify-between">
-                                <div className={`text-3xl font-bold ${textColorClass}`}>
+                                <div className={`text-2xl font-bold ${textColorClass}`}>
                                     {valueFormatted}
                                 </div>
-                                <div className={`text-xl font-semibold ${textColorClass} opacity-80`}>
+                                <div className={`text-sm font-semibold ${textColorClass} opacity-80`}>
                                     {secondaryValueFormatted}
                                 </div>
                             </div>
-                            <div className="mt-2 flex items-center text-xs">
+                            <div className="mt-1 flex items-center text-xs">
                                 <div className={`flex items-center ${change >= 0 ? 'text-green-600' : 'text-red-600'} px-1.5 py-0.5 rounded-full bg-opacity-10 ${change >= 0 ? 'bg-green-100' : 'bg-red-100'}`}>
-                                    {change >= 0 ? <ArrowUpIcon className="h-3 w-3 mr-1" /> : <ArrowDownIcon className="h-3 w-3 mr-1" />}
+                                    {change >= 0 ? <ArrowUpIcon className="h-2 w-2 mr-1" /> : <ArrowDownIcon className="h-2 w-2 mr-1" />}
                                     {Math.abs(change).toFixed(1)}%
                                 </div>
-                                <span className="ml-2 text-muted-foreground">vs. previous period</span>
+                                <span className="ml-1 text-xs text-muted-foreground">vs. previous period</span>
                             </div>
                         </CardContent>
                     </Card>
                 </TooltipTrigger>
                 {tooltipText && (
                     <TooltipContent>
-                        <p className="text-sm">{tooltipText}</p>
+                        <p className="text-xs">{tooltipText}</p>
                     </TooltipContent>
                 )}
             </Tooltip>
         </TooltipProvider>
     );
 }
+
 
 // Helper function to calculate completion rate
 function calculateCompletionRate(followupStats: any[] = [], countType: string, stage: string) {

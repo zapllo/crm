@@ -4,6 +4,8 @@ interface ITimeline {
     stage: string;
     action: string;
     remark: string;
+    type?: string; // Optional type field for different entry types
+    followupType?: string; // Optional followupType for followup entries
     timestamp: Date;
     movedBy: Types.ObjectId;
 }
@@ -39,10 +41,13 @@ interface ILead extends Document {
 
 const timelineSchema = new Schema<ITimeline>({
     stage: { type: String, required: true },
+    
     action: { type: String, required: true },
     remark: { type: String },
     movedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     timestamp: { type: Date, default: Date.now },
+    type: { type: String }, // Add type field
+    followupType: { type: String }, // Add followupType field
 });
 
 const noteSchema = new Schema<INote>({

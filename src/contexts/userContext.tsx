@@ -12,6 +12,7 @@ interface Organization {
 }
 
 interface IUser {
+  _id: string;
   userId: string;
   email: string;
   isOrgAdmin: boolean;
@@ -20,8 +21,8 @@ interface IUser {
   whatsappNo?: string;
   profileImage?: string;
   organization?: Organization;
-  role:{
-    name:string;
+  role: {
+    name: string;
   };
 }
 

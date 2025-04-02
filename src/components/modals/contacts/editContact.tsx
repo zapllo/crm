@@ -228,7 +228,7 @@ export default function EditContact({
         customFieldValues,
       };
 
-      await axios.patch("/api/contacts", { id: contact._id, updates });
+      await axios.patch(`/api/contacts/${contact._id}`, { updates });
 
       if (onContactUpdated) onContactUpdated();
       setIsOpen(false);
@@ -273,10 +273,10 @@ export default function EditContact({
                   <SelectTrigger>
                     <SelectValue placeholder="Select a company" />
                   </SelectTrigger>
-                  <SelectContent className="max-h-[200px]">
+                  <SelectContent className="max-h-[200px] z-[100]">
                     {companies.length > 0 ? (
                       companies.map((company) => (
-                        <SelectItem key={company._id} value={company._id}>
+                        <SelectItem className='hover:bg-accent' key={company._id} value={company._id}>
                           {company.companyName}
                         </SelectItem>
                       ))
@@ -411,9 +411,9 @@ export default function EditContact({
                       )}
                     </SelectValue>
                   </SelectTrigger>
-                  <SelectContent className="max-h-[200px]">
+                  <SelectContent className="max-h-[200px] z-[100]">
                     {countryOptions.map((country) => (
-                      <SelectItem key={country.code} value={country.name}>
+                      <SelectItem className='hover:bg-accent' key={country.code} value={country.name}>
                         <div className="flex items-center">
                           <ReactCountryFlag
                             countryCode={country.code}
@@ -537,9 +537,9 @@ export default function EditContact({
                             <SelectTrigger>
                               <SelectValue placeholder={`Select ${field.name}`} />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="z-[100]">
                               {field.options.map((option) => (
-                                <SelectItem key={option} value={option}>
+                                <SelectItem className="hover:bg-accent" key={option} value={option}>
                                   {option}
                                 </SelectItem>
                               ))}
