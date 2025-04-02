@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import axios from "axios";
 import Link from "next/link";
@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Loader2, Lock, ArrowLeft, CheckCircle2, AlertTriangle } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 
-export default function ResetPasswordPage() {
+ function ResetPassword() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
@@ -328,6 +328,43 @@ export default function ResetPasswordPage() {
           </Card>
         </motion.div>
       </div>
+    </div>
+  );
+}
+
+function LoadingCard() {
+  return (
+    <div className="w-full">
+      <Card className="border shadow-md animate-pulse">
+        <CardHeader className="pb-4 text-center">
+          <div className="flex justify-center mb-4">
+            <div className="rounded-full p-3 bg-gray-200 dark:bg-gray-700 h-14 w-14"></div>
+          </div>
+          <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mx-auto mb-2"></div>
+          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mx-auto"></div>
+        </CardHeader>
+        <CardContent className="space-y-6 pb-6">
+          <div className="h-24 bg-gray-200 dark:bg-gray-700 rounded"></div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="h-32 bg-gray-200 dark:bg-gray-700 rounded"></div>
+            <div className="h-32 bg-gray-200 dark:bg-gray-700 rounded"></div>
+          </div>
+        </CardContent>
+        <CardFooter>
+          <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
+        </CardFooter>
+      </Card>
+    </div>
+  );
+}
+
+// Main component that wraps the content with Suspense
+export default function ResetPasswordPage() {
+  return (
+    <div className="p-6 space-y-6 max-w-3xl mx-auto h-screen overflow-y-scroll flex items-center justify-center">
+      <Suspense fallback={<LoadingCard />}>
+        <ResetPassword />
+      </Suspense>
     </div>
   );
 }
