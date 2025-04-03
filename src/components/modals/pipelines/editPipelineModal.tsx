@@ -285,9 +285,9 @@ export default function EditPipelineForm({
                 </div>
 
                 <Tabs defaultValue="open">
-                    <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="open">Open Stages ({openStages.length})</TabsTrigger>
-                        <TabsTrigger value="close">Close Stages ({closeStages.length})</TabsTrigger>
+                    <TabsList className="grid w-full gap-2 bg-accent grid-cols-2">
+                        <TabsTrigger className="border-none" value="open">Open Stages ({openStages.length})</TabsTrigger>
+                        <TabsTrigger className="border-none" value="close">Close Stages ({closeStages.length})</TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="open" className="space-y-4">
@@ -377,7 +377,7 @@ export default function EditPipelineForm({
                                                                     <span className="sr-only">Delete</span>
                                                                 </Button>
                                                             </AlertDialogTrigger>
-                                                            <AlertDialogContent>
+                                                            <AlertDialogContent className="z-[100]">
                                                                 <AlertDialogHeader>
                                                                     <AlertDialogTitle>Delete Stage</AlertDialogTitle>
                                                                     <AlertDialogDescription>
@@ -548,7 +548,7 @@ export default function EditPipelineForm({
                                                                         <span className="sr-only">Delete</span>
                                                                     </Button>
                                                                 </AlertDialogTrigger>
-                                                                <AlertDialogContent>
+                                                                    <AlertDialogContent className="z-[100]">
                                                                     <AlertDialogHeader>
                                                                         <AlertDialogTitle>Delete Stage</AlertDialogTitle>
                                                                         <AlertDialogDescription>
@@ -582,7 +582,7 @@ export default function EditPipelineForm({
 
             {/* Add/Edit Stage Dialog */}
             <Dialog open={isStageDialogOpen} onOpenChange={setIsStageDialogOpen}>
-                <DialogContent className="sm:max-w-md">
+                <DialogContent className="sm:max-w-md z-[100]">
                     <DialogHeader>
                         <DialogTitle>
                             {currentStageIndex !== null ? "Edit Stage" : "Add New Stage"}

@@ -2520,7 +2520,7 @@ function DroppableStage({
                     <div className="flex flex-col items-center justify-center h-40 text-center border border-dashed rounded-md p-4">
                         <p className="text-sm text-muted-foreground mb-2">No leads in this stage</p>
 
-                        {canAddLead && onAddLead ? (
+                        {/* {canAddLead && onAddLead ? (
                             <Button
                                 variant="outline"
                                 size="sm"
@@ -2534,7 +2534,7 @@ function DroppableStage({
                             <p className="text-xs text-muted-foreground mt-2">
                                 {!canAddLead && "You don't have permission to add leads"}
                             </p>
-                        )}
+                        )} */}
                     </div>
                 )}
 

@@ -39,6 +39,7 @@ import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/use-permissions";
 import { NoPermissionFallback } from "@/components/ui/no-permission-fallback";
 import { canView, canAdd, canDelete, canEdit, usePermissionStatus } from "@/contexts/permissionsContext";
+import PipelineTemplates from "@/components/pipelines/PipelineTemplates";
 
 
 interface CustomField {
@@ -592,6 +593,14 @@ export default function CustomizePage() {
                                 </div>
                             </CardContent>
                         </Card>
+                    </motion.div>
+                    {/* Pipeline Templates Section - ADD THIS PART */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, delay: 0.2 }}
+                    >
+                        <PipelineTemplates />
                     </motion.div>
                     <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
                         <DialogContent className="z-[100] p-6 max-w-lg w-full">

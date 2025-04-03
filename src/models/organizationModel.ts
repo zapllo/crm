@@ -1,6 +1,7 @@
 import mongoose, { Document, Model, Schema } from 'mongoose';
 
 export interface IOrganization extends Document {
+  _id: string;
   companyName: string;
   industry: string;
   teamSize: string;
@@ -15,6 +16,20 @@ export interface IOrganization extends Document {
   subscribedUserCount?: number;
   subscriptionExpires?: Date;
   trialExpires: Date;
+  
+  // Logo and branding
+  logo?: string;
+  additionalLogos?: string[];
+  
+  // Organization-specific settings
+  settings?: {
+    quotations?: {
+      defaultCurrency: string;
+      defaultExpiry: number;
+      termsAndConditions?: string;
+      emailSignature?: string;
+    }
+  };
   
   // Integration related fields
   webhookSecret: string;
@@ -99,6 +114,33 @@ const organizationSchema = new Schema<IOrganization>(
     subscribedPlan: {
       type: String,
     },
+    // Logo and branding fields
+    logo: {
+      type: String,
+    },
+    additionalLogos: {
+      type: [String],
+      default: []
+    },
+    // Organization settings
+    settings: {
+      quotations: {
+        defaultCurrency: {
+          type: String,
+          default: 'USD'
+        },
+        defaultExpiry: {
+          type: Number,
+          default: 30 // 30 days
+        },
+        termsAndConditions: {
+          type: String
+        },
+        emailSignature: {
+          type: String
+        }
+      }
+    },
     webhookSecret: {
       type: String,
       default: () => require('crypto').randomBytes(32).toString('hex'), // Generate a default secret
@@ -175,3 +217,5 @@ organizationSchema.pre('save', function(next) {
 export const Organization: Model<IOrganization> =
   mongoose.models.Organization ||
   mongoose.model<IOrganization>('Organization', organizationSchema);
+
+export default Organization;

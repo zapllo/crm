@@ -100,8 +100,9 @@ export default function AddNoteDialog({ leadId, onNoteAdded }: AddNoteDialogProp
         }}>
             <DialogTrigger asChild>
                 <Button
+                    size='sm'
                     variant="outline"
-                    className="hover:bg-accent border-none hover:text-black w-full flex gap-1 transition-colors"
+                    className="hover:bg-accent  hover:text-black w-full flex gap-1 transition-colors"
                 >
                     <Notebook className="h-5 w-5" />
                     Add Note

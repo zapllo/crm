@@ -68,6 +68,7 @@ interface LeadDetailsType {
         email: string;
         phone: string;
         company?: {
+            id:string;
             name: string;
             country: string;
             city: string;
@@ -210,7 +211,7 @@ export default function LeadDetails() {
                         Email
                     </Button>
 
-                    <DropdownMenu>
+                    {/* <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button size="sm" variant="default">
                                 <Plus className="mr-2 h-4 w-4" />
@@ -218,7 +219,7 @@ export default function LeadDetails() {
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Lead Actions</DropdownMenuLabel>
+                            <DropdownMenuLabel>Lead Actions</DropdownMenuLabel> */}
                             {canEdit("Leads") && (
                                 <MoveLeadDialog
                                     leadId={leadId || ''}
@@ -238,8 +239,8 @@ export default function LeadDetails() {
                                 onFollowupAdded={() => fetchLeadDetails()}
                             // trigger={<DropdownMenuItem onSelect={(e) => e.preventDefault()}>Schedule Follow-up</DropdownMenuItem>}
                             /> */}
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                        {/* </DropdownMenuContent>
+                    </DropdownMenu> */}
                 </div>
             </div>
 
@@ -506,9 +507,10 @@ export default function LeadDetails() {
                                     </div>
                                 </div>
 
-                                <Button variant="outline" size="sm" className="w-full">
+                                <Button onClick={()=> router.push(`/CRM/companies/${leadDetails.contact?.company?.id}`)} variant="outline" size="sm" className="w-full">
                                     <FaBuilding className="mr-2 h-3 w-3" />
                                     View Company Profile
+
                                 </Button>
                             </CardContent>
                         </Card>
@@ -537,7 +539,7 @@ export default function LeadDetails() {
                                     <p className="text-xs text-muted-foreground mt-1">Active for {formatDistanceToNow(new Date(leadDetails.createdAt))}</p>
                                 </div>
                             </div>
-
+{/* 
                             <div className="mt-4">
                                 <Button variant="outline" size="sm" className="w-full" onClick={() => {
                                     const tabsElement = document.querySelector('[data-value="timeline"]');
@@ -547,7 +549,7 @@ export default function LeadDetails() {
                                 }}>
                                     View Full Activity
                                 </Button>
-                            </div>
+                            </div> */}
                         </CardContent>
                     </Card>
                 </div>

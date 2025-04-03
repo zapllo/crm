@@ -201,15 +201,16 @@ export default function MoveLeadDialog({ leadId, currentStage, onLeadMoved }: {
         }}>
             <DialogTrigger asChild>
                 <Button
+                size='sm'
                     variant="outline"
-                    className="hover:bg-accent border-none hover:text-black w-full flex gap-1 transition-colors"
+                    className="hover:bg-accent  hover:text-black w-full flex gap-1 transition-colors"
                 >
                     <IconReplace className="h-5 w-5" />
                     Move To
                 </Button>
             </DialogTrigger>
 
-            <DialogContent className="max-w-lg sm:max-w-xl p-0 overflow-hidden z-[100]">
+            <DialogContent style={{ pointerEvents: 'auto' }} className="max-w-lg sm:max-w-xl h-full max-h-screen p-0 overflow-y-scroll scrollbar-hide z-[100]">
                 <DialogHeader className="px-6 py-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-b">
                     <DialogTitle className="flex items-center gap-2 text-xl">
                         <IconReplace className="h-5 w-5 text-blue-600" />
@@ -310,7 +311,7 @@ export default function MoveLeadDialog({ leadId, currentStage, onLeadMoved }: {
                     </div>
 
                     {/* Remarks Textarea */}
-                    <div>
+                    <div className="">
                         <div className="flex justify-between mb-1.5">
                             <Label className="text-sm font-medium">Remarks</Label>
                             <TooltipProvider>
@@ -330,7 +331,7 @@ export default function MoveLeadDialog({ leadId, currentStage, onLeadMoved }: {
                             value={remark}
                             onChange={(e) => setRemark(e.target.value)}
                             placeholder="Enter the reason for moving this lead..."
-                            className="min-h-[100px] resize-none"
+                            className="min-h-[100px]"
                         />
                     </div>
                 </div>

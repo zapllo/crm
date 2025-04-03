@@ -5,11 +5,12 @@ import { Role } from '@/models/roleModel';
 import { User } from '@/models/userModel';
 import jwt from 'jsonwebtoken';
 import { SendEmailOptions, sendEmail } from "@/lib/sendEmail";
+import { seedTemplates } from '@/lib/seedTemplates';
 
 // Helper function to format date
 const formatDate = (date: Date): string => {
-  const options: Intl.DateTimeFormatOptions = { day: '2-digit', month: 'short', year: '2-digit' };
-  return date.toLocaleDateString('en-GB', options).replace(/ /g, '-');
+    const options: Intl.DateTimeFormatOptions = { day: '2-digit', month: 'short', year: '2-digit' };
+    return date.toLocaleDateString('en-GB', options).replace(/ /g, '-');
 };
 
 const sendWebhookNotification = async (
@@ -17,34 +18,34 @@ const sendWebhookNotification = async (
     country: string,
     templateName: string,
     bodyVariables: string[]
-  ) => {
+) => {
     const payload = {
-      phoneNumber,
-      country,
-      bodyVariables,
-      templateName,
+        phoneNumber,
+        country,
+        bodyVariables,
+        templateName,
     };
     console.log(payload, 'payload');
     try {
-      const response = await fetch('https://zapllo.com/api/webhook', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-  
-      if (!response.ok) {
-        const responseData = await response.json();
-        throw new Error(`Webhook API error: ${responseData.message}`);
-      }
-      console.log('Webhook notification sent successfully:', payload);
+        const response = await fetch('https://zapllo.com/api/webhook', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+            const responseData = await response.json();
+            throw new Error(`Webhook API error: ${responseData.message}`);
+        }
+        console.log('Webhook notification sent successfully:', payload);
     } catch (error) {
-      console.error('Error sending webhook notification:', error);
-      throw new Error('Failed to send webhook notification');
+        console.error('Error sending webhook notification:', error);
+        throw new Error('Failed to send webhook notification');
     }
-  };
-  
+};
+
 
 export async function POST(request: Request) {
     try {
@@ -96,6 +97,8 @@ export async function POST(request: Request) {
             trialExpires,
             users: [] // Will be updated after user creation
         });
+        // Seed default templates for the new organization
+
 
         // 2) Create a default "OrgAdmin" role for that new org
         const orgAdminRole = await Role.create({
@@ -129,6 +132,9 @@ export async function POST(request: Request) {
             organization._id,
             { $push: { users: newUser._id } }
         );
+
+        await seedTemplates(organization._id.toString(), newUser._id.toString());
+
 
         // Format trial expiry date
         const formattedTrialExpires = formatDate(trialExpires);

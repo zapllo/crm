@@ -10,6 +10,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { X } from 'lucide-react';
 
 interface EditFieldFormProps {
     pipelineId: string | undefined;
@@ -63,10 +64,10 @@ export default function EditFieldForm({ pipelineId, field, onClose, onUpdate }: 
 
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
-            <h2 className="text-lg font-semibold dark:text-white">Edit Custom Field</h2>
+            {/* <h2 className="text-lg font-semibold dark:text-white">Edit Custom Field</h2> */}
             <div>
                 <Input
-                    label='Field Name'
+                    // label='Field Name'
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
@@ -99,7 +100,7 @@ export default function EditFieldForm({ pipelineId, field, onClose, onUpdate }: 
                             type="text"
                             value={optionInput}
                             onChange={(e) => setOptionInput(e.target.value)}
-                            className="flex-grow p-2 rounded bg-transparent text-white outline-none border focus:ring-2 focus:ring-[#815bf5]"
+                            className="flex-grow p-2 rounded bg-transparent dark:text-white outline-none border focus:ring-2 focus:ring-[#815bf5]"
                             placeholder="Add an option"
                         />
                         <button
@@ -113,13 +114,13 @@ export default function EditFieldForm({ pipelineId, field, onClose, onUpdate }: 
                     <div className="mt-2 space-y-1">
                         {options.map((option, index) => (
                             <div key={index} className="flex items-center justify-between">
-                                <span className="text-white">{option}</span>
+                                <span className="dark:text-white">{option}</span>
                                 <button
                                     type="button"
                                     onClick={() => handleRemoveOption(index)}
                                     className="text-red-500 hover:underline"
                                 >
-                                    Remove
+                                    <X/>
                                 </button>
                             </div>
                         ))}
