@@ -169,11 +169,12 @@ export async function PUT(req: Request,
     }
 }
 
-export async function DELETE(
-    req: NextRequest,
-    { params }: { params: { id: string } }
+export async function DELETE(req: Request,
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const id = (await params).id
+
         await connectDB();
 
         // 1. Get userId from token
@@ -194,7 +195,7 @@ export async function DELETE(
 
         // Check if user has permission to delete (for example, only creator or admin can delete)
         const quotation = await QuotationModel.findOne({
-            _id: params.id,
+            _id: id,
             organization: user.organization,
         });
 
@@ -215,7 +216,7 @@ export async function DELETE(
         }
 
         // Delete the quotation
-        await QuotationModel.deleteOne({ _id: params.id });
+        await QuotationModel.deleteOne({ _id: id });
 
         return NextResponse.json(
             { message: "Quotation deleted successfully" },
