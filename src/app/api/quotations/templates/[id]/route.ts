@@ -115,11 +115,12 @@ export async function PUT(req: Request,
     }
 }
 
-export async function DELETE(
-    req: NextRequest,
-    { params }: { params: { id: string } }
+export async function DELETE(req: Request,
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const id = (await params).id
+
         await connectDB();
 
         // 1. Get userId from token
@@ -140,7 +141,7 @@ export async function DELETE(
 
         // Find template
         const template = await QuotationTemplateModel.findOne({
-            _id: params.id,
+            _id: id,
             organization: user.organization,
         });
 
@@ -163,10 +164,10 @@ export async function DELETE(
         }
 
         // Delete the template
-        await QuotationTemplateModel.deleteOne({ _id: params.id });
+        await QuotationTemplateModel.deleteOne({ _id:id });
 
         return NextResponse.json(
-            { message: "Template deleted successfully" },
+            { messageṄ: "Template deleted successfully" },
             { status: 200 }
         );
     } catch (error) {
