@@ -60,6 +60,7 @@ export async function POST(req: NextRequest) {
       // after the dial finishes, Twilio will do an HTTP request to your statusCallback
       action: `${process.env.NEXT_PUBLIC_APP_URL}/api/calls/webhook?callId=${call._id}`,
     });
+    
     dial.number(
       {
         // optional: you can track events for the <Number> as well

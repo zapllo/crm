@@ -29,6 +29,7 @@ export async function POST(req: NextRequest) {
     
     // Create new quotation object
     const quotation = new QuotationModel({
+      quotationNumber: data.quotationNumber, // Use the provided quotation number
       title: data.title,
       organization: user.organization,
       creator: userId,

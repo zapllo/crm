@@ -321,7 +321,7 @@ export default function PublicQuotationPage() {
                       <X className="h-4 w-4 mr-1" /> Request Changes
                     </Button>
                   </DialogTrigger>
-                  <DialogContent>
+                  <DialogContent className="z-[100]">
                     <DialogHeader>
                       <DialogTitle>Request Changes</DialogTitle>
                       <DialogDescription>
@@ -615,7 +615,7 @@ export default function PublicQuotationPage() {
 
         <footer className="mt-12 pt-6 border-t text-center text-sm text-muted-foreground">
           <p className="mb-2">This is a secure document shared directly with you. Please do not share this link without authorization.</p>
-          <p>© {new Date().getFullYear()} {quotation?.organization?.companyName || 'Company'}. All rights reserved.</p>
+          <p> Powered by Zapllo CRM</p>
         </footer>
       </div>
     </div>

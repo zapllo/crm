@@ -5,19 +5,34 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Check, MinusCircle, PlusCircle, Sparkles, ChevronDown, ChevronUp } from "lucide-react";
+import { Check, MinusCircle, PlusCircle, Sparkles, ChevronDown, ChevronUp, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 // import { useSession } from "next-auth/react";
 import PricingBreakdown from "@/components/billing/PricingBreakdown";
 import FeaturesList from "@/components/billing/FeaturesList";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // Constants for pricing
-const PRICE_PER_USER = 5999; // ₹3,999 per user per year
+const CRM_PRICE_PER_USER = 5999; // ₹5,999 per user per year
+const QUOTATION_PRICE_PER_USER = 2999; // ₹2,999 per user per year
 const GST_RATE = 0.18; // 18% GST
 
+type ProductType = "crm" | "quotation";
+
+interface Product {
+  id: ProductType;
+  name: string;
+  description: string;
+  pricePerUser: number;
+  icon: React.ReactNode;
+  badge?: string;
+  features: string[];
+}
+
 export default function BillingPage() {
+  const [selectedProduct, setSelectedProduct] = useState<ProductType>("crm");
   const [userCount, setUserCount] = useState(5); // Default to 5 users
   const [showDetails, setShowDetails] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -25,8 +40,48 @@ export default function BillingPage() {
   const router = useRouter();
 //   const { data: session } = useSession();
 
+  const products: Product[] = [
+    {
+      id: "crm",
+      name: "Zapllo CRM",
+      description: "Everything you need to manage and grow your customer relationships",
+      pricePerUser: CRM_PRICE_PER_USER,
+      icon: <Sparkles className="h-4 w-4 mr-1" />,
+      badge: "Most Popular",
+      features: [
+        "Contact Management",
+        "Lead Tracking",
+        "Sales Pipeline",
+        "Email Integration",
+        "Task Management",
+        "Reporting & Analytics",
+        "Mobile Access",
+        "Customer Support"
+      ]
+    },
+    {
+      id: "quotation",
+      name: "Zapllo Quotations",
+      description: "Streamline your quotation process and close deals faster",
+      pricePerUser: QUOTATION_PRICE_PER_USER,
+      icon: <FileText className="h-4 w-4 mr-1" />,
+      badge:"New",
+      features: [
+        "Customizable Templates",
+        "Product Catalog",
+        "Automated Calculations",
+        "Digital Signatures",
+        "PDF Export",
+        "Quotation Tracking",
+        "Integration with CRM"
+      ]
+    }
+  ];
+
+  const currentProduct = products.find(p => p.id === selectedProduct)!;
+
   // Calculate pricing
-  const basePrice = userCount * PRICE_PER_USER;
+  const basePrice = userCount * currentProduct.pricePerUser;
   const gstAmount = basePrice * GST_RATE;
   const totalPrice = basePrice + gstAmount;
 
@@ -44,8 +99,6 @@ export default function BillingPage() {
   };
 
   const handleCheckout = async () => {
-   
-
     setLoading(true);
     try {
       // Create order
@@ -60,7 +113,7 @@ export default function BillingPage() {
           receipt: `receipt_${Date.now()}`,
           notes: {
             userCount: userCount,
-            plan: "CRM Standard",
+            plan: currentProduct.name,
           },
         }),
       });
@@ -76,8 +129,8 @@ export default function BillingPage() {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
         amount: Math.round(finalPrice * 100),
         currency: 'INR',
-        name: 'Zapllo CRM',
-        description: `CRM Subscription - ${userCount} Users`,
+        name: 'Zapllo',
+        description: `${currentProduct.name} Subscription - ${userCount} Users`,
         order_id: orderData.orderId,
         // prefill: {
         //   name: session.user.name || '',
@@ -117,7 +170,7 @@ export default function BillingPage() {
         razorpay_signature: response.razorpay_signature,
         // userId: session?.user.id,
         amount: finalPrice,
-        planName: "CRM Standard",
+        planName: currentProduct.name,
         subscribedUserCount: userCount,
         deduction: discountAmount,
       };
@@ -131,7 +184,7 @@ export default function BillingPage() {
       });
 
       if (result.ok) {
-        router.push(`/payment-success?userCount=${userCount}&amount=${finalPrice}`);
+        router.push(`/payment-success?userCount=${userCount}&amount=${finalPrice}&product=${selectedProduct}`);
       } else {
         router.push('/payment-failure');
       }
@@ -143,51 +196,47 @@ export default function BillingPage() {
     }
   };
 
-//   if (!session) {
-//     return (
-//       <div className="flex h-[80vh] w-full items-center justify-center">
-//         <Card className="w-full max-w-md">
-//           <CardHeader>
-//             <CardTitle className="text-center">Sign In Required</CardTitle>
-//             <CardDescription className="text-center">
-//               You need to be signed in to access the billing page
-//             </CardDescription>
-//           </CardHeader>
-//           <CardFooter className="flex justify-center">
-//             <Button onClick={() => router.push("/login")}>Sign In</Button>
-//           </CardFooter>
-//         </Card>
-//       </div>
-//     );
-//   }
-
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="text-center mb-10">
         <h1 className="text-4xl font-bold tracking-tight mb-2 bg-gradient-to-r from-purple-600 to-orange-500 text-transparent bg-clip-text">
-          Power Up Your Business with Zapllo CRM
+          Power Up Your Business with Zapllo
         </h1>
         <p className="text-muted-foreground max-w-2xl mx-auto">
-          Transform your customer relationships with our powerful CRM solution.
+          Choose the perfect Zapllo solution for your business needs
         </p>
       </div>
+
+      <Tabs 
+        defaultValue="crm" 
+        value={selectedProduct}
+        onValueChange={(value) => setSelectedProduct(value as ProductType)}
+        className="mx-auto max-w-4xl mb-8"
+      >
+        <TabsList className="grid grid-cols-2 h-10 gap-2 bg-accent w-full">
+          <TabsTrigger  value="crm" className="text-base border-none ">Zapllo CRM</TabsTrigger>
+          <TabsTrigger  value="quotation" className="text-base border-none">Zapllo Quotations</TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       <div className="grid md:grid-cols-2 gap-8 mx-auto">
         <Card className="overflow-hidden border-2 border-primary/20">
           <CardHeader className="bg-gradient-to-r from-purple-600/10 to-orange-500/10">
             <div className="flex justify-between items-center">
-              <CardTitle>Zapllo CRM</CardTitle>
-              <Badge className="bg-gradient-to-r from-purple-600 to-orange-500">
-                <Sparkles className="h-3 w-3 mr-1" /> Most Popular
-              </Badge>
+              <CardTitle>{currentProduct.name}</CardTitle>
+              {currentProduct.badge && (
+                <Badge className="bg-gradient-to-r from-purple-600 to-orange-500">
+                  {currentProduct.icon} {currentProduct.badge}
+                </Badge>
+              )}
             </div>
             <CardDescription>
-              Everything you need to manage and grow your customer relationships
+              {currentProduct.description}
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
             <div className="flex items-baseline mb-6">
-              <span className="text-3xl font-bold">₹{PRICE_PER_USER.toLocaleString('en-IN')}</span>
+              <span className="text-3xl font-bold">₹{currentProduct.pricePerUser.toLocaleString('en-IN')}</span>
               <span className="text-muted-foreground ml-2">per user / year</span>
             </div>
 
@@ -262,13 +311,20 @@ export default function BillingPage() {
         <div className="flex flex-col">
           <Card>
             <CardHeader>
-              <CardTitle>Included in Your Subscription</CardTitle>
+              <CardTitle>What's Included</CardTitle>
               <CardDescription>
-                Everything you need to supercharge your customer relationships
+                Everything you need with {currentProduct.name}
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <FeaturesList />
+              <ul className="space-y-2">
+                {currentProduct.features.map((feature, index) => (
+                  <li key={index} className="flex items-start">
+                    <Check className="h-5 w-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                    <span>{feature}</span>
+                  </li>
+                ))}
+              </ul>
             </CardContent>
           </Card>
 
@@ -283,16 +339,14 @@ export default function BillingPage() {
               <ul className="space-y-2">
                 <li className="flex items-center">
                   <Check className="h-5 w-5 text-green-500 mr-2" />
-                  <span>Free onboarding session ($500 value)</span>
+                  <span>Free onboarding session </span>
                 </li>
                 <li className="flex items-center">
                   <Check className="h-5 w-5 text-green-500 mr-2" />
                   <span>10% discount on 10+ users</span>
                 </li>
-                <li className="flex items-center">
-                  <Check className="h-5 w-5 text-green-500 mr-2" />
-                  <span>30-day money-back guarantee</span>
-                </li>
+              
+              
               </ul>
             </CardContent>
           </Card>

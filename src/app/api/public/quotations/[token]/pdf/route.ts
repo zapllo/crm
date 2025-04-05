@@ -2,46 +2,25 @@ import { NextRequest, NextResponse } from "next/server";
 import * as puppeteer from "puppeteer";
 import QuotationModel from "@/models/quotationModel";
 import QuotationTemplateModel from "@/models/quotationTemplateModel";
-import { User } from "@/models/userModel";
 import connectDB from "@/lib/db";
-import { getDataFromToken } from "@/lib/getDataFromToken";
 import { renderQuotationHTML } from "@/lib/quotationRenderer";
 
 export async function GET(req: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ token: string }> }
 ) {
   try {
-    const id = (await params).id
+      const token = (await params).token
     await connectDB();
 
-    // 1. Get userId from token
-    const userId = getDataFromToken(req);
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
-    // 2. Fetch the user from DB
-    const user = await User.findById(userId);
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
-
-    if (!user.organization) {
-      return NextResponse.json({ error: "Missing organization" }, { status: 400 });
-    }
-
-    // Find quotation by ID
+    // Find quotation by public access token
     const quotation = await QuotationModel.findOne({
-      _id: id,
-      organization: user.organization,
+      publicAccessToken: token
     })
       .populate("lead", "title leadId")
       .populate("contact", "firstName lastName email whatsappNumber")
       .populate("creator", "firstName lastName email")
-.populate({
-  path: "organization",
-  select: "companyName logo additionalLogos email phone address tagline"
-});
+      .populate("organization", "companyName logo additionalLogos email phone address tagline");
 
     if (!quotation) {
       return NextResponse.json({ error: "Quotation not found" }, { status: 404 });
@@ -56,11 +35,11 @@ export async function GET(req: Request,
     }
 
     // Explicitly copy the organization logo to logos.company if available
-if (quotationObj.organization && 
-    typeof quotationObj.organization === 'object' && 
-    'logo' in quotationObj.organization && 
-    !quotationObj.logos.company) {
-quotationObj.logos.company = quotationObj.organization.logo as string;
+    if (quotationObj.organization &&
+      typeof quotationObj.organization === 'object' &&
+      'logo' in quotationObj.organization &&
+      !quotationObj.logos.company) {
+      quotationObj.logos.company = quotationObj.organization.logo as string;
       console.log('Explicitly set company logo from organization:', quotationObj.logos.company);
     }
 
@@ -69,14 +48,14 @@ quotationObj.logos.company = quotationObj.organization.logo as string;
       quotation.template !== 'default' ?
       await QuotationTemplateModel.findOne({
         _id: quotation.template,
-        organization: user.organization,
+        organization: quotation.organization._id || quotation.organization,
       }) : null;
 
     let defaultTemplate;
     if (!template) {
       // Fallback to default template
       defaultTemplate = await QuotationTemplateModel.findOne({
-        organization: user.organization,
+        organization: quotation.organization._id || quotation.organization,
         isDefault: true,
       });
 
@@ -84,9 +63,14 @@ quotationObj.logos.company = quotationObj.organization.logo as string;
         return NextResponse.json({ error: "Template not found" }, { status: 404 });
       }
     }
+
     // Use the same rendering function as the API
     const activeTemplate = template || defaultTemplate;
     const html = renderQuotationHTML(quotationObj, activeTemplate);
+
+    // Log view event
+    quotation.lastViewed = new Date();
+    await quotation.save();
 
     // Launch puppeteer to create PDF
     const browser = await puppeteer.launch({
@@ -101,7 +85,7 @@ quotationObj.logos.company = quotationObj.organization.logo as string;
     // Generate PDF with appropriate page settings
     const pdfBuffer = await page.pdf({
       format: (activeTemplate?.pageSettings?.pageSize || 'A4') as puppeteer.PaperFormat,
-      landscape: template?.pageSettings?.orientation === 'landscape',
+      landscape: activeTemplate?.pageSettings?.orientation === 'landscape',
       margin: {
         top: `${activeTemplate?.pageSettings?.margins?.top || 40}px`,
         right: `${activeTemplate?.pageSettings?.margins?.right || 40}px`,
@@ -126,7 +110,7 @@ quotationObj.logos.company = quotationObj.organization.logo as string;
   } catch (error) {
     console.error("Error generating PDF:", error);
     return NextResponse.json(
-      { error: "Failed to generate PDF" },
+      { error: "Failed to generate PDF", details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }

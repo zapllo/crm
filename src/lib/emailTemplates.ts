@@ -174,3 +174,118 @@ interface DailyReportEmailProps {
       html: html,
     });
   }
+
+  // Add this to your existing emailTemplates.ts file
+
+interface QuotationEmailProps {
+    to: string;
+    subject: string;
+    message: string;
+    firstName: string;
+    quotationDetails: {
+      quotationNumber: string;
+      title: string;
+      total: number;
+      currency: string;
+      validUntil: string;
+      senderName: string;
+      publicAccessToken: string;
+    };
+    userId?: string;
+  }
+  
+  export async function sendQuotationEmail({
+    to,
+    subject,
+    message,
+    firstName,
+    quotationDetails,
+    userId
+  }: QuotationEmailProps): Promise<void> {
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://crm.zapllo.com';
+    const quotationUrl = `${appUrl}/share/quotation/${quotationDetails.publicAccessToken}`;
+    
+    // Format currency
+    const formattedTotal = new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: quotationDetails.currency || 'USD',
+    }).format(quotationDetails.total);
+    
+    // Format valid until date
+    const validUntil = new Date(quotationDetails.validUntil).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  
+    const html = `
+    <body style="margin: 0; padding: 0; font-family: Arial, sans-serif;">
+        <div style="background-color: #f0f4f8; padding: 20px;">
+            <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">
+                <div style="padding: 20px; text-align: center;">
+                    <img src="https://res.cloudinary.com/dndzbt8al/image/upload/v1724000375/orjojzjia7vfiycfzfly.png" alt="Zapllo Logo" style="max-width: 150px; height: auto;">
+                </div>
+                <div style="background: linear-gradient(90deg, #7451F8, #F57E57); color: #ffffff; padding: 20px 40px; font-size: 16px; font-weight: bold; text-align: center; border-radius: 12px; margin: 20px auto; max-width: 80%;">
+                    <h1 style="margin: 0; font-size: 20px;">Quotation for Your Review</h1>
+                </div>
+                <div style="padding: 20px;">
+                    <p><strong>Dear ${firstName},</strong></p>
+                    
+                    ${message ? `<p>${message.replace(/\n/g, '<br>')}</p>` : `
+                    <p>Please find attached our quotation for your review. We look forward to working with you.</p>
+                    `}
+                    
+                    <div style="border-radius:8px; margin-top:16px; color:#000000; padding:16px; background-color:#ECF1F6">
+                        <p><strong>Quotation Number:</strong> ${quotationDetails.quotationNumber}</p>
+                        <p><strong>Title:</strong> ${quotationDetails.title}</p>
+                        <p><strong>Total Amount:</strong> ${formattedTotal}</p>
+                        <p><strong>Valid Until:</strong> ${validUntil}</p>
+                    </div>
+                    
+                    <div style="text-align: center; margin-top: 24px;">
+                        <a href="${quotationUrl}" style="background-color: #0C874B; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">View Quotation</a>
+                    </div>
+                    
+                    <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e6e8eb;">
+                        <p>If you have any questions, please don't hesitate to contact us.</p>
+                        <p>Best regards,<br>${quotationDetails.senderName}</p>
+                    </div>
+                    
+                    <p style="margin-top: 24px; text-align: center; font-size: 12px; color: #888888;">This is an automated notification. Please do not reply.</p>
+                </div>
+            </div>
+        </div>
+    </body>
+    `;
+  
+    const text = `
+    Dear ${firstName},
+    
+    ${message || "Please find attached our quotation for your review. We look forward to working with you."}
+    
+    QUOTATION DETAILS:
+    Quotation Number: ${quotationDetails.quotationNumber}
+    Title: ${quotationDetails.title}
+    Total Amount: ${formattedTotal}
+    Valid Until: ${validUntil}
+    
+    To view the quotation, please visit:
+    ${quotationUrl}
+    
+    If you have any questions, please don't hesitate to contact us.
+    
+    Best regards,
+    ${quotationDetails.senderName}
+    
+    ---
+    This is an automated notification. Please do not reply.
+    `;
+  
+    await sendEmail({
+      to,
+      subject,
+      text,
+      html,
+      userId
+    });
+  }

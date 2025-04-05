@@ -476,6 +476,83 @@ export default function QuotationDetailPage() {
     );
   }
 
+  const getAllComments = () => {
+    if (!quotation) return [];
+
+    const notesComments = quotation.notes.map(note => ({
+      content: note.content,
+      createdBy: note.createdBy,
+      timestamp: note.timestamp,
+      type: 'note'
+    }));
+
+    // Filter approval history entries that are comments
+    // (comments usually have longer text in their comment field)
+    const approvalComments = quotation.approvalHistory
+      .filter(entry =>
+        entry.comment &&
+        (entry.comment.includes('Comment from') ||
+          entry.status === 'revision_requested'))
+      .map(entry => ({
+        content: entry.comment,
+        createdBy: entry.updatedBy || 'External User',
+        timestamp: entry.timestamp,
+        type: 'approval',
+        approvalStatus: entry.status
+      }));
+
+    // Combine both arrays and sort by timestamp (newest first)
+    return [...notesComments, ...approvalComments]
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  };
+
+  // Format the display name for a comment
+  type CommentWithStatus = {
+    content: string | undefined;
+    createdBy: string;
+    timestamp: string;
+    type: string;
+    approvalStatus?: 'pending' | 'approved' | 'revision_requested';
+  };
+
+  const getCommentAuthor = (comment: CommentWithStatus) => {
+    if (comment.type === 'approval') {
+      // For approval history entries
+      if (comment.content && comment.content.startsWith('Comment from')) {
+        // Parse "Comment from Name (email): content"
+        const match = comment.content.match(/Comment from (.*?) \((.*?)\):/);
+        if (match) {
+          return match[1] === 'Anonymous' ? 'Client' : match[1];
+        }
+      }
+
+      if ('approvalStatus' in comment && comment.approvalStatus === 'revision_requested') {
+        return 'Client (Change Request)';
+      }
+
+      return 'External User';
+    } else {
+      // For regular notes
+      if (typeof comment.createdBy === 'string') {
+        return comment.createdBy.startsWith('External:')
+          ? comment.createdBy.replace('External:', 'Client:')
+          : 'Internal User';
+      }
+      return 'User';
+    }
+  };
+
+  // Format the content for display
+  const getCommentContent = (comment: any) => {
+    if (comment.type === 'approval' && comment.content && comment.content.startsWith('Comment from')) {
+      // Extract actual comment content from "Comment from Name (email): content"
+      const contentStart = comment.content.indexOf(':');
+      return contentStart > 0 ? comment.content.substring(contentStart + 1).trim() : comment.content;
+    }
+    return comment.content;
+  };
+
+
   return (
     <div className="container mx-auto p-6">
       <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -794,30 +871,40 @@ export default function QuotationDetailPage() {
           </Card>
 
           {/* Comments Section */}
-          {/* <Card>
+          {/* Comments Section - Updated */}
+          <Card>
             <CardHeader className="pb-3">
               <CardTitle>Comments</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4 mb-4 max-h-[400px] overflow-y-auto">
-                {quotation.notes.length === 0 ? (
+                {getAllComments().length === 0 ? (
                   <p className="text-muted-foreground">No comments yet.</p>
                 ) : (
-                  quotation.notes.map((note, index) => (
+                  getAllComments().map((comment, index) => (
                     <div key={index} className="rounded-lg border p-3">
                       <div className="flex justify-between items-start mb-2">
-                        <div className="font-medium">
-                          {typeof note.createdBy === 'string'
-                            ? note.createdBy.startsWith('External:')
-                              ? note.createdBy
-                              : 'User'
-                            : 'User'}
+                        <div className="font-medium flex items-center gap-2">
+                          {comment.type === 'approval' && 'approvalStatus' in comment && comment.approvalStatus === 'revision_requested' ? (
+                            <div className="h-5 w-5 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                              <X className="h-3 w-3 text-red-600 dark:text-red-400" />
+                            </div>
+                          ) : (
+                            <Avatar className="h-6 w-6">
+                              <AvatarFallback>
+                                {getCommentAuthor(comment).substring(0, 2)}
+                              </AvatarFallback>
+                            </Avatar>
+                          )}
+                          {getCommentAuthor(comment)}
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          {formatDate(note.timestamp)}
+                          {formatDate(comment.timestamp)}
                         </div>
                       </div>
-                      <p className="text-muted-foreground">{note.content}</p>
+                      <p className="text-muted-foreground">
+                        {getCommentContent(comment)}
+                      </p>
                     </div>
                   ))
                 )}
@@ -837,7 +924,8 @@ export default function QuotationDetailPage() {
                 </div>
               </div>
             </CardContent>
-          </Card> */}
+          </Card>
+
 
           {/* Share Info */}
           <Card>
@@ -948,7 +1036,7 @@ export default function QuotationDetailPage() {
 
       {/* Approval Dialog */}
       <Dialog open={isApprovalDialogOpen} onOpenChange={setIsApprovalDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md z-[100]">
           <DialogHeader>
             <DialogTitle>Approve or Request Revision</DialogTitle>
             <DialogDescription>
@@ -957,8 +1045,10 @@ export default function QuotationDetailPage() {
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <Alert >
-              <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-              <AlertTitle className="text-blue-600 dark:text-blue-400">Review Summary</AlertTitle>
+              <div className='flex gap-1 items-center'>
+                <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                <AlertTitle className="text-blue-600 dark:text-blue-400">Review Summary</AlertTitle>
+              </div>
               <AlertDescription>
                 <div className="text-muted-foreground text-sm mt-2">
                   <p className="mb-1">Quotation: {quotation.quotationNumber}</p>

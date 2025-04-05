@@ -126,7 +126,17 @@ const OverviewPage = () => {
             badge: "Active",
             badgeColor: "text-emerald-700 bg-emerald-100 dark:text-emerald-300 dark:bg-emerald-900/30",
         },
-
+        {
+            id: "quotations",
+            title: "Quotations",
+            description: "Create and manage sales quotes for your customers",
+            icon: <MessageSquare className="h-6 w-6" />,
+            path: "/quotations/create",
+            color: "bg-indigo-500",
+            count: 24,
+            badge: "New",
+            badgeColor: "text-indigo-700 bg-indigo-100 dark:text-indigo-300 dark:bg-indigo-900/30",
+        },
 
     ];
 

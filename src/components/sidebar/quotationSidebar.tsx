@@ -50,7 +50,7 @@ const QuotationSidebar: React.FC = () => {
       icon: <Plus className="h-5 w-5" />,
       description: "Create a new quotation for your clients",
       shortcutKey: "c",
-      badge: { text: "New", variant: "secondary" }
+      // badge: { text: "New", variant: "secondary" }
     },
     {
       title: "All Quotations",

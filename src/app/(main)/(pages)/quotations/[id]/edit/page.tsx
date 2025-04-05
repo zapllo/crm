@@ -1,9 +1,10 @@
-"use client";
+'use client';
+
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
-import { CalendarIcon, Loader2, Plus, Trash2, ArrowRight, CheckCircle2 } from "lucide-react";
+import { CalendarIcon, Loader2, Plus, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 
 // UI Components
@@ -35,8 +36,7 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import TemplateRenderer from "./TemplateRenderer";
-import { Progress } from "@/components/ui/progress";
+import TemplateRenderer from "@/components/quotations/TemplateRenderer";
 
 // Types
 interface Lead {
@@ -90,25 +90,15 @@ const defaultTerm: QuotationTerm = {
   content: "",
 };
 
-interface OrganizationSettings {
-  defaultCurrency: string;
-  defaultQuotationExpiry: number;
-  template?: string;
-}
-
-
-const CreateQuotationForm: React.FC = () => {
+export default function EditQuotationPage() {
   const router = useRouter();
+  const params = useParams();
   const { toast } = useToast();
+  const id = params?.id as string;
+  
   const [activeTab, setActiveTab] = useState("details");
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
-  const [completedTabs, setCompletedTabs] = useState<Record<string, boolean>>({
-    details: false,
-    items: false,
-    terms: false
-  });
 
   // Data states
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -116,15 +106,8 @@ const CreateQuotationForm: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [leadPopoverOpen, setLeadPopoverOpen] = useState(false);
 
-  const [settings, setSettings] = useState<OrganizationSettings>({
-    defaultCurrency: 'USD',
-    defaultQuotationExpiry: 30,
-  });
-
-
   // Form state
   const [quotationData, setQuotationData] = useState({
-    quotationNumber: "",
     title: "",
     leadId: "",
     contactId: "",
@@ -143,39 +126,22 @@ const CreateQuotationForm: React.FC = () => {
     validUntil: new Date(new Date().setMonth(new Date().getMonth() + 1)),
     terms: [{ ...defaultTerm }],
     notes: "",
-    template: "default",
-    status: "draft" as "draft" | "sent",
+    template: "",
+    status: "draft" as "draft" | "sent" | "approved" | "rejected" | "expired",
   });
+  
+  // Original quotation data for reference
+  const [originalQuotation, setOriginalQuotation] = useState<any>(null);
 
   // Selected lead state for display
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
 
-  // Fetch organization settings
-  const fetchOrganizationSettings = async () => {
-    try {
-      const { data } = await axios.get("/api/organization/settings");
-      setSettings(data);
-
-      // Update form with default values from settings
-      setQuotationData(prev => ({
-        ...prev,
-        currency: data.defaultCurrency || 'USD',
-        template: data.template || 'default',
-        validUntil: new Date(new Date().setDate(new Date().getDate() + (data.defaultQuotationExpiry || 30)))
-      }));
-    } catch (error) {
-      console.error("Error fetching organization settings:", error);
-    }
-  };
-
   // Load data on component mount
   useEffect(() => {
+    fetchQuotation();
     fetchLeads();
     fetchTemplates();
-    fetchOrganizationSettings();
-  }, []);
-
-
+  }, [id]);
 
   // Recalculate totals whenever items, discounts, taxes, or shipping changes
   useEffect(() => {
@@ -188,24 +154,72 @@ const CreateQuotationForm: React.FC = () => {
     quotationData.shipping
   ]);
 
-  // Track completion status of each tab
-  useEffect(() => {
-    updateTabCompletionStatus();
-  }, [quotationData]);
-
-  const updateTabCompletionStatus = () => {
-    setCompletedTabs({
-      details: Boolean(quotationData.title && quotationData.leadId && quotationData.quotationNumber),
-      items: quotationData.items.length > 0 && quotationData.items.every(item => item.name && item.quantity > 0),
-      terms: quotationData.terms.length > 0 && quotationData.terms.every(term => term.title && term.content)
-    });
+  const fetchQuotation = async () => {
+    try {
+      setIsLoading(true);
+      const { data } = await axios.get(`/api/quotations/${id}`);
+      setOriginalQuotation(data);
+      
+      // Map API data to form data
+      setQuotationData({
+        title: data.title || '',
+        leadId: data.lead?._id || '',
+        contactId: data.contact?._id || '',
+        items: data.items?.map((item: any) => ({
+          name: item.name || '',
+          description: item.description || '',
+          quantity: item.quantity || 0,
+          unitPrice: item.unitPrice || 0,
+          discount: item.discount || 0,
+          tax: item.tax || 0,
+          total: item.total || 0,
+        })) || [{ ...defaultItem }],
+        subtotal: data.subtotal || 0,
+        discountType: data.discount?.type || 'percentage',
+        discountValue: data.discount?.value || 0,
+        discountAmount: data.discount?.amount || 0,
+        taxName: data.tax?.name || 'GST',
+        taxPercentage: data.tax?.percentage || 0,
+        taxAmount: data.tax?.amount || 0,
+        shipping: data.shipping || 0,
+        total: data.total || 0,
+        currency: data.currency || 'USD',
+        issueDate: data.issueDate ? new Date(data.issueDate) : new Date(),
+        validUntil: data.validUntil ? new Date(data.validUntil) : new Date(new Date().setMonth(new Date().getMonth() + 1)),
+        status: data.status || 'draft',
+        terms: data.terms?.map((term: any) => ({
+          title: term.title || '',
+          content: term.content || '',
+        })) || [{ ...defaultTerm }],
+        notes: '',
+        template: data.template || '',
+      });
+      
+    } catch (error) {
+      console.error('Error fetching quotation:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load quotation data',
+        variant: 'destructive',
+      });
+      router.push('/quotations/all');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const fetchLeads = async () => {
     try {
-      setIsLoading(true);
       const { data } = await axios.get("/api/leads/all");
       setLeads(data);
+      
+      // If we have quotation data loaded, find and set the selected lead
+      if (quotationData.leadId) {
+        const lead = data.find((l: Lead) => l._id === quotationData.leadId);
+        if (lead) {
+          setSelectedLead(lead);
+        }
+      }
     } catch (error) {
       console.error("Error fetching leads:", error);
       toast({
@@ -213,8 +227,6 @@ const CreateQuotationForm: React.FC = () => {
         description: "Failed to fetch leads data",
         variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -236,77 +248,10 @@ const CreateQuotationForm: React.FC = () => {
       contactId: lead.contact._id,
     });
     setLeadPopoverOpen(false);
-    setValidationErrors({ ...validationErrors, leadId: "" });
   };
 
-  // Modified tab change handler with validation
   const handleTabChange = (value: string) => {
-    // Validate current tab before proceeding to the next one
-    if (activeTab === "details" && value !== "details") {
-      const errors: Record<string, string> = {};
-
-      if (!quotationData.quotationNumber.trim()) {
-        errors.quotationNumber = "Quotation number is required";
-      }
-
-      if (!quotationData.title.trim()) {
-        errors.title = "Quotation title is required";
-      }
-
-      if (!quotationData.leadId) {
-        errors.leadId = "Please select a client";
-      }
-
-      if (Object.keys(errors).length > 0) {
-        setValidationErrors(errors);
-        toast({
-          title: "Missing information",
-          description: "Please fill in all required fields",
-          variant: "destructive",
-        });
-        return; // Don't change tabs if validation fails
-      }
-    }
-
-    if (activeTab === "items" && value !== "items" && value !== "details") {
-      const hasEmptyItems = quotationData.items.some(item =>
-        !item.name.trim() || item.quantity <= 0
-      );
-
-      if (hasEmptyItems) {
-        setValidationErrors({ items: "Please fill in all required item fields" });
-        toast({
-          title: "Missing information",
-          description: "All items must have a name and quantity",
-          variant: "destructive",
-        });
-        return;
-      }
-    }
-
-    // Always allow going back or to previous tabs
-    if ((activeTab === "terms" && value === "preview") ||
-      (activeTab === "items" && value === "terms") ||
-      (activeTab === "details" && value === "items")) {
-      // Going forward - update completion
-      setCompletedTabs({
-        ...completedTabs,
-        [activeTab]: true
-      });
-    }
-
-    // Clear validation errors when changing tabs
-    setValidationErrors({});
     setActiveTab(value);
-  };
-
-  // Helper function to move to next tab
-  const moveToNextTab = () => {
-    const tabOrder = ["details", "items", "terms", "preview"];
-    const currentIndex = tabOrder.indexOf(activeTab);
-    if (currentIndex < tabOrder.length - 1) {
-      handleTabChange(tabOrder[currentIndex + 1]);
-    }
   };
 
   // Handler for item changes
@@ -334,11 +279,6 @@ const CreateQuotationForm: React.FC = () => {
 
     updatedItems[index] = item;
     setQuotationData({ ...quotationData, items: updatedItems });
-
-    // Clear validation error if any
-    if (validationErrors.items && item.name && item.quantity > 0) {
-      setValidationErrors({ ...validationErrors, items: "" });
-    }
   };
 
   // Add a new item
@@ -414,7 +354,7 @@ const CreateQuotationForm: React.FC = () => {
   };
 
   // Handle form submission
-  const handleSubmit = async (e: React.FormEvent, status: 'draft' | 'sent' = 'sent') => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!quotationData.leadId) {
@@ -423,31 +363,25 @@ const CreateQuotationForm: React.FC = () => {
         description: "Please select a client for this quotation",
         variant: "destructive",
       });
-      setActiveTab("details");
       return;
     }
 
     try {
       setIsSaving(true);
-      const response = await axios.post('/api/quotations', {
-        ...quotationData,
-        status
-      });
+      await axios.put(`/api/quotations/${id}`, quotationData);
 
       toast({
         title: "Success!",
-        description: status === 'draft'
-          ? "Quotation has been saved as draft"
-          : "Quotation has been created and is ready to send",
+        description: "Quotation has been updated successfully",
       });
 
       // Redirect to the quotation detail page
-      router.push(`/quotations/${response.data._id}`);
+      router.push(`/quotations/${id}`);
     } catch (error) {
-      console.error('Error creating quotation:', error);
+      console.error('Error updating quotation:', error);
       toast({
         title: "Error",
-        description: "Failed to create quotation. Please try again.",
+        description: "Failed to update quotation. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -464,49 +398,31 @@ const CreateQuotationForm: React.FC = () => {
       lead.contact.whatsappNumber.includes(searchTerm)
   );
 
-  // Calculate progress
-  const calculateProgress = () => {
-    const tabs = ["details", "items", "terms"];
-    const completedCount = Object.values(completedTabs).filter(Boolean).length;
-    return (completedCount / tabs.length) * 100;
-  };
+  if (isLoading) {
+    return (
+      <div className="container mx-auto p-6 flex flex-col items-center justify-center h-96">
+        <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+        <p className="text-lg text-muted-foreground">Loading quotation data...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto p-4 max-w-5xl">
-      <form>
+      <form onSubmit={handleSubmit}>
         <div className="mb-6">
-          <h1 className="text-2xl font-bold mb-2">Create New Quotation</h1>
-          <p className="text-muted-foreground mb-4">
-            Create a detailed quotation for your client with itemized pricing, terms, and more.
+          <h1 className="text-2xl font-bold mb-2">Edit Quotation</h1>
+          <p className="text-muted-foreground">
+            Update the details of this quotation.
           </p>
-
-          {/* Progress bar */}
-          <div className="mb-4 space-y-1">
-            <div className="flex justify-between text-sm mb-1">
-              <span>Progress</span>
-              <span>{Math.round(calculateProgress())}% Complete</span>
-            </div>
-            <Progress value={calculateProgress()} className="h-2" />
-          </div>
         </div>
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
           <TabsList className="grid w-full gap-2 bg-accent grid-cols-4">
-            <TabsTrigger className="flex items-center gap-2 border-none" value="details">
-              {completedTabs.details && <CheckCircle2 className={`h-4 ${activeTab =="details" ? "text-green-800":""} w-4 text-green-500`} />}
-              Details
-            </TabsTrigger>
-            <TabsTrigger className="flex items-center gap-2 border-none" value="items">
-              {completedTabs.items && <CheckCircle2 className={`h-4 ${activeTab =="items" ? "text-green-800":""} w-4 text-green-500`} />}
-              Items & Pricing
-            </TabsTrigger>
-            <TabsTrigger className="flex items-center gap-2 border-none" value="terms">
-              {completedTabs.terms && <CheckCircle2 className={`h-4 ${activeTab =="terms" ? "text-green-800":""} w-4 text-green-500`} />}
-              Terms & Notes
-            </TabsTrigger>
-            <TabsTrigger className="border-none" value="preview">
-              Preview
-            </TabsTrigger>
+            <TabsTrigger className='border-none'  value="details">Details</TabsTrigger>
+            <TabsTrigger className='border-none' value="items">Items & Pricing</TabsTrigger>
+            <TabsTrigger className='border-none' value="terms">Terms & Notes</TabsTrigger>
+            <TabsTrigger className='border-none' value="preview">Preview</TabsTrigger>
           </TabsList>
 
           {/* Details Tab */}
@@ -515,68 +431,61 @@ const CreateQuotationForm: React.FC = () => {
               <CardHeader>
                 <CardTitle>Quotation Details</CardTitle>
                 <CardDescription>
-                  Enter the basic information for your quotation
+                  Edit the basic information for your quotation
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* Quotation Number - New field */}
-                <div className="grid gap-2">
-                  <Label htmlFor="quotationNumber">Quotation Number <span className="text-red-500">*</span></Label>
-                  <Input
-                    id="quotationNumber"
-                    placeholder="E.g., QUO-2023001"
-                    value={quotationData.quotationNumber}
-                    onChange={(e) => {
-                      setQuotationData({ ...quotationData, quotationNumber: e.target.value });
-                      if (e.target.value.trim()) {
-                        setValidationErrors({ ...validationErrors, quotationNumber: "" });
-                      }
-                    }}
-                    className={validationErrors.quotationNumber ? "border-red-500" : ""}
-                  />
-                  {validationErrors.quotationNumber && (
-                    <p className="text-sm text-red-500">{validationErrors.quotationNumber}</p>
-                  )}
-                  <p className="text-xs text-muted-foreground">
-                    A unique identifier for this quotation (e.g., QUO-2023001)
-                  </p>
-                </div>
-
                 {/* Title */}
                 <div className="grid gap-2">
-                  <Label htmlFor="title">Quotation Title <span className="text-red-500">*</span></Label>
+                  <Label htmlFor="title">Quotation Title</Label>
                   <Input
                     id="title"
                     placeholder="E.g., Website Development Project"
-                    value={quotationData.title}
-                    onChange={(e) => {
-                      setQuotationData({ ...quotationData, title: e.target.value });
-                      if (e.target.value.trim()) {
-                        setValidationErrors({ ...validationErrors, title: "" });
-                      }
-                    }}
-                    className={validationErrors.title ? "border-red-500" : ""}
+                    value={quotationData.title}onChange={(e) => setQuotationData({ ...quotationData, title: e.target.value })}
+                    required
                   />
-                  {validationErrors.title && (
-                    <p className="text-sm text-red-500">{validationErrors.title}</p>
-                  )}
+                </div>
+
+                {/* Status */}
+                <div className="grid gap-2">
+                  <Label htmlFor="status">Status</Label>
+                  <Select
+                    value={quotationData.status}
+                    onValueChange={(value) => setQuotationData({ ...quotationData, status: value as any })}
+                  >
+                    <SelectTrigger id="status">
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="draft">Draft</SelectItem>
+                      <SelectItem value="sent">Sent</SelectItem>
+                      <SelectItem value="approved">Approved</SelectItem>
+                      <SelectItem value="rejected">Rejected</SelectItem>
+                      <SelectItem value="expired">Expired</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {/* Lead/Client Selection */}
                 <div className="grid gap-2">
-                  <Label>Client <span className="text-red-500">*</span></Label>
+                  <Label>Client</Label>
                   <Popover open={leadPopoverOpen} onOpenChange={setLeadPopoverOpen}>
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
                         role="combobox"
                         aria-expanded={leadPopoverOpen}
-                        className={`w-full justify-between ${validationErrors.leadId ? "border-red-500" : ""}`}
+                        className="w-full justify-between"
                       >
                         {selectedLead ? (
                           <div className="flex items-center">
                             <Badge variant="outline" className="mr-2">{selectedLead.leadId}</Badge>
                             <span>{selectedLead.title} - {selectedLead.contact.firstName} {selectedLead.contact.lastName}</span>
+                          </div>
+                        ) : originalQuotation?.lead ? (
+                          <div className="flex items-center">
+                            <Badge variant="outline" className="mr-2">{originalQuotation.lead.leadId}</Badge>
+                            <span>{originalQuotation.lead.title} - {originalQuotation.contact?.firstName} {originalQuotation.contact?.lastName}</span>
                           </div>
                         ) : (
                           "Select client..."
@@ -623,15 +532,23 @@ const CreateQuotationForm: React.FC = () => {
                       </div>
                     </PopoverContent>
                   </Popover>
-                  {validationErrors.leadId && (
-                    <p className="text-sm text-red-500">{validationErrors.leadId}</p>
-                  )}
+                </div>
+
+                {/* Quotation Number (Read-only) */}
+                <div className="grid gap-2">
+                  <Label htmlFor="quotationNumber">Quotation Number</Label>
+                  <Input
+                    id="quotationNumber"
+                    value={originalQuotation?.quotationNumber || 'Auto-generated'}
+                    disabled
+                    readOnly
+                  />
                 </div>
 
                 {/* Date Selectors */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
-                    <Label>Issue Date <span className="text-red-500">*</span></Label>
+                    <Label>Issue Date</Label>
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button
@@ -656,7 +573,7 @@ const CreateQuotationForm: React.FC = () => {
                   </div>
 
                   <div className="grid gap-2">
-                    <Label>Valid Until <span className="text-red-500">*</span></Label>
+                    <Label>Valid Until</Label>
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button
@@ -683,9 +600,9 @@ const CreateQuotationForm: React.FC = () => {
                 </div>
 
                 {/* Template & Currency */}
-                {/* <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
-                    <Label>Currency <span className="text-red-500">*</span></Label>
+                    <Label>Currency</Label>
                     <Select
                       value={quotationData.currency}
                       onValueChange={(value) => setQuotationData({ ...quotationData, currency: value })}
@@ -707,7 +624,7 @@ const CreateQuotationForm: React.FC = () => {
                   </div>
 
                   <div className="grid gap-2">
-                    <Label>Template <span className="text-red-500">*</span></Label>
+                    <Label>Template</Label>
                     <Select
                       value={quotationData.template}
                       onValueChange={(value) => setQuotationData({ ...quotationData, template: value })}
@@ -725,16 +642,8 @@ const CreateQuotationForm: React.FC = () => {
                       </SelectContent>
                     </Select>
                   </div>
-                </div> */}
+                </div>
               </CardContent>
-              <CardFooter className="flex justify-between pt-4 border-t">
-                <Button variant="outline" onClick={() => router.back()}>
-                  Cancel
-                </Button>
-                <Button type='button' onClick={moveToNextTab} className="gap-2">
-                  Next <ArrowRight className="h-4 w-4" />
-                </Button>
-              </CardFooter>
             </Card>
           </TabsContent>
 
@@ -744,7 +653,7 @@ const CreateQuotationForm: React.FC = () => {
               <CardHeader>
                 <CardTitle>Items & Pricing</CardTitle>
                 <CardDescription>
-                  Add all the products or services included in this quotation
+                  Edit the products or services included in this quotation
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -753,9 +662,9 @@ const CreateQuotationForm: React.FC = () => {
                   <table className="w-full">
                     <thead>
                       <tr className="border-b bg-muted/50">
-                        <th className="w-[40%] p-2 text-left">Item <span className="text-red-500">*</span></th>
-                        <th className="p-2 text-right">Qty <span className="text-red-500">*</span></th>
-                        <th className="p-2 text-right">Unit Price <span className="text-red-500">*</span></th>
+                        <th className="w-[40%] p-2 text-left">Item</th>
+                        <th className="p-2 text-right">Qty</th>
+                        <th className="p-2 text-right">Unit Price</th>
                         <th className="p-2 text-right">Discount%</th>
                         <th className="p-2 text-right">Tax%</th>
                         <th className="p-2 text-right">Total</th>
@@ -771,7 +680,7 @@ const CreateQuotationForm: React.FC = () => {
                                 placeholder="Item name"
                                 value={item.name}
                                 onChange={(e) => handleItemChange(index, 'name', e.target.value)}
-                                className={!item.name && validationErrors.items ? "border-red-500" : ""}
+                                required
                               />
                               <Textarea
                                 placeholder="Description (optional)"
@@ -787,7 +696,8 @@ const CreateQuotationForm: React.FC = () => {
                               min="1"
                               value={item.quantity}
                               onChange={(e) => handleItemChange(index, 'quantity', Number(e.target.value))}
-                              className={`text-right ${item.quantity <= 0 && validationErrors.items ? "border-red-500" : ""}`}
+                              className="text-right"
+                              required
                             />
                           </td>
                           <td className="p-2">
@@ -798,6 +708,7 @@ const CreateQuotationForm: React.FC = () => {
                               value={item.unitPrice}
                               onChange={(e) => handleItemChange(index, 'unitPrice', Number(e.target.value))}
                               className="text-right"
+                              required
                             />
                           </td>
                           <td className="p-2">
@@ -843,10 +754,6 @@ const CreateQuotationForm: React.FC = () => {
                     </tbody>
                   </table>
                 </div>
-
-                {validationErrors.items && (
-                  <p className="text-sm text-red-500">{validationErrors.items}</p>
-                )}
 
                 {/* Add Item Button */}
                 <Button
@@ -1011,24 +918,6 @@ const CreateQuotationForm: React.FC = () => {
                   </div>
                 </div>
               </CardContent>
-              <CardFooter className="flex justify-end gap-4 pt-4 border-t">
-                <Button
-                  variant="outline"
-                  onClick={(e) => handleSubmit(e, "draft")}
-                  disabled={isSaving}
-                >
-                  Save as Draft
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => handleTabChange("details")}
-                >
-                  Back
-                </Button>
-                <Button type='button' onClick={moveToNextTab} className="gap-2">
-                  Next <ArrowRight className="h-4 w-4" />
-                </Button>
-              </CardFooter>
             </Card>
           </TabsContent>
 
@@ -1038,13 +927,13 @@ const CreateQuotationForm: React.FC = () => {
               <CardHeader>
                 <CardTitle>Terms & Notes</CardTitle>
                 <CardDescription>
-                  Add terms, conditions, and additional notes to your quotation
+                  Edit terms, conditions, and additional notes for your quotation
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Terms & Conditions */}
                 <div>
-                  <h3 className="text-sm font-medium mb-3">Terms & Conditions <span className="text-red-500">*</span></h3>
+                  <h3 className="text-sm font-medium mb-3">Terms & Conditions</h3>
                   <div className="space-y-4">
                     {quotationData.terms.map((term, index) => (
                       <div key={index} className="p-4 border rounded-md bg-muted/30">
@@ -1054,6 +943,7 @@ const CreateQuotationForm: React.FC = () => {
                             value={term.title}
                             onChange={(e) => handleTermChange(index, 'title', e.target.value)}
                             className="max-w-xs"
+                            required
                           />
                           <Button
                             type="button"
@@ -1071,6 +961,7 @@ const CreateQuotationForm: React.FC = () => {
                           value={term.content}
                           onChange={(e) => handleTermChange(index, 'content', e.target.value)}
                           className="min-h-[100px]"
+                          required
                         />
                       </div>
                     ))}
@@ -1099,24 +990,6 @@ const CreateQuotationForm: React.FC = () => {
                   />
                 </div>
               </CardContent>
-              <CardFooter className="flex justify-end gap-4 pt-4 border-t">
-                <Button
-                  variant="outline"
-                  onClick={(e) => handleSubmit(e, "draft")}
-                  disabled={isSaving}
-                >
-                  Save as Draft
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => handleTabChange("items")}
-                >
-                  Back
-                </Button>
-                <Button type='button' onClick={moveToNextTab} className="gap-2">
-                  Preview <ArrowRight className="h-4 w-4" />
-                </Button>
-              </CardFooter>
             </Card>
           </TabsContent>
 
@@ -1124,9 +997,9 @@ const CreateQuotationForm: React.FC = () => {
           <TabsContent value="preview" className="space-y-6 pt-4">
             <Card>
               <CardHeader>
-                <CardTitle>Preview Quotation</CardTitle>
+                <CardTitle>Preview Updated Quotation</CardTitle>
                 <CardDescription>
-                  Review your quotation before finalizing
+                  Review your quotation before saving changes
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-0 overflow-hidden">
@@ -1144,48 +1017,46 @@ const CreateQuotationForm: React.FC = () => {
                   </div>
                 )}
               </CardContent>
-              <CardFooter className="flex justify-between pt-4 border-t">
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => handleTabChange("terms")}
-                  >
-                    Back
-                  </Button>
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={(e) => handleSubmit(e, "draft")}
-                    disabled={isSaving}
-                  >
-                    Save as Draft
-                  </Button>
-                  <Button
-                    type="button"
-                    onClick={(e) => handleSubmit(e, "sent")}
-                    disabled={isSaving}
-                    className="gap-2"
-                  >
-                    {isSaving ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      <>
-                        Create & Send <ArrowRight className="h-4 w-4" />
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </CardFooter>
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Form Actions */}
+        <div className="flex justify-between mt-6">
+          <Button type="button" variant="outline" onClick={() => router.back()}>
+            Cancel
+          </Button>
+          <div className="flex gap-2">
+            {quotationData.status === 'draft' && (
+              <Button
+                type="submit"
+                variant="outline"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setQuotationData({ ...quotationData, status: "sent" });
+                  handleSubmit(e);
+                }}
+                disabled={isSaving}
+              >
+                Save & Send
+              </Button>
+            )}
+            <Button
+              type="submit"
+              disabled={isSaving}
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Save Changes"
+              )}
+            </Button>
+          </div>
+        </div>
       </form>
     </div>
   );
-};
-
-export default CreateQuotationForm;
+}

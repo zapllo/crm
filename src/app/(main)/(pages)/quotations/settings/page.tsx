@@ -225,7 +225,7 @@ export default function QuotationSettingsPage() {
         <TabsList className="mb-4 bg-accent gap-4">
           <TabsTrigger className='border-none' value="branding">Branding</TabsTrigger>
           <TabsTrigger className='border-none' value="defaults">Defaults</TabsTrigger>
-          <TabsTrigger className='border-none' value="templates">Templates</TabsTrigger>
+          {/* <TabsTrigger className='border-none' value="templates">Templates</TabsTrigger> */}
         </TabsList>
 
         <TabsContent value="branding">
@@ -409,7 +409,7 @@ export default function QuotationSettingsPage() {
               
               <Separator className="my-4" />
               
-              <div className="space-y-2">
+              {/* <div className="space-y-2">
               <Label htmlFor="terms">Default Terms & Conditions</Label>
                 <textarea
                   id="terms"
@@ -434,7 +434,7 @@ export default function QuotationSettingsPage() {
                   onChange={(e) => setSettings({...settings, emailSignature: e.target.value})}
                   placeholder="Enter your email signature for quotation emails..."
                 />
-              </div>
+              </div> */}
             </CardContent>
             <CardFooter>
               <p className="text-xs text-muted-foreground">
