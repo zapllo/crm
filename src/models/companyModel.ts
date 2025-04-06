@@ -18,15 +18,15 @@ export interface ICompany extends Document {
 const companySchema = new Schema<ICompany>(
   {
     companyName: { type: String, required: true },
-    taxNo: { type: String, required: true },
-    companyCode: { type: String, required: true },
+    taxNo: { type: String, },
+    companyCode: { type: String,},
     country: { type: String, required: true },
     shippingAddress: { type: String, required: true },
     billingAddress: { type: String, required: true },
     state: { type: String, required: true },
     city: { type: String, required: true },
     website: { type: String },
-    pincode: { type: String, required: true },
+    pincode: { type: String},
     organization: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Organization',

@@ -1,13 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
@@ -18,10 +16,13 @@ import {
     Plus,
     Music,
     MessageSquare,
-    Link,
+    Mic,
+    StopCircle,
+    Trash2,
     CheckCircle,
     AlertCircle
 } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 
 interface AddNoteDialogProps {
     leadId: string;
@@ -30,19 +31,302 @@ interface AddNoteDialogProps {
 
 export default function AddNoteDialog({ leadId, onNoteAdded }: AddNoteDialogProps) {
     const [noteText, setNoteText] = useState("");
-    const [audioLink, setAudioLink] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<"text" | "audio">("text");
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
 
+    // Audio recording states
+    const [isRecording, setIsRecording] = useState(false);
+    const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+    const [audioUrl, setAudioUrl] = useState<string | null>(null);
+    const [recordingTime, setRecordingTime] = useState(0);
+
+    // Refs
+    const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+    const audioChunksRef = useRef<Blob[]>([]);
+    const timerRef = useRef<NodeJS.Timeout | null>(null);
+    const waveformCanvasRef = useRef<HTMLCanvasElement>(null);
+    const audioContextRef = useRef<AudioContext | null>(null);
+    const analyserRef = useRef<AnalyserNode | null>(null);
+    const animationRef = useRef<number | null>(null);
+    const streamRef = useRef<MediaStream | null>(null);
+    const [waveformData, setWaveformData] = useState<number[]>([]);
+
+
     const resetForm = () => {
         setNoteText("");
-        setAudioLink("");
         setActiveTab("text");
         setError(null);
         setSuccess(false);
+        setIsRecording(false);
+        setAudioBlob(null);
+        setAudioUrl(null);
+        setRecordingTime(0);
+
+        // Stop media tracks
+        if (streamRef.current) {
+            streamRef.current.getTracks().forEach(track => track.stop());
+            streamRef.current = null;
+        }
+
+        // Stop recorder if active
+        if (mediaRecorderRef.current && isRecording) {
+            mediaRecorderRef.current.stop();
+            mediaRecorderRef.current = null;
+        }
+
+        // Clear timers and animation frames
+        if (timerRef.current) {
+            clearInterval(timerRef.current);
+            timerRef.current = null;
+        }
+
+        if (animationRef.current) {
+            cancelAnimationFrame(animationRef.current);
+            animationRef.current = null;
+        }
+
+        // Close audio context
+        if (audioContextRef.current) {
+            audioContextRef.current.close().catch(console.error);
+            audioContextRef.current = null;
+        }
+
+        // Revoke object URL if exists
+        if (audioUrl) {
+            URL.revokeObjectURL(audioUrl);
+        }
+    };
+
+    // Cleanup on component unmount
+    useEffect(() => {
+        return resetForm;
+    }, []);
+
+    // Draw the waveform on canvas
+    const drawWaveform = (dataArray: Uint8Array, bufferLength: number) => {
+        const canvas = waveformCanvasRef.current;
+        if (!canvas) return;
+
+        const canvasCtx = canvas.getContext('2d');
+        if (!canvasCtx) return;
+
+        const WIDTH = canvas.width;
+        const HEIGHT = canvas.height;
+
+        // Clear the canvas
+        canvasCtx.clearRect(0, 0, WIDTH, HEIGHT);
+
+        // Set fill and stroke styles based on recording state
+        canvasCtx.fillStyle = isRecording ? 'rgb(239, 68, 68)' : 'rgb(147, 51, 234)';
+
+        // Calculate bar width based on canvas size and number of bars we want to show
+        const barWidth = Math.max(2, (WIDTH / 50) - 1);
+        const barSpacing = 1;
+        let x = 0;
+
+        // Draw a bar for each frequency bin, with some spacing
+        for (let i = 0; i < 50; i++) {
+            // Calculate which part of the frequency data to use
+            const dataIndex = Math.floor((i / 50) * bufferLength);
+
+            // Get the value and scale it to fit the canvas
+            const barHeight = (dataArray[dataIndex] / 255) * HEIGHT;
+
+            // Make sure bars have a minimum height so they're always visible
+            const height = Math.max(4, barHeight);
+
+            // Draw the bar - center the bars vertically
+            const y = (HEIGHT - height) / 2;
+            canvasCtx.fillRect(x, y, barWidth, height);
+
+            // Move to the next bar position
+            x += barWidth + barSpacing;
+        }
+    };
+
+    // Set up audio visualization
+    const setupAudioVisualization = (stream: MediaStream) => {
+        // Create audio context
+        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+
+        // Create analyzer node
+        analyserRef.current = audioContextRef.current.createAnalyser();
+        analyserRef.current.fftSize = 256;
+        analyserRef.current.smoothingTimeConstant = 0.8;
+
+        // Connect stream to analyzer
+        const source = audioContextRef.current.createMediaStreamSource(stream);
+        source.connect(analyserRef.current);
+
+        // Start visualization loop
+        const bufferLength = analyserRef.current.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+
+        function visualize() {
+            if (!analyserRef.current) return;
+
+            // Only continue the animation loop if recording is active
+            if (!isRecording) {
+                if (animationRef.current) {
+                    cancelAnimationFrame(animationRef.current);
+                    animationRef.current = null;
+                }
+                return;
+            }
+
+            // Schedule the next frame
+            animationRef.current = requestAnimationFrame(visualize);
+
+            // Get frequency data
+            analyserRef.current.getByteFrequencyData(dataArray);
+
+            // Draw the waveform
+            drawWaveform(dataArray, bufferLength);
+        }
+
+        // Start the visualization loop
+        animationRef.current = requestAnimationFrame(visualize);
+    };
+
+
+    // Update waveform during recording - similar to AudioRecorder approach
+    const updateWaveform = () => {
+        if (analyserRef.current) {
+            const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
+            analyserRef.current.getByteFrequencyData(dataArray);
+
+            // Reduce the data to a manageable size for display
+            const reducedData: number[] = [];
+            const bucketSize = Math.floor(dataArray.length / 30);
+
+            for (let i = 0; i < 30; i++) {
+                let sum = 0;
+                for (let j = 0; j < bucketSize; j++) {
+                    sum += dataArray[i * bucketSize + j] / 255;
+                }
+                reducedData.push(sum / bucketSize);
+            }
+
+            setWaveformData(reducedData);
+            animationRef.current = requestAnimationFrame(updateWaveform);
+        }
+    };
+
+    // Modify startRecording to match the working approach
+    const startRecording = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            streamRef.current = stream;
+
+            const audioContext = new AudioContext();
+            const mediaStreamSource = audioContext.createMediaStreamSource(stream);
+            const analyser = audioContext.createAnalyser();
+            analyser.fftSize = 2048;
+            mediaStreamSource.connect(analyser);
+            analyserRef.current = analyser;
+            audioContextRef.current = audioContext;
+
+            audioChunksRef.current = [];
+
+            const mediaRecorder = new MediaRecorder(stream);
+            mediaRecorderRef.current = mediaRecorder;
+
+            mediaRecorder.addEventListener('dataavailable', (event) => {
+                audioChunksRef.current.push(event.data);
+            });
+
+            mediaRecorder.addEventListener('stop', () => {
+                // Create audio blob and URL
+                const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
+                setAudioBlob(audioBlob);
+
+                const url = URL.createObjectURL(audioBlob);
+                setAudioUrl(url);
+
+                // Stop stream tracks
+                stream.getTracks().forEach(track => track.stop());
+                streamRef.current = null;
+            });
+
+            mediaRecorder.start(100);
+            setIsRecording(true);
+
+            // Start visualizing the waveform
+            animationRef.current = requestAnimationFrame(updateWaveform);
+
+            // Start a timer for recording duration
+            timerRef.current = setInterval(() => {
+                setRecordingTime(prev => prev + 1);
+            }, 1000);
+
+        } catch (err) {
+            console.error("Error accessing microphone:", err);
+            setError("Could not access microphone. Please check permissions.");
+        }
+    };
+
+    const stopRecording = () => {
+        if (mediaRecorderRef.current && isRecording) {
+            mediaRecorderRef.current.stop();
+            setIsRecording(false);
+
+            if (timerRef.current) {
+                clearInterval(timerRef.current);
+                timerRef.current = null;
+            }
+
+            if (animationRef.current) {
+                cancelAnimationFrame(animationRef.current);
+                animationRef.current = null;
+            }
+        }
+    };
+
+    const handleDiscardRecording = () => {
+        if (audioUrl) {
+            URL.revokeObjectURL(audioUrl);
+        }
+        setAudioBlob(null);
+        setAudioUrl(null);
+        setRecordingTime(0);
+
+        // Clear canvas
+        const canvas = waveformCanvasRef.current;
+        if (canvas) {
+            const canvasCtx = canvas.getContext('2d');
+            if (canvasCtx) {
+                canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+        }
+    };
+
+    const formatTime = (seconds: number) => {
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+        return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+    };
+
+    const uploadAudio = async () => {
+        if (!audioBlob) return null;
+
+        const formData = new FormData();
+        formData.append('audio', audioBlob, `recording-${Date.now()}.wav`);
+
+        try {
+            const response = await axios.post('/api/upload', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+
+            return response.data.audioUrl;
+        } catch (error) {
+            console.error('Error uploading audio:', error);
+            throw new Error('Failed to upload audio recording');
+        }
     };
 
     const handleAddNote = async () => {
@@ -52,8 +336,8 @@ export default function AddNoteDialog({ leadId, onNoteAdded }: AddNoteDialogProp
             return;
         }
 
-        if (activeTab === "audio" && !audioLink.trim()) {
-            setError("Please provide an audio link");
+        if (activeTab === "audio" && !audioBlob) {
+            setError("Please record an audio note");
             return;
         }
 
@@ -61,13 +345,19 @@ export default function AddNoteDialog({ leadId, onNoteAdded }: AddNoteDialogProp
         setIsLoading(true);
 
         try {
+            let audioFileUrl = null;
+
+            if (activeTab === "audio" && audioBlob) {
+                audioFileUrl = await uploadAudio();
+            }
+
             await axios.post("/api/leads/notes", {
                 leadId,
                 text: activeTab === "text" ? noteText : null,
-                audioLink: activeTab === "audio" ? audioLink : null,
+                audioLink: audioFileUrl,
             });
 
-            // Also add a timeline entry indicating a note was added
+            // Also add a timeline entry
             await axios.post("/api/leads/update-stage", {
                 leadId,
                 newStage: "Note Added",
@@ -79,7 +369,7 @@ export default function AddNoteDialog({ leadId, onNoteAdded }: AddNoteDialogProp
             setSuccess(true);
             onNoteAdded(); // Refresh lead details
 
-            // Close dialog after a brief delay to show success message
+            // Close dialog after a brief delay
             setTimeout(() => {
                 setIsDialogOpen(false);
                 resetForm();
@@ -102,7 +392,7 @@ export default function AddNoteDialog({ leadId, onNoteAdded }: AddNoteDialogProp
                 <Button
                     size='sm'
                     variant="outline"
-                    className="hover:bg-accent  hover:text-black w-full flex gap-1 transition-colors"
+                    className="hover:bg-accent hover:text-black w-full flex gap-1 transition-colors"
                 >
                     <Notebook className="h-5 w-5" />
                     Add Note
@@ -184,8 +474,8 @@ export default function AddNoteDialog({ leadId, onNoteAdded }: AddNoteDialogProp
                             <div className="space-y-4">
                                 <div>
                                     <div className="flex justify-between mb-2">
-                                        <Label className="text-sm font-medium" htmlFor="audio-link">
-                                            Audio Recording URL
+                                        <Label className="text-sm font-medium">
+                                            Audio Recording
                                         </Label>
                                         <Badge
                                             variant="outline"
@@ -194,35 +484,98 @@ export default function AddNoteDialog({ leadId, onNoteAdded }: AddNoteDialogProp
                                             Audio Note
                                         </Badge>
                                     </div>
-                                    <div className="relative">
-                                        <Input
-                                            id="audio-link"
-                                            type="url"
-                                            placeholder="Paste audio recording URL..."
-                                            value={audioLink}
-                                            onChange={(e) => setAudioLink(e.target.value)}
-                                            className="pr-10 focus-visible:ring-purple-500"
-                                        />
-                                        <Link className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+
+                                    <div className="border rounded-md overflow-hidden">
+                                        {/* Canvas-based waveform visualization */}
+                                   
+                                        <div className="h-24 bg-black/5 dark:bg-white/5 p-4">
+                                            <div className="h-full flex items-center justify-between">
+                                                {waveformData.length > 0 ? (
+                                                    waveformData.map((value, index) => (
+                                                        <div
+                                                            key={index}
+                                                            className="bg-primary w-1.5 mx-px"
+                                                            style={{
+                                                                height: `${Math.max(5, value * 100)}%`,
+                                                                backgroundColor: isRecording ? 'rgb(239, 68, 68)' : 'rgb(147, 51, 234)'
+                                                            }}
+                                                        />
+                                                    ))
+                                                ) : !isRecording && !audioUrl ? (
+                                                    <div className="w-full text-sm text-muted-foreground flex items-center justify-center gap-2">
+                                                        <Mic className="h-4 w-4" />
+                                                        Click record to start
+                                                    </div>
+                                                ) : null}
+
+                                                {!isRecording && !waveformData.length && audioUrl && (
+                                                    <Progress value={undefined} className="w-full" />
+                                                )}
+                                            </div>
+                                        </div>
+                                        {/* Controls */}
+                                        <div className="p-3 flex items-center justify-between border-t bg-muted/20">
+                                            <div className="flex items-center gap-2">
+                                                {!isRecording && !audioUrl ? (
+                                                    <Button
+                                                        onClick={startRecording}
+                                                        size="sm"
+                                                        variant="secondary"
+                                                        className="bg-red-100 hover:bg-red-200 text-red-600 border-none flex gap-1"
+                                                    >
+                                                        <Mic className="h-4 w-4" />
+                                                        Record
+                                                    </Button>
+                                                ) : isRecording ? (
+                                                    <Button
+                                                        onClick={stopRecording}
+                                                        size="sm"
+                                                        variant="destructive"
+                                                        className="flex gap-1"
+                                                    >
+                                                        <StopCircle className="h-4 w-4" />
+                                                        Stop
+                                                    </Button>
+                                                ) : (
+                                                    <Button
+                                                        onClick={handleDiscardRecording}
+                                                        size="sm"
+                                                        variant="outline"
+                                                        className="flex gap-1"
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                        Discard
+                                                    </Button>
+                                                )}
+
+                                                {audioUrl && (
+                                                    <audio controls className="h-8 w-[180px]">
+                                                        <source src={audioUrl} type="audio/wav" />
+                                                        Your browser does not support audio playback.
+                                                    </audio>
+                                                )}
+                                            </div>
+
+                                            <div className="text-sm font-medium">
+                                                {formatTime(recordingTime)}
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
-                                {audioLink && (
-                                    <div className="bg-muted/30 rounded-md p-3">
-                                        <div className="text-sm font-medium mb-2 flex items-center gap-2">
-                                            <Music className="h-4 w-4 text-purple-600" />
-                                            Audio Preview
-                                        </div>
-                                        <audio controls className="w-full">
-                                            <source src={audioLink} type="audio/mpeg" />
-                                            Your browser does not support the audio element.
-                                        </audio>
-                                    </div>
-                                )}
-
                                 <div className="text-xs text-muted-foreground bg-muted/30 p-3 rounded-md">
-                                    Record audio using your favorite tool and paste the link here.
-                                    Audio notes are great for capturing detailed conversations.
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger className="underline decoration-dotted">
+                                                Pro Tip:
+                                            </TooltipTrigger>
+                                            <TooltipContent side="bottom">
+                                                <p>Find a quiet place for clear audio recording</p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                    {" "}
+                                    Audio notes are great for capturing detailed conversations and thoughts quickly.
                                 </div>
                             </div>
                         </TabsContent>
@@ -258,7 +611,8 @@ export default function AddNoteDialog({ leadId, onNoteAdded }: AddNoteDialogProp
                         onClick={handleAddNote}
                         disabled={isLoading ||
                             (activeTab === "text" && !noteText.trim()) ||
-                            (activeTab === "audio" && !audioLink.trim())}
+                            (activeTab === "audio" && !audioBlob) ||
+                            isRecording}
                         className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 gap-2"
                     >
                         {isLoading ? (

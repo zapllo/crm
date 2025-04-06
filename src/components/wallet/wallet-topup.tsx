@@ -95,7 +95,7 @@ export default function WalletTopup({ currentBalance, currency, onTopupSuccess }
         amount: number
     ) => {
         try {
-            const response = await axios.post('/api/wallet/payment-success', {
+            const response = await axios.post('/api/payment-success', {
                 razorpay_payment_id,
                 razorpay_order_id,
                 razorpay_signature,
@@ -128,88 +128,95 @@ export default function WalletTopup({ currentBalance, currency, onTopupSuccess }
     };
 
     // Initialize Razorpay payment
-    const handleTopup = async () => {
-        // Validate the amount
-        if (topupAmount < 100) {
-            setPaymentError("Minimum topup amount is ₹100");
-            return;
+// Initialize Razorpay payment
+const handleTopup = async () => {
+    // Validate the amount
+    if (topupAmount < 100) {
+        setPaymentError("Minimum topup amount is ₹100");
+        return;
+    }
+
+    if (!user || !user.organization) {
+        toast({
+            title: "Authentication Error",
+            description: "Please login again to continue",
+            variant: "destructive",
+        });
+        return;
+    }
+
+    // This check might be causing issues - let's remove it and initialize Razorpay directly
+    // if (!scriptLoaded) {
+    //     toast({
+    //         title: "Payment System Loading",
+    //         description: "Please wait while we initialize the payment system",
+    //     });
+    //     return;
+    // }
+
+    try {
+        setIsLoading(true);
+
+        // Create a Razorpay order
+        const { data } = await axios.post('/api/wallet/topup', {
+            amount: topupAmount
+        });
+
+        if (!data.orderId) {
+            throw new Error('Failed to create payment order');
         }
 
-        if (!user || !user.organization) {
-            toast({
-                title: "Authentication Error",
-                description: "Please login again to continue",
-                variant: "destructive",
-            });
-            return;
-        }
-
-        if (!scriptLoaded) {
-            toast({
-                title: "Payment System Loading",
-                description: "Please wait while we initialize the payment system",
-            });
-            return;
-        }
-
-        try {
-            setIsLoading(true);
-
-            // Create a Razorpay order
-            const { data } = await axios.post('/api/wallet/topup', {
-                amount: topupAmount
-            });
-
-            if (!data.orderId) {
-                throw new Error('Failed to create payment order');
-            }
-
-            // Initialize Razorpay checkout
-            const options = {
-                key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-                amount: data.amount,
-                currency: data.currency,
-                name: "ZaplloCRM",
-                description: "Add credits to your calling wallet",
-                order_id: data.orderId,
-                prefill: {
-                    name: data.user.name,
-                    email: data.user.email,
-                    contact: data.user.contact
-                },
-                notes: {
-                    purpose: 'wallet_topup'
-                },
-                theme: {
-                    color: "#4f46e5"
-                },
-                handler: function (response: any) {
-                    verifyPayment(
-                        response.razorpay_payment_id,
-                        response.razorpay_order_id,
-                        response.razorpay_signature,
-                        user.userId,
-                        user.organization?._id || '',
-                        data.amount
-                    );
+        // Initialize Razorpay checkout - UPDATED TO MATCH BILLING PAGE
+        const options = {
+            key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+            amount: data.amount,
+            currency: data.currency,
+            name: "ZaplloCRM",
+            description: "Add credits to your calling wallet",
+            order_id: data.orderId,
+            prefill: {
+                name: data.user.name,
+                email: data.user.email,
+                contact: data.user.contact
+            },
+            notes: {
+                purpose: 'wallet_topup'
+            },
+            handler: function (response: any) {
+                verifyPayment(
+                    response.razorpay_payment_id,
+                    response.razorpay_order_id,
+                    response.razorpay_signature,
+                    user.userId,
+                    user.organization?._id || '',
+                    data.amount
+                );
+            },
+            modal: {
+                ondismiss: function() {
+                    setIsLoading(false);
                 }
-            };
+            },
+            theme: {
+                color: "#4f46e5"
+            }
+        };
 
-            const razorpay = new window.Razorpay(options);
-            razorpay.open();
+        // Create and open Razorpay - this matches your billing page implementation
+        const razorpay = new (window as any).Razorpay(options);
+        razorpay.open();
 
-        } catch (error) {
-            console.error("Error initiating payment:", error);
-            toast({
-                title: "Payment Failed",
-                description: "Failed to initiate payment. Please try again later.",
-                variant: "destructive",
-            });
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
+    } catch (error) {
+        console.error("Error initiating payment:", error);
+        toast({
+            title: "Payment Failed",
+            description: "Failed to initiate payment. Please try again later.",
+            variant: "destructive",
+        });
+    } finally {
+        setIsLoading(false);
+    }
+};
     return (
         <>
             <Script

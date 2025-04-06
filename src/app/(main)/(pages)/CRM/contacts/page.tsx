@@ -349,10 +349,10 @@ export default function ContactsPage() {
       </Card>
 
       {/* Add Contact Dialog */}
-      <AddContact isOpen={isModalOpen} setIsOpen={setIsModalOpen} />
+      <AddContact isOpen={isModalOpen}    onContactCreated={fetchContacts}  setIsOpen={setIsModalOpen} />
 
       {/* Edit Contact Dialog */}
-      <EditContact isOpen={isEditModalOpen} setIsOpen={setIsEditModalOpen} contact={selectedContact} />
+      <EditContact isOpen={isEditModalOpen}   onContactUpdated={fetchContacts} setIsOpen={setIsEditModalOpen} contact={selectedContact} />
     </div >
   );
 }

@@ -49,7 +49,7 @@ export function ProfilePage() {
   }
 
   return (
-    <div className="container mt-12  h-screen scrollbar-hide overflow-y-scroll mx-auto py-10 px-4 max-w-5xl">
+    <div className="container mt-12  h-full max-h-screen scrollbar-hide overflow-y-scroll mx-auto py-10 px-4 max-w-5xl">
       <h1 className="text-3xl font-bold mb-8 text-start">My Profile</h1>
 
       <div className="grid md:grid-cols-[300px_1fr] gap-8">

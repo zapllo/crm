@@ -445,12 +445,12 @@ export default function LeadDetails() {
                                 </div>
 
                                 <div className="flex justify-between">
-                                    <Button variant="outline" size="sm" className="w-[48%]">
+                                    {/* <Button variant="outline" size="sm" className="w-[48%]">
                                         <FaEnvelope className="mr-2 h-3 w-3" />
                                         Email
-                                    </Button>
+                                    </Button> */}
 
-                                    <Button onClick={()=> router.push(`/CRM/contacts/${leadDetails.contact?.id}`)} variant="outline" size="sm" className="w-[48%]">
+                                    <Button onClick={()=> router.push(`/CRM/contacts/${leadDetails.contact?.id}`)} variant="outline" size="sm" className="w-full">
                                         <Eye className="mr-2 h-3 w-3" />
                                         View
                                     </Button>

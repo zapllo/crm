@@ -136,14 +136,14 @@ export default function WalletOverview({ balance, currency, isLoading }: WalletO
             })}
           </p>
         </CardContent>
-        <CardFooter>
+        {/* <CardFooter>
           <Link href="/settings/wallet?tab=topup" className="w-full">
             <Button className="w-full" size="sm">
               <CircleDollarSign className="mr-2 h-4 w-4" />
               Add Credits
             </Button>
           </Link>
-        </CardFooter>
+        </CardFooter> */}
       </Card>
 
       {/* Call Time Estimate Card */}

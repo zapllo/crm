@@ -33,6 +33,7 @@ const DynamicAnnouncement = () => {
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
 
+
   // Default fallback announcement about the new Quotations product
   const defaultAnnouncement: Announcement = {
     id: "quotations-launch",
@@ -46,6 +47,12 @@ const DynamicAnnouncement = () => {
   };
 
   useEffect(() => {
+      // Check if announcement was dismissed in this session
+      const isDismissed = sessionStorage.getItem('announcement-dismissed') === 'true';
+      if (isDismissed) {
+        setIsVisible(false);
+        return;
+      }
     const fetchAnnouncements = async () => {
       try {
         // Try to fetch announcements from API
@@ -103,18 +110,11 @@ const DynamicAnnouncement = () => {
   }, [announcements.length, isExpanded]);
 
   const dismissAnnouncement = () => {
-    if (announcements.length === 1) {
-      setIsVisible(false);
-      // Not storing in localStorage to ensure it comes back on refresh
-    } else {
-      // Remove current announcement from rotation
-      const newAnnouncements = [...announcements];
-      newAnnouncements.splice(currentIndex, 1);
-      setAnnouncements(newAnnouncements);
-      setCurrentIndex(0);
-    }
-
-    // Mark as seen for this session only
+    setIsVisible(false);
+    // Store dismissal in sessionStorage to remember for this session
+    sessionStorage.setItem('announcement-dismissed', 'true');
+    
+    // Mark as seen for this session
     setHasNewAnnouncement(false);
   };
 
