@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { 
   ChevronRight, 
@@ -46,7 +46,7 @@ import {
   CommandShortcut 
 } from '@/components/ui/command'
 
-export default function HelpPage() {
+function HelpPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [searchOpen, setSearchOpen] = useState(false)
@@ -1610,5 +1610,18 @@ function ContactSupportTab() {
         </div>
       </div>
     </div>
+  )
+}
+
+// Main component with Suspense
+export default function HelpPage() {
+  return (
+    <Suspense fallback={
+      <div className="container max-w-7xl mx-auto p-10 mt-12 py-8 flex justify-center items-center">
+        <Loader2 className="h-10 w-10 animate-spin text-primary/70" />
+      </div>
+    }>
+      <HelpPageContent />
+    </Suspense>
   )
 }
