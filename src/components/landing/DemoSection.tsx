@@ -123,7 +123,7 @@ export default function DemoSection({ id }: { id?: string }) {
                 >
                     <div className="lg:col-span-2">
                         <Tabs defaultValue="dashboard" className="w-full">
-                            <TabsList className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full mb-8">
+                            <TabsList className="grid grid-cols-2 mb-20 md:mb-6 md:grid-cols-4 gap-4 w-full ">
                                 {demoTabs.map((tab) => (
                                     <TabsTrigger
                                         key={tab.id}

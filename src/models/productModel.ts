@@ -9,6 +9,7 @@ interface IProduct extends Document {
     maxDiscount?: number;
     description?: string;
     imageUrl?: string;
+    organization: Schema.Types.ObjectId; //
 }
 
 const productSchema = new Schema<IProduct>(
@@ -21,6 +22,7 @@ const productSchema = new Schema<IProduct>(
         maxDiscount: { type: Number },
         description: { type: String },
         imageUrl: { type: String }, // Image upload URL
+        organization: { type: Schema.Types.ObjectId, ref: 'Organization', required: true },
     },
     { timestamps: true }
 );

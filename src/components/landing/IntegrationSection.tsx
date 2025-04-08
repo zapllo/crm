@@ -1,12 +1,13 @@
 "use client"
 
-import { useRef } from "react"
+import { useRef, useState } from "react"
 import { motion, useInView } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ArrowRight, Plus, PlusCircle } from "lucide-react"
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
+import Link from "next/link"
 
 const integrations = [
     {
@@ -133,22 +134,23 @@ const integrations = [
     },
 ];
 
-
-
-const categories = [
-    "All",
-    "Communication",
-    "Marketing",
-    "Finance",
-    "E-commerce",
-    "Productivity",
-    "CRM",
-    "Automation"
-]
+// Get unique categories from integrations and add "All" at the beginning
+const categories = ["All", ...Array.from(new Set(integrations.map(item => item.category)))];
 
 export default function IntegrationSection({ id }: { id?: string }) {
     const ref = useRef(null)
     const isInView = useInView(ref, { once: true, amount: 0.2 })
+    const [selectedCategory, setSelectedCategory] = useState("All")
+
+    // Filter integrations based on selected category
+    const filteredIntegrations = selectedCategory === "All"
+        ? integrations
+        : integrations.filter(integration => integration.category === selectedCategory)
+
+    // Handle category selection
+    const handleCategorySelect = (category: string) => {
+        setSelectedCategory(category)
+    }
 
     return (
         <section id={id} ref={ref} className="w-full py-12 md:py-24 bg-gradient-to-b from-white to-slate-50 dark:from-slate-950 dark:to-slate-900">
@@ -177,12 +179,17 @@ export default function IntegrationSection({ id }: { id?: string }) {
                     className="mb-8"
                 >
                     <ScrollArea className="w-full whitespace-nowrap pb-4">
-                        <div className="flex space-x-2 pl-3">
-                            {categories.map((category, i) => (
+                        <div className="flex justify-center space-x-2 pl-3">
+                            {categories.map((category) => (
                                 <Badge
                                     key={category}
-                                    variant={i === 0 ? "default" : "outline"}
-                                    className="cursor-pointer py-1.5 px-3"
+                                    variant={selectedCategory === category ? "default" : "outline"}
+                                    className={`cursor-pointer py-1.5 px-3 transition-all ${
+                                        selectedCategory === category
+                                            ? "bg-primary text-primary-foreground"
+                                            : "hover:bg-primary/10 hover:text-primary"
+                                    }`}
+                                    onClick={() => handleCategorySelect(category)}
                                 >
                                     {category}
                                 </Badge>
@@ -193,59 +200,86 @@ export default function IntegrationSection({ id }: { id?: string }) {
                 </motion.div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {integrations.map((integration, index) => (
+                    {filteredIntegrations.length > 0 ? (
+                        <>
+                            {filteredIntegrations.map((integration, index) => (
+                                <motion.div
+                                    key={integration.name}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+                                    transition={{ duration: 0.4, delay: 0.1 + (index % 8) * 0.05 }}
+                                    whileHover={{ y: -5 }}
+                                    className="h-full"
+                                    layout
+                                >
+                                    <Card className="h-full relative overflow-hidden group cursor-pointer">
+                                        {integration.featured && (
+                                            <div className="absolute top-0 right-0 z-10">
+                                                <Badge variant="default" className="rounded-tl-none rounded-br-none bg-primary">
+                                                    Popular
+                                                </Badge>
+                                            </div>
+                                        )}
+                                        <CardContent className="p-6 flex flex-col h-full">
+                                            <div className="flex items-center space-x-4 mb-4">
+                                                <div className="h-12 w-12 bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center justify-center overflow-hidden">
+                                                    <img
+                                                        src={integration.logo}
+                                                        alt={`${integration.name} logo`}
+                                                        className="h-8 w-8 object-contain"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <h3 className="font-semibold">{integration.name}</h3>
+                                                    <Badge variant="secondary" className="text-xs font-normal">
+                                                        {integration.category}
+                                                    </Badge>
+                                                </div>
+                                            </div>
+                                            <p className="text-sm text-muted-foreground mb-4">{integration.description}</p>
+                                            <div className="mt-auto pt-4 flex justify-between items-center">
+                                                {/* <Button variant="ghost" size="sm" className="text-primary group-hover:text-primary/80">
+                                                    <span>Powered by ZaplloCRM</span>
+                                                    <ArrowRight className="ml-1 h-3.5 w-3.5 opacity-70 group-hover:translate-x-0.5 transition-transform" />
+                                                </Button> */}
+                                                {/* <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                                                    <Plus className="h-4 w-4" />
+                                                </div> */}
+                                            </div>
+                                        </CardContent>
+                                        <div className="absolute inset-0 border-2 border-transparent group-hover:border-primary/20 rounded-lg pointer-events-none transition-colors duration-300" />
+                                    </Card>
+                                </motion.div>
+                            ))}
+                        </>
+                    ) : (
                         <motion.div
-                            key={integration.name}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-                            transition={{ duration: 0.4, delay: 0.1 + (index % 8) * 0.05 }}
-                            whileHover={{ y: -5 }}
-                            className="h-full"
+                            className="col-span-full text-center py-12"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ duration: 0.4 }}
                         >
-                            <Card className="h-full relative overflow-hidden group cursor-pointer">
-                                {integration.featured && (
-                                    <div className="absolute top-0 right-0 z-10">
-                                        <Badge variant="default" className="rounded-tl-none rounded-br-none bg-primary">
-                                            Popular
-                                        </Badge>
-                                    </div>
-                                )}
-                                <CardContent className="p-6 flex flex-col h-full">
-                                    <div className="flex items-center space-x-4 mb-4">
-                                        <div className="h-12 w-12 bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center justify-center overflow-hidden">
-                                            <img
-                                                src={integration.logo}
-                                                alt={`${integration.name} logo`}
-                                                className="h-8 w-8 object-contain"
-                                            />
-                                        </div>
-                                        <div>
-                                            <h3 className="font-semibold">{integration.name}</h3>
-                                            <Badge variant="secondary" className="text-xs font-normal">
-                                                {integration.category}
-                                            </Badge>
-                                        </div>
-                                    </div>
-                                    <p className="text-sm text-muted-foreground mb-4">{integration.description}</p>
-                                    <div className="mt-auto pt-4 flex justify-between items-center">
-                                        <Button variant="ghost" size="sm" className="text-primary group-hover:text-primary/80">
-                                            <span>Learn more</span>
-                                            <ArrowRight className="ml-1 h-3.5 w-3.5 opacity-70 group-hover:translate-x-0.5 transition-transform" />
-                                        </Button>
-                                        <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                                            <Plus className="h-4 w-4" />
-                                        </div>
-                                    </div>
-                                </CardContent>
-                                <div className="absolute inset-0 border-2 border-transparent group-hover:border-primary/20 rounded-lg pointer-events-none transition-colors duration-300" />
-                            </Card>
+                            <div className="mx-auto flex flex-col items-center">
+                                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                                    <PlusCircle className="h-6 w-6 text-primary" />
+                                </div>
+                                <h3 className="font-semibold mb-2">No integrations found</h3>
+                                <p className="text-sm text-muted-foreground mb-4">
+                                    We don't have any integrations in this category yet.
+                                </p>
+                                <Button variant="outline" size="sm" onClick={() => setSelectedCategory("All")}>
+                                    View all integrations
+                                </Button>
+                            </div>
                         </motion.div>
-                    ))}
+                    )}
+
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
                         transition={{ duration: 0.4, delay: 0.5 }}
                         whileHover={{ y: -5 }}
+                        layout
                     >
                         <Card className="h-full border-dashed flex flex-col items-center justify-center p-6 text-center cursor-pointer hover:border-primary/50 transition-colors">
                             <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
@@ -255,9 +289,11 @@ export default function IntegrationSection({ id }: { id?: string }) {
                             <p className="text-sm text-muted-foreground mb-4">
                                 Don't see the tool you use? Let us know and we'll build it!
                             </p>
-                            <Button variant="outline" size="sm">
+                            <Link href='https://forms.gle/v16NjQusTan2PCDW6'>
+                            <Button  variant="outline" size="sm">
                                 Request integration
                             </Button>
+                            </Link>
                         </Card>
                     </motion.div>
                 </div>

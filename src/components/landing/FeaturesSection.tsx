@@ -226,10 +226,10 @@ export default function FeaturesSection({ id }: { id?: string }) {
                                                         ))}
                                                     </div>
 
-                                                    <Button className="w-fit mt-2 group" size="sm">
+                                                    {/* <Button className="w-fit mt-2 group" size="sm">
                                                         Learn more about {feature.title.toLowerCase()}
                                                         <ChevronRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                                                    </Button>
+                                                    </Button> */}
                                                 </div>
                                             </CardContent>
                                         </div>
