@@ -2,15 +2,15 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { 
-  ChevronRight, 
-  LifeBuoy, 
-  Search, 
-  Info, 
-  FileText, 
-  Code, 
-  MessageSquare, 
-  BookOpen, 
+import {
+  ChevronRight,
+  LifeBuoy,
+  Search,
+  Info,
+  FileText,
+  Code,
+  MessageSquare,
+  BookOpen,
   CheckCircle,
   ArrowRight,
   Users,
@@ -34,16 +34,16 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { 
-  Command, 
-  CommandDialog, 
-  CommandEmpty, 
-  CommandGroup, 
-  CommandInput, 
-  CommandItem, 
-  CommandList, 
-  CommandSeparator, 
-  CommandShortcut 
+import {
+  Command,
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator,
+  CommandShortcut
 } from '@/components/ui/command'
 
 function HelpPageContent() {
@@ -53,7 +53,7 @@ function HelpPageContent() {
   const [searchQuery, setSearchQuery] = useState('')
   const [activeTab, setActiveTab] = useState('getting-started')
   const [isLoading, setIsLoading] = useState(false)
-  
+
   // Get the category from URL params if present
   useEffect(() => {
     const category = searchParams.get('category')
@@ -61,7 +61,7 @@ function HelpPageContent() {
       setActiveTab(category)
     }
   }, [searchParams])
-  
+
   // Enable keyboard shortcut for search
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -88,19 +88,19 @@ function HelpPageContent() {
   return (
     <div className="container max-w-7xl h-full overflow-y-scroll max-h-screen mx-auto p-10 mt-12 py-8">
       <HelpHeader setSearchOpen={setSearchOpen} />
-      
+
       <Tabs defaultValue={activeTab} value={activeTab} onValueChange={setActiveTab} className="mt-10">
         <div className="flex justify-between items-center mb-8">
           <TabsList className=" bg-accent gap-2 p-1">
             <TabsTrigger value="getting-started" className="rounded-md border-none data-[state=active]:bg-background">
               Getting Started
             </TabsTrigger>
-           
+
             <TabsTrigger value="contact" className="rounded-md border-none data-[state=active]:bg-background">
               Contact Support
             </TabsTrigger>
           </TabsList>
-          
+
           <Button variant="outline" onClick={() => setSearchOpen(true)} className="hidden md:flex items-center gap-2">
             <Search className="h-4 w-4" />
             <span>Search documentation</span>
@@ -109,31 +109,31 @@ function HelpPageContent() {
             </kbd>
           </Button>
         </div>
-        
+
         <TabsContent value="getting-started" className="border-none p-0">
           <GettingStartedTab />
         </TabsContent>
-        
+
         <TabsContent value="user-guides" className="border-none p-0">
           <UserGuidesTab />
         </TabsContent>
-        
+
         <TabsContent value="api" className="border-none p-0">
           <ApiDocsTab />
         </TabsContent>
-        
+
         <TabsContent value="faq" className="border-none p-0">
           <FaqTab />
         </TabsContent>
-        
+
         <TabsContent value="contact" className="border-none p-0">
           <ContactSupportTab />
         </TabsContent>
       </Tabs>
-      
+
       <CommandDialog open={searchOpen} onOpenChange={setSearchOpen}>
-        <CommandInput 
-          placeholder="Search help articles..." 
+        <CommandInput
+          placeholder="Search help articles..."
           value={searchQuery}
           onValueChange={handleSearch}
         />
@@ -246,21 +246,21 @@ function HelpHeader({ setSearchOpen }: { setSearchOpen: (open: boolean) => void 
 }
 
 // Quick Link Component
-function QuickLink({ 
-  title, 
-  href, 
-  description, 
-  icon: Icon 
-}: { 
+function QuickLink({
+  title,
+  href,
+  description,
+  icon: Icon
+}: {
   title: string
   href: string
   description: string
   icon: LucideIcon
 }) {
   const router = useRouter()
-  
+
   return (
-    <Card 
+    <Card
       className="cursor-pointer hover:shadow-md transition-all hover:border-primary/30"
       onClick={() => router.push(href)}
     >
@@ -293,7 +293,7 @@ function GettingStartedTab() {
                 Welcome to Zapllo CRM! This guide will help you set up your account and learn the basics.
               </p>
             </div>
-            
+
             <Card>
               <CardHeader className="pb-3">
                 <div className="bg-primary/10 rounded-full p-2 w-fit mb-3">
@@ -333,8 +333,8 @@ function GettingStartedTab() {
                     </div>
                   </div>
                 </div>
-                {/* <Button 
-                  className="mt-4 w-full" 
+                {/* <Button
+                  className="mt-4 w-full"
                   onClick={() => router.push('/help/articles/quick-start-guide')}
                 >
                   Read Full Guide
@@ -342,7 +342,7 @@ function GettingStartedTab() {
                 </Button> */}
               </CardContent>
             </Card>
-            
+
             {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
               <OnboardingCard
                 icon={Users}
@@ -369,8 +369,8 @@ function GettingStartedTab() {
                 href="/help/articles/creating-reports"
               />
             </div> */}
-            
-            <Card className="bg-primary/5 border-primary/20">
+
+            {/* <Card className="bg-primary/5 border-primary/20">
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <CheckCircle className="h-5 w-5 mr-2 text-primary" />
@@ -381,37 +381,37 @@ function GettingStartedTab() {
                 <p className="text-muted-foreground">
                   Follow our guided checklist to set up your CRM completely. Our step-by-step process ensures you get the most from Zapllo CRM.
                 </p>
-                <Button className="mt-4" variant="outline" onClick={() => router.push('/checklist')}>
+                {/* <Button className="mt-4" variant="outline" onClick={() => router.push('/checklist')}>
                   View Onboarding Checklist
-                </Button>
-              </CardContent>
-            </Card>
+                </Button> */}
+              {/* </CardContent>
+            </Card> */}
           </div>
         </div>
-        
+
         <div>
-         
+
         </div>
       </div>
     </div>
   )
 }
 
-function OnboardingCard({ 
-  icon: Icon, 
-  title, 
-  description, 
-  href 
-}: { 
+function OnboardingCard({
+  icon: Icon,
+  title,
+  description,
+  href
+}: {
   icon: LucideIcon
   title: string
   description: string
   href: string
 }) {
   const router = useRouter()
-  
+
   return (
-    <Card 
+    <Card
       className="cursor-pointer hover:shadow-md transition-all"
       onClick={() => router.push(href)}
     >
@@ -437,7 +437,7 @@ function OnboardingCard({
 function UserGuidesTab() {
   const router = useRouter()
   const [activeCategory, setActiveCategory] = useState<string>('all')
-  
+
   const categories = [
     { id: 'all', name: 'All Guides' },
     { id: 'contacts', name: 'Contacts & Companies' },
@@ -447,7 +447,7 @@ function UserGuidesTab() {
     { id: 'settings', name: 'Settings & Admin' },
     { id: 'integrations', name: 'Integrations' },
   ]
-  
+
   const guides = [
     {
       id: 1,
@@ -522,11 +522,11 @@ function UserGuidesTab() {
       popular: false,
     },
   ]
-  
-  const filteredGuides = activeCategory === 'all' 
-    ? guides 
+
+  const filteredGuides = activeCategory === 'all'
+    ? guides
     : guides.filter(guide => guide.category === activeCategory)
-  
+
   return (
     <div className="space-y-6">
       <div>
@@ -535,7 +535,7 @@ function UserGuidesTab() {
           Detailed documentation on how to use every feature of Zapllo CRM.
         </p>
       </div>
-      
+
       <div className="flex overflow-auto pb-2 hide-scrollbar">
         <div className="flex gap-2">
           {categories.map((category) => (
@@ -551,11 +551,11 @@ function UserGuidesTab() {
           ))}
         </div>
       </div>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredGuides.map((guide) => (
-          <Card 
-            key={guide.id} 
+          <Card
+            key={guide.id}
             className="cursor-pointer hover:shadow-md transition-all"
             onClick={() => router.push(guide.href)}
           >
@@ -586,7 +586,7 @@ function UserGuidesTab() {
           </Card>
         ))}
       </div>
-      
+
       {filteredGuides.length === 0 && (
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <Info className="h-12 w-12 text-muted-foreground/50 mb-4" />
@@ -599,9 +599,9 @@ function UserGuidesTab() {
           </Button>
         </div>
       )}
-      
+
       <Separator className="my-10" />
-      
+
       <div className="rounded-lg border bg-card text-card-foreground shadow-sm overflow-hidden">
         <div className="grid lg:grid-cols-2 gap-0">
           <div className="p-6 flex flex-col justify-center">
@@ -617,9 +617,9 @@ function UserGuidesTab() {
             <h4 className="font-medium mb-3">Related Resources</h4>
             <ul className="space-y-3">
               <li>
-                <Button 
-                  variant="link" 
-                  className="p-0 h-auto text-primary" 
+                <Button
+                  variant="link"
+                  className="p-0 h-auto text-primary"
                   onClick={() => router.push('/help/articles')}
                 >
                   <FileText className="h-4 w-4 mr-2" />
@@ -627,9 +627,9 @@ function UserGuidesTab() {
                 </Button>
               </li>
               <li>
-                <Button 
-                  variant="link" 
-                  className="p-0 h-auto text-primary" 
+                <Button
+                  variant="link"
+                  className="p-0 h-auto text-primary"
                   onClick={() => router.push('/help/videos')}
                 >
                   <FileText className="h-4 w-4 mr-2" />
@@ -637,9 +637,9 @@ function UserGuidesTab() {
                 </Button>
               </li>
               <li>
-                <Button 
-                  variant="link" 
-                  className="p-0 h-auto text-primary" 
+                <Button
+                  variant="link"
+                  className="p-0 h-auto text-primary"
                   onClick={() => router.push('/help?category=faq')}
                 >
                   <FileText className="h-4 w-4 mr-2" />
@@ -658,7 +658,7 @@ function UserGuidesTab() {
 function ApiDocsTab() {
   const router = useRouter()
   const [activeSection, setActiveSection] = useState<string>('overview')
-  
+
   return (
     <div className="space-y-8">
       <div>
@@ -667,7 +667,7 @@ function ApiDocsTab() {
           Integrate with Zapllo CRM using our robust RESTful API.
         </p>
       </div>
-      
+
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         <div className="lg:col-span-1">
           <div className="sticky top-24 space-y-1">
@@ -679,7 +679,7 @@ function ApiDocsTab() {
             >
               Overview
             </Button>
-            
+
             <Button
               variant={activeSection === 'authentication' ? "default" : "ghost"}
               size="sm"
@@ -688,7 +688,7 @@ function ApiDocsTab() {
             >
               Authentication
             </Button>
-            
+
             <Button
               variant={activeSection === 'endpoints' ? "default" : "ghost"}
               size="sm"
@@ -697,7 +697,7 @@ function ApiDocsTab() {
             >
               API Endpoints
             </Button>
-            
+
             <Button
               variant={activeSection === 'webhooks' ? "default" : "ghost"}
               size="sm"
@@ -706,7 +706,7 @@ function ApiDocsTab() {
             >
               Webhooks
             </Button>
-            
+
             <Button
               variant={activeSection === 'sdks' ? "default" : "ghost"}
               size="sm"
@@ -715,7 +715,7 @@ function ApiDocsTab() {
             >
               SDKs & Libraries
             </Button>
-            
+
             <Button
               variant={activeSection === 'rate-limits' ? "default" : "ghost"}
               size="sm"
@@ -724,7 +724,7 @@ function ApiDocsTab() {
             >
               Rate Limits
             </Button>
-            
+
             <Button
               variant={activeSection === 'pagination' ? "default" : "ghost"}
               size="sm"
@@ -733,7 +733,7 @@ function ApiDocsTab() {
             >
               Pagination
             </Button>
-            
+
             <Button
               variant={activeSection === 'errors' ? "default" : "ghost"}
               size="sm"
@@ -742,9 +742,9 @@ function ApiDocsTab() {
             >
               Error Handling
             </Button>
-            
+
             <Separator className="my-4" />
-            
+
             <div className="p-4 bg-muted/50 rounded-lg border">
               <h4 className="font-medium text-sm">Need help with API?</h4>
               <p className="text-xs text-muted-foreground mt-1 mb-3">
@@ -756,7 +756,7 @@ function ApiDocsTab() {
             </div>
           </div>
         </div>
-        
+
         <div className="lg:col-span-3">
           {activeSection === 'overview' && (
             <div className="space-y-6">
@@ -774,7 +774,7 @@ function ApiDocsTab() {
                       https://api.zapllo.com/v1
                     </div>
                   </div>
-                  
+
                   <div>
                     <h3 className="font-medium">What You Can Do</h3>
                     <ul className="mt-2 space-y-2">
@@ -800,7 +800,7 @@ function ApiDocsTab() {
                       </li>
                     </ul>
                   </div>
-                  
+
                   <div>
                     <h3 className="font-medium">Getting Started</h3>
                     <ol className="mt-2 space-y-2 ml-5 list-decimal">
@@ -824,14 +824,14 @@ function ApiDocsTab() {
                       </li>
                     </ol>
                   </div>
-                  
+
                   <Button onClick={() => setActiveSection('authentication')}>
                     Get Started with API
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </CardContent>
               </Card>
-              
+
               <Card>
                 <CardHeader>
                   <CardTitle>Example API Request</CardTitle>
@@ -864,7 +864,7 @@ function ApiDocsTab() {
   -H "Content-Type: application/json"`}</pre>
                     </div>
                   </div>
-                  
+
                   <div className="rounded-md overflow-hidden mt-4">
                     <div className="bg-muted text-sm font-mono p-3 flex justify-between items-center border-b">
                       <span>Response</span>
@@ -917,7 +917,7 @@ function ApiDocsTab() {
               </Card>
             </div>
           )}
-          
+
           {activeSection === 'authentication' && (
             <Card>
               <CardHeader>
@@ -932,7 +932,7 @@ function ApiDocsTab() {
                   <p className="text-muted-foreground mt-2">
                     All API requests must include your API key for authentication. You can get your API key from the Settings / API section in your Zapllo CRM account.
                   </p>
-                  
+
                   <div className="mt-4 bg-muted p-4 rounded-md">
                     <h4 className="text-sm font-medium">API Key in Header</h4>
                     <div className="bg-black text-white p-3 rounded-md mt-2 font-mono text-sm overflow-x-auto">
@@ -940,7 +940,7 @@ function ApiDocsTab() {
                     </div>
                   </div>
                 </div>
-                
+
                 <div>
                   <h3 className="font-medium">Getting Your API Key</h3>
                   <ol className="mt-2 space-y-3 ml-5 list-decimal">
@@ -965,7 +965,7 @@ function ApiDocsTab() {
                     </div>
                   </div>
                 </div>
-                
+
                 <div>
                   <h3 className="font-medium">API Key Permissions</h3>
                   <p className="text-muted-foreground mt-2">
@@ -986,7 +986,7 @@ function ApiDocsTab() {
                     </div>
                   </div>
                 </div>
-                
+
                 <Button onClick={() => setActiveSection('endpoints')}>
                   Next: API Endpoints
                   <ArrowRight className="ml-2 h-4 w-4" />
@@ -994,7 +994,7 @@ function ApiDocsTab() {
               </CardContent>
             </Card>
           )}
-          
+
           {activeSection === 'endpoints' && (
             <Card>
               <CardHeader>
@@ -1017,7 +1017,7 @@ function ApiDocsTab() {
                         { method: "DELETE", path: "/contacts/{id}", description: "Delete a contact" },
                       ]}
                     />
-                    
+
                     <ApiEndpointSection
                       title="Companies"
                       description="Manage company information"
@@ -1029,7 +1029,7 @@ function ApiDocsTab() {
                         { method: "DELETE", path: "/companies/{id}", description: "Delete a company" },
                       ]}
                     />
-                    
+
                     <ApiEndpointSection
                       title="Leads"
                       description="Manage leads and deals"
@@ -1042,7 +1042,7 @@ function ApiDocsTab() {
                         { method: "GET", path: "/leads/{id}/timeline", description: "Get lead timeline" },
                       ]}
                     />
-                    
+
                     <ApiEndpointSection
                       title="Activities"
                       description="Track calls, emails, and tasks"
@@ -1054,7 +1054,7 @@ function ApiDocsTab() {
                         { method: "DELETE", path: "/activities/{id}", description: "Delete an activity" },
                       ]}
                     />
-                    
+
                     <ApiEndpointSection
                       title="Users"
                       description="Manage users and permissions"
@@ -1066,7 +1066,7 @@ function ApiDocsTab() {
                         { method: "DELETE", path: "/users/{id}", description: "Delete a user" },
                       ]}
                     />
-                    
+
                     <ApiEndpointSection
                       title="Webhooks"
                       description="Manage webhooks for real-time notifications"
@@ -1080,7 +1080,7 @@ function ApiDocsTab() {
                     />
                   </div>
                 </ScrollArea>
-                
+
                 <div className="py-4 flex justify-between">
                   <Button variant="outline" onClick={() => setActiveSection('authentication')}>
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 mr-2">
@@ -1097,9 +1097,9 @@ function ApiDocsTab() {
               </CardContent>
             </Card>
           )}
-          
+
           {/* Additional sections for webhooks, sdks, rate-limits would go here */}
-          
+
         </div>
       </div>
     </div>
@@ -1125,15 +1125,15 @@ function ApiEndpointSection({
     <div>
       <h3 className="text-lg font-medium">{title}</h3>
       <p className="text-sm text-muted-foreground mt-1">{description}</p>
-      
+
       <div className="mt-3 space-y-2">
         {endpoints.map((endpoint, i) => (
-          <div 
-            key={i} 
+          <div
+            key={i}
             className="flex items-center p-3 rounded-md border hover:bg-muted/50 transition-colors cursor-pointer"
           >
-            <Badge 
-              variant="outline" 
+            <Badge
+              variant="outline"
               className={`mr-3 font-mono ${
                 endpoint.method === "GET" ? "text-green-600 border-green-200 bg-green-50 dark:text-green-400 dark:border-green-900 dark:bg-green-950/30" :
                 endpoint.method === "POST" ? "text-blue-600 border-blue-200 bg-blue-50 dark:text-blue-400 dark:border-blue-900 dark:bg-blue-950/30" :
@@ -1156,14 +1156,14 @@ function ApiEndpointSection({
 // FAQ Tab
 function FaqTab() {
   const [openItems, setOpenItems] = useState<Record<number, boolean>>({0: true})
-  
+
   const toggleItem = (index: number) => {
     setOpenItems(prev => ({
       ...prev,
       [index]: !prev[index]
     }))
   }
-  
+
   const faqs = [
     {
       question: "How do I import contacts into the CRM?",
@@ -1198,7 +1198,7 @@ function FaqTab() {
       answer: "Zapllo CRM implements enterprise-grade security measures including data encryption at rest and in transit, regular security audits, multi-factor authentication, and compliance with major security standards to ensure your data is secure."
     },
   ]
-  
+
   return (
     <div className="space-y-6">
       <div>
@@ -1207,7 +1207,7 @@ function FaqTab() {
           Quick answers to common questions about using Zapllo CRM.
         </p>
       </div>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-muted/50 p-6 rounded-lg border space-y-2">
           <h3 className="font-medium text-lg">Popular Topics</h3>
@@ -1219,7 +1219,7 @@ function FaqTab() {
             ))}
           </div>
         </div>
-        
+
         <div className="bg-muted/50 p-6 rounded-lg border">
           <h3 className="font-medium text-lg mb-3">Can't find an answer?</h3>
           <p className="text-muted-foreground text-sm mb-4">
@@ -1228,11 +1228,11 @@ function FaqTab() {
           <Button onClick={() => {}}>Contact Support</Button>
         </div>
       </div>
-      
+
       <div className="space-y-4 mt-8">
         {faqs.map((faq, i) => (
           <Card key={i} className="overflow-hidden">
-            <div 
+            <div
               className="p-6 flex justify-between items-center cursor-pointer hover:bg-muted/50 transition-colors"
               onClick={() => toggleItem(i)}
             >
@@ -1259,7 +1259,7 @@ function FaqTab() {
           </Card>
         ))}
       </div>
-      
+
       <Card className="mt-8">
         <CardHeader>
           <CardTitle>Still need help?</CardTitle>
@@ -1308,7 +1308,7 @@ function ContactSupportTab() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
-    
+
     // Simulate API call
     setTimeout(() => {
       setIsSubmitting(false)
@@ -1322,7 +1322,7 @@ function ContactSupportTab() {
       setPriorityLevel("")
     }, 1500)
   }
-  
+
   if (submitted) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -1368,7 +1368,7 @@ function ContactSupportTab() {
       </div>
     )
   }
-  
+
   return (
     <div className="space-y-8">
       <div>
@@ -1377,7 +1377,7 @@ function ContactSupportTab() {
           Need help with Zapllo CRM? Our support team is here to assist you.
         </p>
       </div>
-      
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
           <Card>
@@ -1416,13 +1416,13 @@ function ContactSupportTab() {
                     />
                   </div>
                 </div>
-                
+
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
                     <label htmlFor="category" className="text-sm font-medium">
                       Issue Category
                     </label>
-                    <select 
+                    <select
                       id="category"
                       className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                       value={category}
@@ -1441,7 +1441,7 @@ function ContactSupportTab() {
                     <label htmlFor="priority" className="text-sm font-medium">
                       Priority Level
                     </label>
-                    <select 
+                    <select
                       id="priority"
                       className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                       value={priorityLevel}
@@ -1456,7 +1456,7 @@ function ContactSupportTab() {
                     </select>
                   </div>
                 </div>
-                
+
                 <div className="space-y-2">
                   <label htmlFor="subject" className="text-sm font-medium">
                     Subject
@@ -1469,12 +1469,12 @@ function ContactSupportTab() {
                     required
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <label htmlFor="message" className="text-sm font-medium">
                     Message
                   </label>
-                  <textarea 
+                  <textarea
                     id="message"
                     rows={6}
                     className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
@@ -1487,7 +1487,7 @@ function ContactSupportTab() {
                     Please include any error messages, steps to reproduce, and relevant screenshots.
                   </p>
                 </div>
-                
+
                 <div className="flex items-center space-x-2">
                   <input
                     type="checkbox"
@@ -1499,7 +1499,7 @@ function ContactSupportTab() {
                     I understand that my information will be processed as described in the <a href="#" className="text-primary underline">Privacy Policy</a>.
                   </label>
                 </div>
-                
+
                 <Button type="submit" className="w-full" disabled={isSubmitting}>
                   {isSubmitting ? (
                     <>
@@ -1515,7 +1515,7 @@ function ContactSupportTab() {
             </CardContent>
           </Card>
         </div>
-        
+
         <div className="space-y-6">
           <Card>
             <CardHeader>
@@ -1528,13 +1528,13 @@ function ContactSupportTab() {
                 </svg>
                 <div>
                   <h3 className="font-medium text-sm">Phone Support</h3>
-                  <p className="text-sm text-muted-foreground">+1 (888) 123-4567</p>
+                  <p className="text-sm text-muted-foreground">+91 8910748670</p>
                   <p className="text-xs text-muted-foreground mt-1">
                     Monday - Friday, 9:00 AM - 5:00 PM ET
                   </p>
                 </div>
               </div>
-              
+
               <div className="flex">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 mr-3 text-primary">
                   <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
@@ -1548,7 +1548,7 @@ function ContactSupportTab() {
                   </p>
                 </div>
               </div>
-              
+
               <div className="flex">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 mr-3 text-primary">
                   <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
@@ -1563,7 +1563,7 @@ function ContactSupportTab() {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader>
               <CardTitle>Support Hours</CardTitle>
@@ -1589,7 +1589,7 @@ function ContactSupportTab() {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader className="pb-2">
               <CardTitle>View Your Tickets</CardTitle>
@@ -1598,8 +1598,8 @@ function ContactSupportTab() {
               <p className="text-sm text-muted-foreground mb-4">
                 Track the status of your existing support requests
               </p>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 className="w-full"
                 onClick={() => router.push('/help/tickets')}
               >

@@ -281,7 +281,7 @@ export default function AIAutomationDemo() {
                             <FormLabel>Full Name</FormLabel>
                             <FormControl>
                               <Input
-                                placeholder="John Doe"
+                                placeholder=""
                                 {...field}
                                 className="transition-all duration-200 focus:ring-2 focus:ring-primary/50"
                               />
@@ -333,10 +333,10 @@ export default function AIAutomationDemo() {
                         name="description"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>How can we help you?</FormLabel>
+                            <FormLabel>Submit Your Query<span className='text-red-500'>*</span></FormLabel>
                             <FormControl>
                               <Textarea
-                                placeholder="Tell us about your project or requirements..."
+                                placeholder="Tell us about your issues"
                                 className="min-h-[120px] transition-all duration-200 focus:ring-2 focus:ring-primary/50"
                                 {...field}
                               />
