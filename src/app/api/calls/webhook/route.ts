@@ -124,25 +124,10 @@ export async function POST(req: NextRequest) {
             }
           }
         }
-
+        // With simply:
         if (callStatus === 'completed' && recordingSid) {
-          // Initiate transcription (only if there's a recording!)
-          const client = twilio(
-            process.env.TWILIO_ACCOUNT_SID!,
-            process.env.TWILIO_AUTH_TOKEN!
-          );
-
-          try {
-            await (client.transcriptions as any).create({
-              recordingSid,
-              callbackUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/calls/transcription`,
-              contentLanguage: 'en-US',
-            });
-
-            console.log('Transcription request initiated for Recording SID:', recordingSid);
-          } catch (transcribeError) {
-            console.error('Error creating transcription:', transcribeError);
-          }
+          // Store the recording URL but don't attempt transcription
+          console.log(`Call ${callId} completed with recording ${recordingSid}`);
         }
 
         console.log(`Updating call ${callId} to status: ${call.status}`);

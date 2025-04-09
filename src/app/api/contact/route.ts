@@ -26,7 +26,7 @@ async function scheduleCall(fullName: string, whatsappNumber: string, responseTe
       userId: process.env.SYSTEM_USER_ID || "000000000000000000000000",
       contactName: fullName, // Add the contact name for the TwiML
       customMessage: responseText, // Add this field to your Call model
-      scheduledFor: new Date(Date.now() + 2 * 60 * 1000), // Schedule for 2 mins from now
+      scheduledFor: new Date(Date.now() + 1 * 60 * 1000), // Schedule for 2 mins from now
       startTime: new Date(),
       cost: 0
     });
