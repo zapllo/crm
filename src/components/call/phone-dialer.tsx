@@ -180,7 +180,7 @@ export default function PhoneDialer({
     setStatus("connecting");
 
     try {
-      // (1) Create the call record in your DB. 
+      // (1) Create the call record in your DB.
       const resp = await axios.post("/api/calls/create", {
         contactId,
         leadId,
@@ -350,7 +350,7 @@ export default function PhoneDialer({
                 </Badge>
               </div>
             )}
-          
+
           </DialogTitle>
         </DialogHeader>
 
@@ -496,20 +496,22 @@ export default function PhoneDialer({
           </div>
         )}
 
-        <DialogFooter className="flex justify-center gap-2">
+        <div className="gap-2">
           {status === "idle" && (
             <>
+            <div className='flex justify-center gap-2'>
               <Button variant="outline" onClick={handleCloseDialog}>Cancel</Button>
               <Button onClick={startCall} className="gap-2 bg-green-600 hover:bg-green-700 text-white">
                 <PhoneCall className="h-4 w-4" />
                 Call Now
               </Button>
+              </div>
             </>
           )}
           {(status === "failed" || status === "completed") && (
             <Button onClick={handleCloseDialog}>Close</Button>
           )}
-        </DialogFooter>
+        </div>
       </DialogContent>
 
       {/* Low Balance Alert */}

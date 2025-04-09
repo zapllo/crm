@@ -117,13 +117,7 @@ export async function POST(request: NextRequest) {
             subscriptionExpires.setDate(subscriptionExpires.getDate() + 365);
 
             // Update organization's fields only if the plan is not 'Recharge'
-            const organizationUpdate: Partial<{
-                isPro: boolean;
-                subscriptionExpires: Date;
-                subscribedPlan: string;
-                subscribedUserCount: number;
-                userExceed: boolean;
-            }> = {
+            const organizationUpdate: any = {
                 isPro: true,
                 subscriptionExpires,
             };
@@ -131,6 +125,25 @@ export async function POST(request: NextRequest) {
             if (planName !== 'Recharge') {
                 organizationUpdate.subscribedPlan = planName;
                 organizationUpdate.subscribedUserCount = subscribedUserCount;
+
+                // Check if this is a Quotation-related plan
+                if (
+                    planName === 'Zapllo Quotations' ||
+                    planName.includes('Quotation') ||
+                    planName.includes('quotation')
+                ) {
+                    // Enable quotation feature in settings
+                    organizationUpdate['settings.quotations.enabled'] = true;
+                    organizationUpdate['settings.quotations.defaultCurrency'] = 'INR';
+                    organizationUpdate['settings.quotations.defaultExpiry'] = 30;
+
+                    // Update activeSubscriptions array to include quotation
+                    await Organization.updateOne(
+                        { _id: user.organization },
+                        { $addToSet: { activeSubscriptions: 'quotation' } }
+                    );
+                }
+
                 const currentUserCount = await User.countDocuments({ organization: user.organization });
 
                 if (currentUserCount > subscribedUserCount) {
@@ -140,6 +153,7 @@ export async function POST(request: NextRequest) {
                 }
             }
 
+            // Update the organization with our changes
             await Organization.updateOne(
                 { _id: user.organization },
                 { $set: organizationUpdate }
@@ -164,7 +178,7 @@ export async function POST(request: NextRequest) {
         // Check if this is an integration purchase
         if (planName && planName.includes('Integration')) {
             const platform = planName.replace(' Integration', '').toLowerCase();
-            
+
             try {
                 // Find or create integration record
                 let integration = await Integration.findOne({
@@ -203,18 +217,18 @@ export async function POST(request: NextRequest) {
 
                     await integration.save();
                 }
-                
+
                 // Send notification to integration team
                 try {
                     // You can implement email notification here
                     // Example using your webhook notification:
                     await sendWebhookNotification(
-                        user, 
-                        `${platform} Integration`, 
+                        user,
+                        `${platform} Integration`,
                         organization.companyName || '',
                         '1' // Integrations don't have user counts, so default to 1
                     );
-                    
+
                     console.log(`Integration purchase notification sent for ${platform}`);
                 } catch (notificationError) {
                     console.error('Error sending integration purchase notification:', notificationError);

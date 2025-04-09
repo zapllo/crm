@@ -33,12 +33,15 @@ interface Product {
 
 export default function BillingPage() {
   const [selectedProduct, setSelectedProduct] = useState<ProductType>("crm");
-  const [userCount, setUserCount] = useState(5); // Default to 5 users
+  const [userCounts, setUserCounts] = useState({
+    crm: 5,
+    quotation: 5
+  });
   const [showDetails, setShowDetails] = useState(false);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
-//   const { data: session } = useSession();
+  //   const { data: session } = useSession();
 
   const products: Product[] = [
     {
@@ -65,7 +68,7 @@ export default function BillingPage() {
       description: "Streamline your quotation process and close deals faster",
       pricePerUser: QUOTATION_PRICE_PER_USER,
       icon: <FileText className="h-4 w-4 mr-1" />,
-      badge:"New",
+      badge: "New",
       features: [
         "Customizable Templates",
         "Product Catalog",
@@ -79,6 +82,8 @@ export default function BillingPage() {
   ];
 
   const currentProduct = products.find(p => p.id === selectedProduct)!;
+  // Get the current user count based on selected product
+  const userCount = userCounts[selectedProduct];
 
   // Calculate pricing
   const basePrice = userCount * currentProduct.pricePerUser;
@@ -92,15 +97,31 @@ export default function BillingPage() {
 
   const handleUserCountChange = (increment: boolean) => {
     if (increment && userCount < 50) {
-      setUserCount(userCount + 1);
+      // Update only the count for the selected product
+      setUserCounts({
+        ...userCounts,
+        [selectedProduct]: userCount + 1
+      });
     } else if (!increment && userCount > 1) {
-      setUserCount(userCount - 1);
+      setUserCounts({
+        ...userCounts,
+        [selectedProduct]: userCount - 1
+      });
     }
   };
 
   const handleCheckout = async () => {
     setLoading(true);
     try {
+      // Define the plan name based on the selected product
+      // This ensures the correct plan name is stored in the database
+      let planName = currentProduct.name;
+
+      // Special case for combined purchase (if you implement this in the future)
+      // if (selectedProduct === "crm" && includedQuotations) {
+      //   planName = "Zapllo CRM & Quotations";
+      // }
+
       // Create order
       const orderResponse = await fetch('/api/create-order', {
         method: 'POST',
@@ -113,13 +134,13 @@ export default function BillingPage() {
           receipt: `receipt_${Date.now()}`,
           notes: {
             userCount: userCount,
-            plan: currentProduct.name,
+            plan: planName, // Use the planName we defined above
           },
         }),
       });
 
       const orderData = await orderResponse.json();
-      
+
       if (!orderData.orderId) {
         throw new Error('Failed to create order');
       }
@@ -130,17 +151,14 @@ export default function BillingPage() {
         amount: Math.round(finalPrice * 100),
         currency: 'INR',
         name: 'Zapllo',
-        description: `${currentProduct.name} Subscription - ${userCount} Users`,
+        description: `${planName} Subscription - ${userCount} Users`, // Use planName here too
         order_id: orderData.orderId,
-        // prefill: {
-        //   name: session.user.name || '',
-        //   email: session.user.email || '',
-        // },
+        // prefill information as needed...
         handler: function(response: any) {
-          handlePaymentSuccess(response, orderData.orderId);
+          handlePaymentSuccess(response, orderData.orderId, planName); // Pass 
         },
         modal: {
-          ondismiss: function() {
+          ondismiss: function () {
             setLoading(false);
           }
         },
@@ -162,7 +180,8 @@ export default function BillingPage() {
     }
   };
 
-  const handlePaymentSuccess = async (response: any, orderId: string) => {
+  // Update the payment success handler to pass the plan name
+  const handlePaymentSuccess = async (response: any, orderId: string, planName: string) => {
     try {
       const paymentData = {
         razorpay_payment_id: response.razorpay_payment_id,
@@ -170,10 +189,11 @@ export default function BillingPage() {
         razorpay_signature: response.razorpay_signature,
         // userId: session?.user.id,
         amount: finalPrice,
-        planName: currentProduct.name,
+        planName: planName, // Use the passed planName
         subscribedUserCount: userCount,
         deduction: discountAmount,
       };
+
 
       const result = await fetch('/api/payment-success', {
         method: 'POST',
@@ -207,15 +227,15 @@ export default function BillingPage() {
         </p>
       </div>
 
-      <Tabs 
-        defaultValue="crm" 
+      <Tabs
+        defaultValue="crm"
         value={selectedProduct}
         onValueChange={(value) => setSelectedProduct(value as ProductType)}
         className="mx-auto max-w-4xl mb-8"
       >
         <TabsList className="grid grid-cols-2 h-10 gap-2 bg-accent w-full">
-          <TabsTrigger  value="crm" className="text-base border-none ">Zapllo CRM</TabsTrigger>
-          <TabsTrigger  value="quotation" className="text-base border-none">Zapllo Quotations</TabsTrigger>
+          <TabsTrigger value="crm" className="text-base border-none ">Zapllo CRM</TabsTrigger>
+          <TabsTrigger value="quotation" className="text-base border-none">Zapllo Quotations</TabsTrigger>
         </TabsList>
       </Tabs>
 
@@ -253,8 +273,8 @@ export default function BillingPage() {
                   >
                     <MinusCircle className="h-4 w-4" />
                   </Button>
-                  
-                  <motion.span 
+
+                  <motion.span
                     key={userCount}
                     initial={{ scale: 0.8, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
@@ -262,7 +282,7 @@ export default function BillingPage() {
                   >
                     {userCount}
                   </motion.span>
-                  
+
                   <Button
                     variant="outline"
                     size="icon"
@@ -286,15 +306,15 @@ export default function BillingPage() {
               )}
             </div>
 
-            <PricingBreakdown 
-              basePrice={basePrice} 
-              gstAmount={gstAmount} 
-              discountAmount={discountAmount} 
+            <PricingBreakdown
+              basePrice={basePrice}
+              gstAmount={gstAmount}
+              discountAmount={discountAmount}
               totalPrice={finalPrice}
               userCount={userCount}
             />
 
-            <Button 
+            <Button
               className="w-full mt-6 py-6 text-lg bg-gradient-to-r from-purple-600 to-orange-500 hover:from-purple-700 hover:to-orange-600"
               onClick={handleCheckout}
               disabled={loading}
@@ -345,8 +365,8 @@ export default function BillingPage() {
                   <Check className="h-5 w-5 text-green-500 mr-2" />
                   <span>10% discount on 10+ users</span>
                 </li>
-              
-              
+
+
               </ul>
             </CardContent>
           </Card>

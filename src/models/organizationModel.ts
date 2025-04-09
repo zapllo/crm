@@ -16,21 +16,23 @@ export interface IOrganization extends Document {
   subscribedUserCount?: number;
   subscriptionExpires?: Date;
   trialExpires: Date;
-  
+  activeSubscriptions?: string[]; // New field: tracks active module subscriptions
+
   // Logo and branding
   logo?: string;
   additionalLogos?: string[];
-  
+
   // Organization-specific settings
   settings?: {
     quotations?: {
+      enabled?: boolean;
       defaultCurrency: string;
       defaultExpiry: number;
       termsAndConditions?: string;
       emailSignature?: string;
     }
   };
-  
+
   // Integration related fields
   webhookSecret: string;
   apiConfigurations: {
@@ -41,7 +43,7 @@ export interface IOrganization extends Document {
     maxWebhooksAllowed: number;
     maxApiKeysAllowed: number;
   };
-  
+
   notifications?: {
     newLeadEmail: boolean;
     newLeadWhatsapp: boolean;
@@ -114,6 +116,11 @@ const organizationSchema = new Schema<IOrganization>(
     subscribedPlan: {
       type: String,
     },
+    // New field to track active subscriptions/modules
+    activeSubscriptions: {
+      type: [String],
+      default: []
+    },
     // Logo and branding fields
     logo: {
       type: String,
@@ -125,6 +132,10 @@ const organizationSchema = new Schema<IOrganization>(
     // Organization settings
     settings: {
       quotations: {
+        enabled: {
+          type: Boolean,
+          default: false
+        },
         defaultCurrency: {
           type: String,
           default: 'USD'
@@ -155,7 +166,7 @@ const organizationSchema = new Schema<IOrganization>(
       type: Date,
       required: true,
     },
-    
+
     // Enhanced API configuration
     apiConfigurations: {
       webhooksEnabled: {
@@ -182,7 +193,7 @@ const organizationSchema = new Schema<IOrganization>(
         default: 5 // Default limit can be adjusted based on plan
       }
     },
-    
+
     notifications: {
       newLeadEmail: {
         type: Boolean,

@@ -318,7 +318,7 @@ export default function AIAutomationDemo() {
                             <FormLabel>WhatsApp Number</FormLabel>
                             <FormControl>
                               <Input
-                                placeholder="+919876543210"
+                                placeholder=""
                                 {...field}
                                 className="transition-all duration-200 focus:ring-2 focus:ring-primary/50"
                               />
@@ -570,7 +570,7 @@ export default function AIAutomationDemo() {
                                 <div className={`w-14 h-14 rounded-full flex items-center justify-center z-10
                                   ${automationStatus.call === 'sent' ? 'bg-purple-100 text-purple-600' :
                                     automationStatus.call === 'sending' ? 'bg-amber-100 text-amber-600' :
-                                      'bg-primary/10 text-primary'}`}>
+                                      'bg-primary text-white'}`}>
                                   {automationStatus.call === 'sent' ?
                                     <CheckCircle2 className="h-6 w-6" /> :
                                     automationStatus.call === 'sending' ?
