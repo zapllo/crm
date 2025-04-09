@@ -171,7 +171,7 @@ const handleTopup = async () => {
             key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
             amount: data.amount,
             currency: data.currency,
-            name: "ZaplloCRM",
+            name: "Zapllo",
             description: "Add credits to your calling wallet",
             order_id: data.orderId,
             prefill: {

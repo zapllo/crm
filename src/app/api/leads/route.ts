@@ -272,8 +272,8 @@ export async function POST(request: Request) {
                                 month: 'short',
                                 year: '2-digit'
                             })
-                            const templateName = 'loginsuccessmember2';
-                            const bodyVariables = [`${assignedUser.firstName}`, creatorName, title, `${contactDetails.firstName} ${contactDetails.lastName}`, `${contactDetails?.whatsappNumber}`, `${sourceDetails?.name}`,today, "crm.zapllo.com" ]
+                            const templateName = 'lead_assignment';
+                            const bodyVariables = [`${assignedUser.firstName}`, creatorName, title, `${contactDetails.firstName} ${contactDetails.lastName}`, `${contactDetails?.whatsappNumber}`, `${sourceDetails?.name}`, today, "crm.zapllo.com"]
                             await sendWebhookNotification(`${assignedUser.whatsappNo}`, "IN", templateName, bodyVariables);
                             console.log("Lead assignment WhatsApp notification sent successfully");
                         } catch (error) {

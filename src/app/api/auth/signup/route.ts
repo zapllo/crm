@@ -214,9 +214,9 @@ export async function POST(request: Request) {
 
         // 7) Send WhatsApp notification
         if (whatsappNo && country) {
-            const templateName = 'loginSuccessAdmin2';
+            const templateName = 'loginsuccessadmin2';
             const bodyVariables = [firstName, companyName];
-            await sendWebhookNotification(whatsappNo, country, templateName, bodyVariables);
+            await sendWebhookNotification(whatsappNo, "IN", templateName, bodyVariables);
         }
 
         // 8) Generate JWT & set as HttpOnly cookie

@@ -41,7 +41,7 @@ interface ILead extends Document {
 
 const timelineSchema = new Schema<ITimeline>({
     stage: { type: String, required: true },
-    
+
     action: { type: String, required: true },
     remark: { type: String },
     movedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
@@ -63,8 +63,8 @@ const leadSchema = new Schema<ILead>(
         leadId: { type: String, required: true },
         title: { type: String, required: true },
         description: { type: String },
-        product: { type: Schema.Types.ObjectId, ref: 'Product', required: true },
-        contact: { type: Schema.Types.ObjectId, ref: 'Contact', required: true },
+        product: { type: Schema.Types.ObjectId, ref: 'Product' },
+        contact: { type: Schema.Types.ObjectId, ref: 'Contact', required:true},
         amount: { type: Number },
         closeDate: { type: Date },
         source: { type: Schema.Types.ObjectId, ref: "Source" },

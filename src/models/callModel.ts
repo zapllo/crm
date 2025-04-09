@@ -9,10 +9,10 @@ export interface ICall extends Document {
   twilioCallSid: string;
   twilioRecordingSid?: string;
   recordingUrl?: string;
-  phoneNumber?: string; // 
+  phoneNumber?: string; //
   duration: number; // in seconds
   direction: 'inbound' | 'outbound';
-  status: 'queued' | 'initiated' | 'ringing' | 'in-progress' | 'completed' | 'failed' | 'busy' | 'no-answer' | 'canceled';
+  status: 'queued' | 'initiated' | 'scheduled' | 'ringing' | 'in-progress' | 'completed' | 'failed' | 'busy' | 'no-answer' | 'canceled';
   notes?: string;
   transcription?: string;
   sentiment?: {
@@ -23,6 +23,9 @@ export interface ICall extends Document {
   cost: number; // in cents
   startTime: Date;
   endTime?: Date;
+  contactName?: string;
+  customMessage?: string;
+  scheduledFor?: Date;
 }
 
 const callSchema = new Schema<ICall>(
@@ -35,11 +38,15 @@ const callSchema = new Schema<ICall>(
     twilioRecordingSid: { type: String },
     recordingUrl: { type: String },
     phoneNumber: { type: String }, // Add this field
+    // Add these new fields
+    contactName: { type: String },
+    customMessage: { type: String },
+    scheduledFor: { type: Date },
     duration: { type: Number, default: 0 },
     direction: { type: String, enum: ['inbound', 'outbound'], required: true },
     status: {
       type: String,
-      enum: ['queued', 'initiated', 'ringing', 'in-progress', 'completed', 'failed', 'busy', 'no-answer', 'canceled'],
+      enum: ['queued', 'scheduled', 'initiated', 'ringing', 'in-progress', 'completed', 'failed', 'busy', 'no-answer', 'canceled'],
       required: true
     },
     notes: { type: String },

@@ -18,7 +18,7 @@ export async function sendLeadAssignmentEmail({
     leadDetails
 }: LeadAssignmentEmailProps): Promise<void> {
     const subject = `🚀 New Lead Assigned: ${leadDetails.title}`;
-    
+
     const html = `
     <body style="margin: 0; padding: 0; font-family: Arial, sans-serif;">
         <div style="background-color: #f0f4f8; padding: 20px;">
@@ -50,18 +50,18 @@ export async function sendLeadAssignmentEmail({
 
     const text = `
     Hi ${firstName},
-    
+
     A new lead has just been assigned to you in Zapllo CRM.
-    
+
     Lead Title: ${leadDetails.title}
     Contact Name: ${leadDetails.contactName}
     Contact Number: ${leadDetails.contactNumber}
     Source: ${leadDetails.sourceName}
-    
+
     Visit https://crm.zapllo.com/CRM/leads/${leadDetails.leadId} to view the lead details.
-    
+
     Pro Tip: Reaching out within the first hour can increase your conversion rate significantly!
-    
+
     Best regards,
     The Zapllo Team
     `;
@@ -100,14 +100,14 @@ interface DailyReportEmailProps {
     reportData
 }: DailyReportEmailProps) {
     const { totalLeads, openLeads, wonLeads, lostLeads, pendingFollowups } = reportData;
-    
+
     // Format the date for the report
     const today = new Date();
-    const formattedDate = today.toLocaleDateString('en-US', { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
+    const formattedDate = today.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
     });
 
     // Generate table rows for followups
@@ -132,7 +132,7 @@ interface DailyReportEmailProps {
                 <div style="padding: 20px;">
                     <p><strong>Dear ${firstName},</strong></p>
                     <p>Here's your daily CRM activity report for ${formattedDate}:</p>
-                    
+
                     <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px;">
                         <div style="flex: 1; min-width: 120px; padding: 15px; border-radius: 8px; text-align: center; background-color:#ECF1F6; border-left: 3px solid #7451F8;">
                             <div style="font-size: 13px; color: #5d6778; margin-bottom: 5px;">TOTAL LEADS</div>
@@ -151,12 +151,12 @@ interface DailyReportEmailProps {
                             <div style="font-size: 22px; font-weight: bold; color: #1D193F;">${lostLeads}</div>
                         </div>
                     </div>
-                    
+
                     <p><strong>Pending Follow-ups (${pendingFollowups.length}):</strong></p>
                     <div style="border-radius:8px; margin-top:4px; color:#000000; padding:10px; background-color:#ECF1F6">
                         ${pendingFollowups.length > 0 ? followupRows : "<p>No pending follow-ups for today!</p>"}
                     </div>
-                    
+
                     <div style="text-align: center; margin-top: 20px;">
                         <a href="https://crm.zapllo.com/CRM/dashboard" style="background-color: #0C874B; color: #ffffff; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Go to Dashboard</a>
                     </div>
@@ -166,7 +166,7 @@ interface DailyReportEmailProps {
         </div>
     </body>
     `;
-  
+
     await sendEmail({
       to,
       text: `Zapllo CRM Daily Report for ${formattedDate}`,
@@ -193,7 +193,7 @@ interface QuotationEmailProps {
     };
     userId?: string;
   }
-  
+
   export async function sendQuotationEmail({
     to,
     subject,
@@ -204,20 +204,20 @@ interface QuotationEmailProps {
   }: QuotationEmailProps): Promise<void> {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://crm.zapllo.com';
     const quotationUrl = `${appUrl}/share/quotation/${quotationDetails.publicAccessToken}`;
-    
+
     // Format currency
     const formattedTotal = new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: quotationDetails.currency || 'USD',
     }).format(quotationDetails.total);
-    
+
     // Format valid until date
     const validUntil = new Date(quotationDetails.validUntil).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
     });
-  
+
     const html = `
     <body style="margin: 0; padding: 0; font-family: Arial, sans-serif;">
         <div style="background-color: #f0f4f8; padding: 20px;">
@@ -230,62 +230,150 @@ interface QuotationEmailProps {
                 </div>
                 <div style="padding: 20px;">
                     <p><strong>Dear ${firstName},</strong></p>
-                    
+
                     ${message ? `<p>${message.replace(/\n/g, '<br>')}</p>` : `
                     <p>Please find attached our quotation for your review. We look forward to working with you.</p>
                     `}
-                    
+
                     <div style="border-radius:8px; margin-top:16px; color:#000000; padding:16px; background-color:#ECF1F6">
                         <p><strong>Quotation Number:</strong> ${quotationDetails.quotationNumber}</p>
                         <p><strong>Title:</strong> ${quotationDetails.title}</p>
                         <p><strong>Total Amount:</strong> ${formattedTotal}</p>
                         <p><strong>Valid Until:</strong> ${validUntil}</p>
                     </div>
-                    
+
                     <div style="text-align: center; margin-top: 24px;">
                         <a href="${quotationUrl}" style="background-color: #0C874B; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">View Quotation</a>
                     </div>
-                    
+
                     <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e6e8eb;">
                         <p>If you have any questions, please don't hesitate to contact us.</p>
                         <p>Best regards,<br>${quotationDetails.senderName}</p>
                     </div>
-                    
+
                     <p style="margin-top: 24px; text-align: center; font-size: 12px; color: #888888;">This is an automated notification. Please do not reply.</p>
                 </div>
             </div>
         </div>
     </body>
     `;
-  
+
     const text = `
     Dear ${firstName},
-    
+
     ${message || "Please find attached our quotation for your review. We look forward to working with you."}
-    
+
     QUOTATION DETAILS:
     Quotation Number: ${quotationDetails.quotationNumber}
     Title: ${quotationDetails.title}
     Total Amount: ${formattedTotal}
     Valid Until: ${validUntil}
-    
+
     To view the quotation, please visit:
     ${quotationUrl}
-    
+
     If you have any questions, please don't hesitate to contact us.
-    
+
     Best regards,
     ${quotationDetails.senderName}
-    
+
     ---
     This is an automated notification. Please do not reply.
     `;
-  
+
     await sendEmail({
       to,
       subject,
       text,
       html,
       userId
+    });
+  }
+
+  // ... existing code ...
+
+interface FollowupReminderEmailProps {
+    to: string;
+    firstName: string;
+    followupDetails: {
+      description: string;
+      type: string;
+      followupDate: Date;
+      leadTitle: string;
+      contactName: string;
+      leadId: string;
+    };
+  }
+
+  export async function sendFollowupReminderEmail({
+    to,
+    firstName,
+    followupDetails
+  }: FollowupReminderEmailProps): Promise<void> {
+    const subject = `⏰ Follow-up Reminder: ${followupDetails.leadTitle}`;
+
+    // Format the date for display
+    const formattedDate = new Date(followupDetails.followupDate).toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    const html = `
+    <body style="margin: 0; padding: 0; font-family: Arial, sans-serif;">
+        <div style="background-color: #f0f4f8; padding: 20px;">
+            <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">
+                <div style="padding: 20px; text-align: center;">
+                    <img src="https://res.cloudinary.com/dndzbt8al/image/upload/v1724000375/orjojzjia7vfiycfzfly.png" alt="Zapllo Logo" style="max-width: 150px; height: auto;">
+                </div>
+                <div style="background: linear-gradient(90deg, #7451F8, #F57E57); color: #ffffff; padding: 20px 40px; font-size: 16px; font-weight: bold; text-align: center; border-radius: 12px; margin: 20px auto; max-width: 80%;">
+                    <h1 style="margin: 0; font-size: 20px;">Follow-up Reminder</h1>
+                </div>
+                <div style="padding: 20px;">
+                    <p><strong>Hello ${firstName},</strong></p>
+                    <p>This is a reminder about your scheduled follow-up:</p>
+                    <div style="border-radius:8px; margin-top:4px; color:#000000; padding:10px; background-color:#ECF1F6">
+                        <p><strong>Lead:</strong> ${followupDetails.leadTitle}</p>
+                        <p><strong>Client Name:</strong> ${followupDetails.contactName}</p>
+                        <p><strong>Type:</strong> ${followupDetails.type}</p>
+                        <p><strong>Description:</strong> ${followupDetails.description}</p>
+                        <p><strong>Due Date:</strong> ${formattedDate}</p>
+                    </div>
+                    <div style="text-align: center; margin-top: 20px;">
+                        <a href="https://crm.zapllo.com/CRM/leads/${followupDetails.leadId}" style="background-color: #0C874B; color: #ffffff; padding: 10px 20px; text-decoration: none; border-radius: 5px;">View Lead Details</a>
+                    </div>
+                    <p style="margin-top: 20px; text-align: center; font-size: 12px; color: #888888;">Please ensure timely follow-up with the lead and update their status on the application accordingly. This is an automated notification. Please do not reply.</p>
+                </div>
+            </div>
+        </div>
+    </body>
+    `;
+
+    const text = `
+    Hello ${firstName},
+
+    ⏰ Here is the Follow-up Reminder for you
+
+    💰 Lead: ${followupDetails.leadTitle}
+    👤 Client Name: ${followupDetails.contactName}
+    📝 Type: ${followupDetails.type}
+    📄 Description: ${followupDetails.description}
+    📆 Due Date: ${formattedDate}
+
+    Please ensure timely follow-up with the lead and update their status on the application accordingly.
+
+    View Lead: https://crm.zapllo.com/CRM/leads/${followupDetails.leadId}
+
+    This is an automated notification generated by zapllo.com
+    `;
+
+    await sendEmail({
+      to,
+      subject,
+      text,
+      html
     });
   }
