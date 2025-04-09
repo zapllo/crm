@@ -42,24 +42,21 @@ const sendWebhookNotification = async (
 
 export async function GET(request: Request) {
   try {
-    // Connect to the database
     await connectDB();
 
     console.log(`Followup reminder check started at: ${new Date().toISOString()}`);
-
-    // Get a query parameter for testing
     const { searchParams } = new URL(request.url);
     const testMode = searchParams.get("testMode") === "true";
     const followupId = searchParams.get("followupId");
+    const forceMode = searchParams.get("force") === "true";
 
-    console.log(`Test mode: ${testMode}, Followup ID: ${followupId || 'none'}`);
+    console.log(`Test mode: ${testMode}, Force mode: ${forceMode}, Followup ID: ${followupId || 'none'}`);
 
-    // FIRST, find all open followups
+    // Find open followups - either all of them or a specific one
     let query: any = { stage: 'Open' };
 
-    if (testMode && followupId) {
+    if (followupId) {
       query._id = new mongoose.Types.ObjectId(followupId);
-      console.log(`Test mode enabled for followup: ${followupId}`);
     }
 
     const followups = await Followup.find(query);
@@ -73,92 +70,106 @@ export async function GET(request: Request) {
     };
 
     const now = new Date();
+    const currentTime = {
+      hours: now.getHours(),
+      minutes: now.getMinutes()
+    };
 
     // Process each followup
     for (const followup of followups) {
       try {
-        console.log(`Checking followup: ${followup._id}, scheduled for: ${new Date(followup.followupDate).toISOString()}`);
+        const followupDate = new Date(followup.followupDate);
+        console.log(`Checking followup ${followup._id}, scheduled for ${followupDate.toISOString()}`);
 
-        // Check if there are any unsent reminders
-        const hasUnsentReminders = followup.reminders.some((r: { sent: boolean }) => r.sent === false);
-        if (!hasUnsentReminders && !testMode) {
-          console.log(`Followup ${followup._id} has no unsent reminders, skipping`);
-          continue;
-        }
-
-        // Get user and lead information
-        const [user, lead] = await Promise.all([
-          User.findById(followup.addedBy),
-          Lead.findById(followup.lead)
-        ]);
-
-        if (!user || !lead) {
-          console.error(`Missing user or lead data for followup: ${followup._id}`);
-          continue;
-        }
-
-        // Get contact information
-        const contact = await Contact.findById(lead.contact);
-        const contactName = contact ? `${contact.firstName} ${contact.lastName}` : 'Unknown Contact';
-
-        // Format date for display
-        const formattedDate = new Date(followup.followupDate).toLocaleDateString('en-GB', {
-          day: '2-digit',
-          month: 'short',
-          year: '2-digit'
-        });
-
-        // Prepare followup details for notifications
-        const followupDetails = {
-          description: followup.description,
-          type: followup.type,
-          followupDate: followup.followupDate,
-          leadTitle: lead.title,
-          contactName: contactName,
-          leadId: lead._id
-        };
-
-        // Track which reminders need to be updated
-        let remindersToUpdate = [];
-
-        // Process each reminder individually
+        // For each reminder in the followup
         for (const reminder of followup.reminders) {
-          // Skip already sent reminders
-          if (reminder.sent === true) {
+          // Skip if already sent
+          if (reminder.sent && !forceMode) {
             console.log(`Reminder ${reminder._id} already sent, skipping`);
             continue;
           }
 
-          // Determine if we should send now
-          let shouldSend = testMode;
+          // Determine if we should send the reminder now
+          let shouldSend = testMode || forceMode;
 
-          if (!testMode) {
-            if (reminder.type === 'specific' && reminder.date) {
-              shouldSend = now >= new Date(reminder.date);
-            } else if (['minutes', 'hours', 'days'].includes(reminder.type) && reminder.value) {
-              const followupTime = new Date(followup.followupDate).getTime();
-              let reminderTime;
+          if (!shouldSend) {
+            // For minutes reminder with value 0, check exact match
+            if (reminder.type === 'minutes' && reminder.value === 0) {
+              // If the followup is today
+              const isToday =
+                followupDate.getDate() === now.getDate() &&
+                followupDate.getMonth() === now.getMonth() &&
+                followupDate.getFullYear() === now.getFullYear();
 
-              switch (reminder.type) {
-                case 'minutes':
-                  reminderTime = followupTime - (reminder.value * 60 * 1000);
-                  break;
-                case 'hours':
-                  reminderTime = followupTime - (reminder.value * 60 * 60 * 1000);
-                  break;
-                case 'days':
-                  reminderTime = followupTime - (reminder.value * 24 * 60 * 60 * 1000);
-                  break;
+              if (isToday) {
+                shouldSend =
+                  followupDate.getHours() === currentTime.hours &&
+                  followupDate.getMinutes() === currentTime.minutes;
+              } else {
+                // For future dates, just match the hour and minute for testing
+                shouldSend =
+                  followupDate.getHours() === currentTime.hours &&
+                  followupDate.getMinutes() === currentTime.minutes;
               }
+            }
+            // For non-zero minute values, calculate the reminder time
+            else if (reminder.type === 'minutes' && reminder.value && reminder.value > 0) {
+              const reminderTimeMs = followupDate.getTime() - (reminder.value * 60 * 1000);
+              const reminderTime = new Date(reminderTimeMs);
 
-              shouldSend = now.getTime() >= reminderTime!;
+              // For reminders today
+              const isToday =
+                reminderTime.getDate() === now.getDate() &&
+                reminderTime.getMonth() === now.getMonth() &&
+                reminderTime.getFullYear() === now.getFullYear();
+
+              if (isToday) {
+                shouldSend =
+                  reminderTime.getHours() === currentTime.hours &&
+                  reminderTime.getMinutes() === currentTime.minutes;
+              } else {
+                // For future dates, just match the hour and minute for testing
+                shouldSend =
+                  reminderTime.getHours() === currentTime.hours &&
+                  reminderTime.getMinutes() === currentTime.minutes;
+              }
             }
           }
 
           console.log(`Reminder ${reminder._id} should send: ${shouldSend}`);
 
-          // Send notifications if needed
           if (shouldSend) {
+            // Get user, lead, and contact information
+            const [user, lead] = await Promise.all([
+              User.findById(followup.addedBy),
+              Lead.findById(followup.lead)
+            ]);
+
+            if (!user || !lead) {
+              console.error(`Missing user or lead data for followup ${followup._id}`);
+              continue;
+            }
+
+            const contact = await Contact.findById(lead.contact);
+            const contactName = contact ? `${contact.firstName} ${contact.lastName}` : 'Unknown Contact';
+
+            // Format the date for display
+            const formattedDate = new Date(followup.followupDate).toLocaleDateString('en-GB', {
+              day: '2-digit',
+              month: 'short',
+              year: '2-digit'
+            });
+
+            // Prepare followup details
+            const followupDetails = {
+              description: followup.description,
+              type: followup.type,
+              followupDate: followup.followupDate,
+              leadTitle: lead.title,
+              contactName: contactName,
+              leadId: lead._id
+            };
+
             try {
               // Send email notification
               if (reminder.notificationType === 'email' && user.email) {
@@ -169,7 +180,7 @@ export async function GET(request: Request) {
                   followupDetails
                 });
                 results.emailsSent++;
-                console.log(`Email sent to ${user.email} for followup ${followup._id}`);
+                console.log(`Email sent successfully to ${user.email}`);
               }
 
               // Send WhatsApp notification
@@ -189,42 +200,27 @@ export async function GET(request: Request) {
                   bodyVariables
                 );
                 results.whatsappSent++;
-                console.log(`WhatsApp sent to ${user.whatsappNo} for followup ${followup._id}`);
+                console.log(`WhatsApp sent successfully to ${user.whatsappNo}`);
               }
 
-              // Add to the list of reminders to mark as sent
-              remindersToUpdate.push(reminder._id);
-
+              // Mark the reminder as sent - CRITICAL FIX
+              if (!forceMode) {
+                await Followup.updateOne(
+                  { _id: followup._id, "reminders._id": reminder._id },
+                  { $set: { "reminders.$.sent": true } }
+                );
+                console.log(`Marked reminder ${reminder._id} as sent`);
+              } else {
+                console.log(`Force mode active - not marking reminder as sent`);
+              }
             } catch (error: any) {
-              console.error(`Error sending notification for followup ${followup._id}:`, error);
-              results.errors.push(`Followup ${followup._id}, Reminder ${reminder._id}: ${error.message}`);
+              console.error(`Error sending notification:`, error);
+              results.errors.push(`Error: ${error.message}`);
             }
           }
         }
 
-        // Update the reminders that were sent - CRITICAL CHANGE
-        if (remindersToUpdate.length > 0) {
-          console.log(`Marking reminders as sent: ${remindersToUpdate.join(', ')}`);
-
-          // Use atomic update operation instead of replacing the whole array
-          const updateResult = await Followup.updateOne(
-            { _id: followup._id },
-            {
-              $set: {
-                "reminders.$[elem].sent": true
-              }
-            },
-            {
-              arrayFilters: [{ "elem._id": { $in: remindersToUpdate } }],
-              new: true
-            }
-          );
-
-          console.log(`Database update result:`, updateResult);
-        }
-
         results.processed++;
-
       } catch (error: any) {
         console.error(`Error processing followup:`, error);
         results.errors.push(`General error: ${error.message}`);
@@ -238,15 +234,10 @@ export async function GET(request: Request) {
       results,
       timestamp: new Date().toISOString()
     });
-
   } catch (error: any) {
     console.error('Error processing follow-up reminders:', error);
     return NextResponse.json(
-      {
-        success: false,
-        error: 'Failed to process follow-up reminders: ' + error.message,
-        timestamp: new Date().toISOString()
-      },
+      { success: false, error: error.message, timestamp: new Date().toISOString() },
       { status: 500 }
     );
   }
