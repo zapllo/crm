@@ -48,10 +48,10 @@ async function sendWebhookNotification(
 ) {
   const templateName = "personalized_response_x6";
   // First line of response as WhatsApp preview, rest will be in the expanded message
-  const firstLine = responseText.split("\n")[0];
+  const messageContent = responseText.substring(0, 950); //
   const bodyVariables = [
     fullName,
-    firstLine,
+    messageContent,
     "Zapllo Team"
   ];
 

@@ -67,11 +67,11 @@ export async function GET(req: NextRequest) {
           const twilioCall = await client.calls.create({
             twiml: `
           <Response>
-            <Say voice="alice">Hello ${call.contactName || "there"}. This is a message from Zapllo.</Say>
+            <Say voice="Polly.Raveena">Hello ${call.contactName || "there"}. This is a message from Zapllo.</Say>
             <Pause length="1"/>
-            <Say voice="alice">${call.customMessage || "Thank you for contacting us. We look forward to speaking with you."}</Say>
+            <Say voice="Polly.Raveena"call.customMessage || "Thank you for contacting us. We look forward to speaking with you."}</Say>
             <Pause length="1"/>
-            <Say voice="alice">If you'd like to discuss your needs further, please call us back during business hours. Thank you for your interest in Zapllo!</Say>
+            <Say voice="Polly.Raveena">If you'd like to discuss your needs further, please call us back during business hours. Thank you for your interest in Zapllo!</Say>
           </Response>
           `,
             to: formattedPhoneNumber,
