@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
 
     const responseText = completion.choices[0].message.content ||
       `Thank you for reaching out, ${fullName}. We'll review your inquiry about "${description}" and get back to you soon. - Zapllo Team`;
-
+    console.log(responseText, 'response text?')
     // Send email response
     await sendEmail({
       to: email,

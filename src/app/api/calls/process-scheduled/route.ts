@@ -56,18 +56,25 @@ export async function GET(req: NextRequest) {
 
           console.log(`Twilio client initialized for call to ${call.phoneNumber}`);
 
-          // Make the call
+          const phoneNumber = call.phoneNumber.trim();
+          // Format phone number - ensure it has the international format with + prefix
+          const formattedPhoneNumber = phoneNumber.startsWith('+')
+            ? phoneNumber
+            : `+91${phoneNumber}`; // Assuming India as default country code
+
+          console.log(`Calling formatted number: ${formattedPhoneNumber}`);
+
           const twilioCall = await client.calls.create({
             twiml: `
-    <Response>
-      <Say voice="alice">Hello ${call.contactName || "there"}. This is a message from Zapllo.</Say>
-      <Pause length="1"/>
-      <Say voice="alice">${call.customMessage || "Thank you for contacting us. We look forward to speaking with you."}</Say>
-      <Pause length="1"/>
-      <Say voice="alice">If you'd like to discuss your needs further, please call us back during business hours. Thank you for your interest in Zapllo!</Say>
-    </Response>
-  `,
-            to: call.phoneNumber,
+          <Response>
+            <Say voice="alice">Hello ${call.contactName || "there"}. This is a message from Zapllo.</Say>
+            <Pause length="1"/>
+            <Say voice="alice">${call.customMessage || "Thank you for contacting us. We look forward to speaking with you."}</Say>
+            <Pause length="1"/>
+            <Say voice="alice">If you'd like to discuss your needs further, please call us back during business hours. Thank you for your interest in Zapllo!</Say>
+          </Response>
+          `,
+            to: formattedPhoneNumber,
             from: process.env.TWILIO_PHONE_NUMBER,
             statusCallback: `${process.env.NEXT_PUBLIC_APP_URL}/api/calls/webhook?callId=${call._id}`,
             statusCallbackMethod: 'POST',
