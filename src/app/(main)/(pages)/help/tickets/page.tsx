@@ -1,15 +1,15 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { 
-  ChevronLeft, 
-  Search, 
-  Filter, 
-  Clock, 
-  CheckCircle2, 
-  AlertCircle, 
-  Loader2, 
+import {
+  ChevronLeft,
+  Search,
+  Filter,
+  Clock,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
   MessageSquare,
   MoreHorizontal,
   Plus,
@@ -48,6 +48,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { toast } from '@/hooks/use-toast'
 
 // Demo ticket data
 const DEMO_TICKETS = [
@@ -102,28 +103,30 @@ export default function TicketsPage() {
   const [replyContent, setReplyContent] = useState('')
   const [isSending, setIsSending] = useState(false)
   const [newTicketDialog, setNewTicketDialog] = useState(false)
-  
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
   // New ticket form state
   const [newTicketSubject, setNewTicketSubject] = useState('')
   const [newTicketCategory, setNewTicketCategory] = useState('')
   const [newTicketPriority, setNewTicketPriority] = useState('')
   const [newTicketMessage, setNewTicketMessage] = useState('')
   const [isSubmittingNewTicket, setIsSubmittingNewTicket] = useState(false)
-  
+
   // Fetch tickets from API
   useEffect(() => {
     const fetchTickets = async () => {
       setIsLoading(true)
       setError(null)
-      
+
       try {
         // In a real implementation, replace this with a call to your API
         const response = await fetch('/api/help/tickets')
-        
+
         if (!response.ok) {
           throw new Error('Failed to fetch tickets')
         }
-        
+
         const data = await response.json()
         setTickets(data.tickets || [])
         setFilteredTickets(data.tickets || [])
@@ -137,16 +140,16 @@ export default function TicketsPage() {
         setIsLoading(false)
       }
     }
-    
+
     fetchTickets()
   }, [])
-  
+
   // Filter tickets based on active tab and search query
   useEffect(() => {
     if (!tickets.length) return
-    
+
     let result = [...tickets]
-    
+
     // Filter by tab
     if (activeTab !== 'all') {
       result = result.filter(ticket => {
@@ -155,47 +158,108 @@ export default function TicketsPage() {
         return true
       })
     }
-    
+
     // Filter by search query
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
       result = result.filter(
-        ticket => ticket.subject.toLowerCase().includes(query) || 
-                 ticket.id.toLowerCase().includes(query)
+        ticket => ticket.subject.toLowerCase().includes(query) ||
+          ticket.id.toLowerCase().includes(query)
       )
     }
-    
+
     setFilteredTickets(result)
   }, [activeTab, searchQuery, tickets])
-  
-  // Handle ticket reply submission
+
+
+  // Add this function near other handler functions
+  const handleFileSelection = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    if (files.length > 0) {
+      // Check file size (limit to 5MB per file)
+      const oversizedFiles = files.filter(file => file.size > 5 * 1024 * 1024)
+
+      if (oversizedFiles.length > 0) {
+        toast({
+          title: "Files too large",
+          description: "Some files exceed the 5MB size limit and were not added.",
+          variant: "destructive"
+        })
+
+        // Filter out oversized files
+        const validFiles = files.filter(file => file.size <= 5 * 1024 * 1024)
+        setSelectedFiles(prev => [...prev, ...validFiles])
+      } else {
+        setSelectedFiles(prev => [...prev, ...files])
+      }
+    }
+  }
+
+  const removeSelectedFile = (index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index))
+  }
+
+  // Update the handleSubmitReply function to include file uploads
   const handleSubmitReply = async (e: React.FormEvent) => {
     e.preventDefault()
-    
-    if (!replyContent.trim() || !activeTicket) {
+
+    if (!replyContent.trim() && selectedFiles.length === 0 || !activeTicket) {
       return
     }
-    
+
     setIsSending(true)
-    
+
     try {
+      // Upload files first if any
+      let fileUrls: string[] = []
+
+      if (selectedFiles.length > 0) {
+        const formData = new FormData()
+        selectedFiles.forEach(file => {
+          formData.append('files', file)
+        })
+
+        const uploadResponse = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        })
+
+        if (!uploadResponse.ok) {
+          throw new Error('Failed to upload attachments')
+        }
+
+        const uploadData = await uploadResponse.json()
+        fileUrls = uploadData.fileUrls || []
+      }
+
       // In a real implementation, replace this with a call to your API
       const response = await fetch(`/api/help/tickets/${activeTicket.ticketId}/reply`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ content: replyContent }),
+        body: JSON.stringify({
+          content: replyContent,
+          attachments: fileUrls.map(url => ({
+            name: selectedFiles.find(file => url.includes(encodeURIComponent(file.name)))?.name || 'attachment',
+            url
+          }))
+        }),
       })
-      
+
       if (!response.ok) {
         throw new Error('Failed to submit reply')
       }
-      
+
       // For demo purposes, update the UI directly
+      const now = new Date().toISOString()
+      const attachments = fileUrls.map(url => ({
+        name: selectedFiles.find(file => url.includes(encodeURIComponent(file.name)))?.name || 'attachment',
+        url
+      }))
+
       const updatedTickets = tickets.map(ticket => {
         if (ticket.id === activeTicket.id) {
-          const now = new Date().toISOString()
           return {
             ...ticket,
             updatedAt: now,
@@ -205,48 +269,59 @@ export default function TicketsPage() {
                 sender: 'user',
                 content: replyContent,
                 timestamp: now,
+                attachments: attachments.length > 0 ? attachments : undefined
               }
             ]
           }
         }
         return ticket
       })
-      
+
       setTickets(updatedTickets)
       setActiveTicket({
         ...activeTicket,
-        updatedAt: new Date().toISOString(),
+        updatedAt: now,
         messages: [
           ...activeTicket.messages,
           {
             sender: 'user',
             content: replyContent,
-            timestamp: new Date().toISOString(),
+            timestamp: now,
+            attachments: attachments.length > 0 ? attachments : undefined
           }
         ]
       })
-      
+
       setReplyContent('')
-      // Show a toast or notification here
+      setSelectedFiles([])
+
+      toast({
+        title: "Reply sent",
+        description: "Your reply has been sent successfully."
+      })
     } catch (err) {
       console.error('Error submitting reply:', err)
-      // Show error notification
+      toast({
+        title: "Error",
+        description: "Failed to send your reply. Please try again.",
+        variant: "destructive"
+      })
     } finally {
       setIsSending(false)
     }
   }
-  
+
   // Create new ticket
   const handleCreateTicket = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!newTicketSubject.trim() || !newTicketMessage.trim() || !newTicketCategory || !newTicketPriority) {
       // Show validation error
       return
     }
-    
+
     setIsSubmittingNewTicket(true)
-    
+
     try {
       // In a real implementation, replace this with a call to your API
       const response = await fetch('/api/help/tickets', {
@@ -261,13 +336,13 @@ export default function TicketsPage() {
           priority: newTicketPriority,
         }),
       })
-      
+
       if (!response.ok) {
         throw new Error('Failed to create ticket')
       }
-      
+
       const data = await response.json()
-      
+
       // For demo purposes, update the UI directly
       const newTicket = {
         id: `TKT-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -285,17 +360,17 @@ export default function TicketsPage() {
           }
         ]
       }
-      
+
       setTickets([newTicket, ...tickets])
       setFilteredTickets([newTicket, ...filteredTickets])
-      
+
       // Reset form
       setNewTicketSubject('')
       setNewTicketCategory('')
       setNewTicketPriority('')
       setNewTicketMessage('')
       setNewTicketDialog(false)
-      
+
       // Show success notification
     } catch (err) {
       console.error('Error creating ticket:', err)
@@ -304,12 +379,12 @@ export default function TicketsPage() {
       setIsSubmittingNewTicket(false)
     }
   }
-  
+
   // Handle ticket selection
   const selectTicket = (ticket: any) => {
     setActiveTicket(ticket)
   }
-  
+
   // Format date for display
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -321,7 +396,7 @@ export default function TicketsPage() {
       minute: '2-digit',
     }).format(date)
   }
-  
+
   // Get status icon
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -335,7 +410,7 @@ export default function TicketsPage() {
         return <Clock className="h-4 w-4 text-blue-500" />
     }
   }
-  
+
   // Get status badge variant
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -365,7 +440,7 @@ export default function TicketsPage() {
         return <Badge variant="outline">{priority}</Badge>
     }
   }
-  
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-[500px]">
@@ -376,13 +451,13 @@ export default function TicketsPage() {
       </div>
     )
   }
-  
+
   return (
     <div className="container max-w-7xl mt-12 h-full max-h-screen overflow-y-scroll mx-auto px-4 py-8">
       <div className="flex items-center mb-8">
-        <Button 
-          variant="ghost" 
-          size="sm" 
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() => router.push('/help')}
           className="gap-1"
         >
@@ -390,7 +465,7 @@ export default function TicketsPage() {
           <span>Back to Help Center</span>
         </Button>
         <h1 className="text-2xl font-bold ml-auto">Support Tickets</h1>
-        
+
         <Dialog open={newTicketDialog} onOpenChange={setNewTicketDialog}>
           <DialogTrigger asChild>
             <Button className="ml-auto">
@@ -405,7 +480,7 @@ export default function TicketsPage() {
                 Submit a new ticket to our support team for assistance.
               </DialogDescription>
             </DialogHeader>
-            
+
             <form onSubmit={handleCreateTicket} className="space-y-6 py-4">
               <div className="space-y-2">
                 <label htmlFor="subject" className="text-sm font-medium">
@@ -419,14 +494,14 @@ export default function TicketsPage() {
                   required
                 />
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label htmlFor="category" className="text-sm font-medium">
                     Category
                   </label>
-                  <Select 
-                    value={newTicketCategory} 
+                  <Select
+                    value={newTicketCategory}
                     onValueChange={setNewTicketCategory}
                     required
                   >
@@ -443,13 +518,13 @@ export default function TicketsPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                
+
                 <div className="space-y-2">
                   <label htmlFor="priority" className="text-sm font-medium">
                     Priority
                   </label>
-                  <Select 
-                    value={newTicketPriority} 
+                  <Select
+                    value={newTicketPriority}
                     onValueChange={setNewTicketPriority}
                     required
                   >
@@ -465,12 +540,12 @@ export default function TicketsPage() {
                   </Select>
                 </div>
               </div>
-              
+
               <div className="space-y-2">
                 <label htmlFor="message" className="text-sm font-medium">
                   Message
                 </label>
-                <textarea 
+                <textarea
                   id="message"
                   rows={6}
                   className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
@@ -480,7 +555,7 @@ export default function TicketsPage() {
                   required
                 />
               </div>
-              
+
               <DialogFooter>
                 <Button
                   type="button"
@@ -490,13 +565,13 @@ export default function TicketsPage() {
                 >
                   Cancel
                 </Button>
-                <Button 
+                <Button
                   type="submit"
                   disabled={isSubmittingNewTicket}
                 >
                   {isSubmittingNewTicket ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Submitting...
                     </>
                   ) : (
@@ -508,7 +583,7 @@ export default function TicketsPage() {
           </DialogContent>
         </Dialog>
       </div>
-      
+
       {error && (
         <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded mb-6 flex items-start">
           <AlertCircle className="h-5 w-5 mr-2 mt-0.5 text-amber-600" />
@@ -518,7 +593,7 @@ export default function TicketsPage() {
           </div>
         </div>
       )}
-      
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-1 space-y-4">
           <div className="flex gap-2 mb-4">
@@ -532,7 +607,7 @@ export default function TicketsPage() {
               <Filter className="h-4 w-4" />
             </Button>
           </div>
-          
+
           <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid grid-cols-3 bg-accent gap-2 w-full mb-4">
               <TabsTrigger className='border-none' value="all">All</TabsTrigger>
@@ -540,20 +615,20 @@ export default function TicketsPage() {
               <TabsTrigger className='border-none' value="closed">Closed</TabsTrigger>
             </TabsList>
           </Tabs>
-          
+
           <div className="border rounded-md overflow-hidden">
             {filteredTickets.length === 0 ? (
               <div className="py-8 px-4 text-center">
                 <MessageSquare className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
                 <h3 className="font-medium">No tickets found</h3>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {searchQuery 
-                    ? "Try changing your search terms" 
+                  {searchQuery
+                    ? "Try changing your search terms"
                     : "Create a new ticket to get help from our support team"}
                 </p>
                 {!searchQuery && (
-                  <Button 
-                    className="mt-4" 
+                  <Button
+                    className="mt-4"
                     size="sm"
                     onClick={() => setNewTicketDialog(true)}
                   >
@@ -566,9 +641,8 @@ export default function TicketsPage() {
                 {filteredTickets.map(ticket => (
                   <div
                     key={ticket.id}
-                    className={`p-4 hover:bg-muted/50 cursor-pointer transition-colors ${
-                      activeTicket?.id === ticket.id ? 'bg-muted' : ''
-                    }`}
+                    className={`p-4 hover:bg-muted/50 cursor-pointer transition-colors ${activeTicket?.id === ticket.id ? 'bg-muted' : ''
+                      }`}
                     onClick={() => selectTicket(ticket)}
                   >
                     <div className="flex justify-between items-start">
@@ -592,7 +666,7 @@ export default function TicketsPage() {
             )}
           </div>
         </div>
-        
+
         <div className="lg:col-span-2">
           {!activeTicket ? (
             <div className="border rounded-md h-full flex items-center justify-center p-8">
@@ -620,7 +694,7 @@ export default function TicketsPage() {
                       {activeTicket.id} • Created {formatDate(activeTicket.createdAt)}
                     </p>
                   </div>
-                  
+
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="icon">
@@ -629,16 +703,16 @@ export default function TicketsPage() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuLabel>Ticket Actions</DropdownMenuLabel>
-                      <DropdownMenuItem onClick={() => {}}>
+                      <DropdownMenuItem onClick={() => { }}>
                         <RefreshCw className="h-4 w-4 mr-2" /> Refresh
                       </DropdownMenuItem>
                       {activeTicket.status !== 'closed' && (
                         <>
-                          <DropdownMenuItem onClick={() => {}}>
+                          <DropdownMenuItem onClick={() => { }}>
                             <CheckCircle2 className="h-4 w-4 mr-2" /> Mark as Closed
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => {}} className="text-red-600">
+                          <DropdownMenuItem onClick={() => { }} className="text-red-600">
                             <XCircle className="h-4 w-4 mr-2" /> Close Ticket
                           </DropdownMenuItem>
                         </>
@@ -646,7 +720,7 @@ export default function TicketsPage() {
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
-                
+
                 <div className="flex gap-2 mt-4">
                   <div className="text-sm px-2 py-1 bg-muted rounded-md flex items-center">
                     <span className="text-muted-foreground mr-1">Category:</span>
@@ -658,18 +732,17 @@ export default function TicketsPage() {
                   </div>
                 </div>
               </CardHeader>
-              
+
               <Separator />
-              
+
               <CardContent className="pt-4 overflow-y-auto flex-grow">
                 <div className="space-y-6">
                   {activeTicket.messages.map((message: any, index: number) => (
                     <div key={index} className={`flex ${message.sender === 'user' ? 'justify-end' : ''}`}>
-                      <div className={`max-w-[85%] ${
-                        message.sender === 'user' 
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted'
-                      } rounded-lg p-4`}>
+                      <div className={`max-w-[85%] ${message.sender === 'user'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted'
+                        } rounded-lg p-4`}>
                         {message.sender === 'agent' && (
                           <div className="mb-2 pb-2 border-b border-muted-foreground/20 flex justify-between items-center">
                             <span className="font-medium">{message.agent || 'Support Agent'}</span>
@@ -682,11 +755,13 @@ export default function TicketsPage() {
                             <p className="text-sm font-medium mb-2">Attachments:</p>
                             <div className="flex flex-wrap gap-2">
                               {message.attachments.map((attachment: any, i: number) => (
-                                <Button 
-                                  key={i} 
-                                  variant="outline" 
-                                  size="sm" 
-                                  className="h-8 gap-1 text-xs"
+                                <a
+                                  key={i}
+                                  href={attachment.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  download={attachment.name}
+                                  className="inline-flex items-center justify-center h-8 py-1 px-3 text-xs font-medium rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors"
                                 >
                                   {attachment.name}
                                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3 ml-1">
@@ -694,7 +769,7 @@ export default function TicketsPage() {
                                     <polyline points="7 10 12 15 17 10"></polyline>
                                     <line x1="12" y1="15" x2="12" y2="3"></line>
                                   </svg>
-                                </Button>
+                                </a>
                               ))}
                             </div>
                           </div>
@@ -709,37 +784,73 @@ export default function TicketsPage() {
                   ))}
                 </div>
               </CardContent>
-              
+
+
               {activeTicket.status !== 'closed' && (
                 <>
                   <Separator />
                   <CardFooter className="pt-4 pb-4">
                     <form onSubmit={handleSubmitReply} className="w-full">
                       <div className="space-y-2">
-                        <textarea 
+                        <textarea
                           rows={4}
                           className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                           placeholder="Type your reply..."
                           value={replyContent}
                           onChange={e => setReplyContent(e.target.value)}
-                          required
                         />
+
+                        {selectedFiles.length > 0 && (
+                          <div className="border rounded-md p-3 bg-muted/50">
+                            <p className="text-sm font-medium mb-2">Selected Files:</p>
+                            <div className="flex flex-wrap gap-2">
+                              {selectedFiles.map((file, index) => (
+                                <div key={index} className="text-xs flex items-center gap-1 bg-background border rounded-md px-2 py-1">
+                                  <span className="max-w-[120px] truncate">{file.name}</span>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-4 w-4 rounded-full"
+                                    onClick={() => removeSelectedFile(index)}
+                                  >
+                                    <XCircle className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
                         <div className="flex justify-between items-center">
-                          <Button variant="outline" type="button" className="text-xs h-8">
+                          <input
+                            type="file"
+                            multiple
+                            ref={fileInputRef}
+                            onChange={handleFileSelection}
+                            className="hidden"
+                            accept="image/*,application/pdf,text/plain,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                          />
+                          <Button
+                            variant="outline"
+                            type="button"
+                            className="text-xs h-8"
+                            onClick={() => fileInputRef.current?.click()}
+                          >
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 mr-1">
                               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                               <polyline points="17 8 12 3 7 8"></polyline>
                               <line x1="12" y1="3" x2="12" y2="15"></line>
                             </svg>
-                            Attach File
+                            Attach Files
                           </Button>
-                          <Button 
+                          <Button
                             type="submit"
-                            disabled={!replyContent.trim() || isSending}
+                            disabled={(!replyContent.trim() && selectedFiles.length === 0) || isSending}
                           >
                             {isSending ? (
                               <>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                 Sending...
                               </>
                             ) : (
