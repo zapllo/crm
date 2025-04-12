@@ -166,10 +166,10 @@ function HelpHeader({ setSearchOpen }: { setSearchOpen: (open: boolean) => void 
           </div>
           <div className="flex items-center justify-center md:justify-end">
             <div className="grid grid-cols-2 gap-4">
-             
+
               <QuickLink
                 title="Video Tutorials"
-                href="/help/videos"
+                href="https://zapllo.com/tutorials-zapllo"
                 description="Watch step-by-step guides"
                 icon={BookOpen}
               />
