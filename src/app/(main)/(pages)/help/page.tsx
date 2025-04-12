@@ -101,13 +101,7 @@ function HelpPageContent() {
             </TabsTrigger>
           </TabsList>
 
-          <Button variant="outline" onClick={() => setSearchOpen(true)} className="hidden md:flex items-center gap-2">
-            <Search className="h-4 w-4" />
-            <span>Search documentation</span>
-            <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 text-[10px] font-medium text-muted-foreground ml-2">
-              <span>⌘</span><span>K</span>
-            </kbd>
-          </Button>
+
         </div>
 
         <TabsContent value="getting-started" className="border-none p-0">
@@ -131,48 +125,7 @@ function HelpPageContent() {
         </TabsContent>
       </Tabs>
 
-      <CommandDialog open={searchOpen} onOpenChange={setSearchOpen}>
-        <CommandInput
-          placeholder="Search help articles..."
-          value={searchQuery}
-          onValueChange={handleSearch}
-        />
-        {isLoading && (
-          <div className="flex items-center justify-center py-10">
-            <Loader2 className="h-8 w-8 animate-spin text-primary/70" />
-          </div>
-        )}
-        {!isLoading && (
-          <CommandList>
-            <CommandEmpty>No results found.</CommandEmpty>
-            <CommandGroup heading="Getting Started">
-              <CommandItem onSelect={() => router.push('/help/articles/quick-start-guide')}>
-                <FileText className="mr-2 h-4 w-4" />
-                <span>Quick Start Guide</span>
-              </CommandItem>
-              <CommandItem onSelect={() => router.push('/help/articles/setting-up-your-account')}>
-                <Users className="mr-2 h-4 w-4" />
-                <span>Setting up your account</span>
-              </CommandItem>
-            </CommandGroup>
-            <CommandSeparator />
-            <CommandGroup heading="Popular Guides">
-              <CommandItem onSelect={() => router.push('/help/articles/managing-leads')}>
-                <Layers className="mr-2 h-4 w-4" />
-                <span>Managing leads and deals</span>
-              </CommandItem>
-              <CommandItem onSelect={() => router.push('/help/articles/email-marketing')}>
-                <Mail className="mr-2 h-4 w-4" />
-                <span>Email marketing campaigns</span>
-              </CommandItem>
-              <CommandItem onSelect={() => router.push('/help/articles/analytics-reporting')}>
-                <PieChart className="mr-2 h-4 w-4" />
-                <span>Analytics and reporting</span>
-              </CommandItem>
-            </CommandGroup>
-          </CommandList>
-        )}
-      </CommandDialog>
+
     </div>
   )
 }
@@ -213,24 +166,14 @@ function HelpHeader({ setSearchOpen }: { setSearchOpen: (open: boolean) => void 
           </div>
           <div className="flex items-center justify-center md:justify-end">
             <div className="grid grid-cols-2 gap-4">
-              <QuickLink
-                title="Quickstart Guide"
-                href="/help/articles/quick-start-guide"
-                description="Get up and running in 10 minutes"
-                icon={Sparkles}
-              />
+             
               <QuickLink
                 title="Video Tutorials"
                 href="/help/videos"
                 description="Watch step-by-step guides"
                 icon={BookOpen}
               />
-              <QuickLink
-                title="Common Issues"
-                href="/help/articles/common-issues"
-                description="Solutions to frequent problems"
-                icon={Info}
-              />
+
               <QuickLink
                 title="Contact Support"
                 href="/help?category=contact"
