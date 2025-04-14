@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import axios from "axios";
 import {
     ArrowLeft,
@@ -115,6 +115,7 @@ import { canView, canAdd, canDelete, canEdit, usePermissionStatus } from "@/cont
 import MediaAttachments from "@/components/MediaAttachments";
 import { Checkbox } from "@/components/ui/checkbox";
 import BulkEmailDialog from "@/components/leads/bulkEmail";
+import LeadActionMenu from "@/components/modals/leads/LeadActionMenu";
 
 
 /* ---------------- TYPES ---------------- */
@@ -249,6 +250,81 @@ export default function LeadsDashboard() {
             setSelectedLeads(prev => prev.filter(l => l._id !== lead._id));
         }
     };
+
+    // Add this function to filter leads based on search term
+    const filterLeadsBySearchTerm = (leads: Lead[], term: string) => {
+        if (!term.trim()) return leads;
+
+        const lowerCaseTerm = term.toLowerCase();
+        return leads.filter(lead => {
+            // Create searchable text from multiple fields
+            const searchableText = [
+                lead.title || '',                           // Lead title
+                lead.leadId || '',                          // Lead ID
+                lead.description || '',                     // Description
+                lead.company || '',                         // Company name
+
+                // Contact name - handle potential undefined values safely
+                lead.contact?.firstName || '',              // Contact first name
+                lead.contact?.lastName || '',               // Contact last name
+                `${lead.contact?.firstName || ''} ${lead.contact?.lastName || ''}`, // Full contact name
+
+                // Additional fields you might want to search
+                lead.assignedTo?.firstName || '',           // Assigned user first name
+                lead.assignedTo?.lastName || '',            // Assigned user last name
+                `${lead.assignedTo?.firstName || ''} ${lead.assignedTo?.lastName || ''}`, // Full assigned name
+
+                // Tags joined as a single string
+                (lead.tags || []).join(' ')                 // Tags
+            ].join(' ').toLowerCase();
+
+            // Check if the search term is found in any of the combined text
+            return searchableText.includes(lowerCaseTerm);
+        });
+    };
+
+
+    // 1. Create a memoized filtered stages array based on the search term
+    const filteredStages = useMemo(() => {
+        if (!searchTerm.trim()) return stages;
+
+        return stages.map(stage => {
+            // Filter leads in this stage that match the search term
+            const filteredLeads = stage.leads.filter(lead => {
+                const term = searchTerm.toLowerCase();
+
+                // Check each searchable field
+                return (
+                    // Lead title
+                    (lead.title?.toLowerCase().includes(term)) ||
+
+                    // Lead ID
+                    (lead.leadId?.toLowerCase().includes(term)) ||
+
+                    // Contact name
+                    (lead.contact?.firstName?.toLowerCase().includes(term)) ||
+                    (lead.contact?.lastName?.toLowerCase().includes(term)) ||
+
+                    // Company
+                    (lead.company?.toLowerCase().includes(term)) ||
+
+                    // Description
+                    (lead.description?.toLowerCase().includes(term)) ||
+
+                    // Assigned person
+                    (lead.assignedTo?.firstName?.toLowerCase().includes(term)) ||
+                    (lead.assignedTo?.lastName?.toLowerCase().includes(term))
+                );
+            });
+
+            // Return a new stage object with filtered leads
+            return {
+                ...stage,
+                leads: filteredLeads
+            };
+        });
+    }, [stages, searchTerm]);
+
     const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
 
     // Pagination
@@ -982,7 +1058,137 @@ export default function LeadsDashboard() {
             setIsCreatingLead(false);
         }
     };
-    // Reset form fields
+
+    // Add a new state variable to track whether we're in edit mode
+    const [isEditMode, setIsEditMode] = useState(false);
+    const [leadToEdit, setLeadToEdit] = useState<Lead | null>(null);
+
+    // Add this function to handle editing a lead
+    const handleEditLead = (lead: Lead) => {
+        setLeadToEdit(lead);
+        setIsEditMode(true);
+
+        // Prefill the form with the lead's data
+        setLeadTitle(lead.title || "");
+        setDescription(lead.description || "");
+        setEstimateAmount(lead.amount || "");
+        setCloseDate(lead.closeDate ? new Date(lead.closeDate) : undefined);
+        setModalStage(lead.stage || "");
+        setAssignedTo(lead.assignedTo?._id || "");
+
+
+
+
+
+        // Open the modal
+        setIsLeadModalOpen(true);
+    };
+
+    // Modify the existing handleAddLead function to handle both add and edit
+    const handleAddOrUpdateLead = async () => {
+        // Validate required fields
+        const errors = [];
+
+        if (!modalPipeline) errors.push("Pipeline is required");
+        if (!modalStage) errors.push("Stage is required");
+        if (!leadTitle.trim()) errors.push("Lead title is required");
+        if (!selectedContact || selectedContact === "NONE") errors.push("Contact is required");
+
+        if (errors.length > 0) {
+            toast({
+                title: "Missing required fields",
+                description: (
+                    <ul className="list-disc pl-4 space-y-1 mt-2">
+                        {errors.map((error, index) => (
+                            <li key={index} className="text-sm">{error}</li>
+                        ))}
+                    </ul>
+                ),
+                variant: "destructive",
+            });
+            return;
+        }
+
+        setIsCreatingLead(true);
+        // Convert closeDate to string if needed
+        const closeDateStr = closeDate ? format(closeDate, "yyyy-MM-dd") : "";
+
+        try {
+            // Prepare the data object, only including valid fields
+            const leadData: any = {
+                pipeline: modalPipeline,
+                stage: modalStage,
+                title: leadTitle,
+                description,
+                contact: selectedContact,
+                closeDate: closeDateStr,
+                files,
+                audioRecordings,
+                links
+            };
+
+            // Only add these fields if they have valid values
+            if (selectedProduct && selectedProduct !== "NONE") {
+                leadData.product = selectedProduct;
+            }
+
+            if (assignedTo && assignedTo !== "NONE") {
+                leadData.assignedTo = assignedTo;
+            }
+
+            if (estimateAmount !== "") {
+                leadData.amount = estimateAmount;
+            }
+
+            // Only include source if it's a valid value
+            if (source && source.trim() !== "") {
+                leadData.source = source;
+            }
+
+            let responseMessage = "";
+
+            if (isEditMode && leadToEdit) {
+                // Add a remark for the timeline
+                leadData.remark = "Lead information updated";
+
+                // Update existing lead
+                await axios.put(`/api/leads/${leadToEdit._id}`, leadData);
+                responseMessage = "Lead updated successfully";
+            } else {
+                // Create new lead
+                await axios.post("/api/leads", leadData);
+                responseMessage = "New lead has been created successfully";
+            }
+
+            // refresh board if current pipeline == modalPipeline
+            if (selectedPipeline && selectedPipeline === modalPipeline) {
+                const updated = await axios.get(`/api/pipelines/${selectedPipeline}`);
+                await prepareStages(updated.data);
+            }
+
+            toast({
+                title: isEditMode ? "Lead updated" : "Lead created",
+                description: responseMessage,
+            });
+
+            // reset fields
+            resetAddLeadForm();
+            setIsLeadModalOpen(false);
+            setIsEditMode(false);
+            setLeadToEdit(null);
+        } catch (error) {
+            console.error(isEditMode ? "Failed to update lead:" : "Failed to create lead:", error);
+            toast({
+                title: isEditMode ? "Failed to update lead" : "Failed to create lead",
+                description: "There was an error with your request",
+                variant: "destructive",
+            });
+        } finally {
+            setIsCreatingLead(false);
+        }
+    };
+
+    // Update the resetAddLeadForm function to also reset the edit mode
     function resetAddLeadForm() {
         setLeadTitle("");
         setDescription("");
@@ -1001,7 +1207,10 @@ export default function LeadsDashboard() {
         setLinks([]);
         setFiles([]);
         setAudioRecordings([]);
+        setIsEditMode(false);
+        setLeadToEdit(null);
     }
+
 
     const handleDragStart = (event: any) => {
         const { active } = event;
@@ -1339,11 +1548,13 @@ export default function LeadsDashboard() {
                                 disabled={isCreatingLead}
                             >
                                 {isCreatingLead ? (
-                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        {isEditMode ? "Updating..." : "Creating..."}
+                                    </>
                                 ) : (
-                                    <Plus className="h-4 w-4 mr-2" />
+                                    <>{isEditMode ? "Update Lead" : "Create Lead"}</>
                                 )}
-                                Add Lead
                             </Button>
                         ) : (
                             <TooltipProvider>
@@ -1599,12 +1810,12 @@ export default function LeadsDashboard() {
                 >
                     <div
                         ref={scrollContainerRef}
-                        className="w-full overflow-x-auto scrollbar-hide h-[calc(100vh-380px)]" // Adjusted height for sleeker cards
+                        className="w-full overflow-x-auto mb-24 scrollbar-hide h-[calc(120vh-380px)]" // Adjusted height for sleeker cards
                     >
 
-                        <div className="flex gap-4 p-2 mb-12 min-w-max">
-
-                            {stages?.map((stage) => (
+                        <div className="flex gap-4  p-2  min-w-max">
+                            {/* Use filteredStages instead of stages */}
+                            {filteredStages.map((stage) => (
                                 <DroppableStage
                                     key={stage._id || stage.name}
                                     stage={stage}
@@ -1616,9 +1827,9 @@ export default function LeadsDashboard() {
                                     canAddLead={canAdd("Leads")}
                                     canEditStage={canEdit("Leads")}
                                     canDeleteStage={canDelete("Leads")}
-                                    showCheckboxes={showCheckboxes} // Add this prop
+                                    showCheckboxes={showCheckboxes}
                                 >
-                                    {stage.leads?.map((lead) => (
+                                    {stage.leads.map((lead) => (
                                         <DraggableLead
                                             key={lead._id}
                                             lead={lead}
@@ -1626,7 +1837,26 @@ export default function LeadsDashboard() {
                                             canDrag={canEdit("Leads")}
                                             canView={canView("Leads")}
                                             onSelectChange={toggleLeadSelection}
-                                            showCheckboxes={showCheckboxes} // Pass it to each lead
+                                            showCheckboxes={showCheckboxes}
+                                            onLeadDeleted={() => {
+                                                // Refresh the pipeline to show the updated leads
+                                                if (selectedPipeline) {
+                                                    const pipelineDoc = pipelines.find((p) => p._id === selectedPipeline);
+                                                    if (pipelineDoc) {
+                                                        prepareStages(pipelineDoc);
+                                                    }
+                                                }
+                                            }}
+                                            onLeadMoved={() => {
+                                                // Refresh the pipeline to show the updated leads
+                                                if (selectedPipeline) {
+                                                    const pipelineDoc = pipelines.find((p) => p._id === selectedPipeline);
+                                                    if (pipelineDoc) {
+                                                        prepareStages(pipelineDoc);
+                                                    }
+                                                }
+                                            }}
+                                            onLeadEdit={handleEditLead}
                                         />
                                     ))}
                                 </DroppableStage>
@@ -1679,9 +1909,11 @@ export default function LeadsDashboard() {
                 >
                     <DialogContent className="sm:max-w-[500px] h-fit max-h-screen m-auto overflow-y-scroll scrollbar-hide z-[100]">
                         <DialogHeader>
-                            <DialogTitle className="text-xl font-semibold">Add New Lead</DialogTitle>
+                            <DialogTitle className="text-xl font-semibold"> {isEditMode ? "Edit Lead" : "Add New Lead"}</DialogTitle>
                             <DialogDescription>
-                                Fill in the details to create a new sales lead.
+                                {isEditMode
+                                    ? "Update the lead information below."
+                                    : "Fill in the details to create a new sales lead."}
                             </DialogDescription>
                         </DialogHeader>
 
@@ -1895,7 +2127,7 @@ export default function LeadsDashboard() {
                             </Button>
                             <Button
                                 type="button"
-                                onClick={handleAddLead}
+                                onClick={handleAddOrUpdateLead}
                                 disabled={isCreatingLead}
                             >
                                 {isCreatingLead ? (
@@ -2253,6 +2485,9 @@ function DraggableLead({
     canView = true,
     onSelectChange, // Add this prop
     showCheckboxes = false, // Add this prop with default false
+    onLeadDeleted,
+    onLeadMoved,
+    onLeadEdit, // Add this prop
 }: {
     lead: Lead;
     setDraggedLead: React.Dispatch<React.SetStateAction<Lead | null>>;
@@ -2260,6 +2495,9 @@ function DraggableLead({
     canView?: boolean;
     onSelectChange?: (lead: Lead, isSelected: boolean) => void; // Add this
     showCheckboxes?: boolean; //
+    onLeadDeleted?: () => void;
+    onLeadMoved?: () => void;
+    onLeadEdit?: (lead: Lead) => void; // Add this type
 }) {
     const router = useRouter();
     const [isSelected, setIsSelected] = useState(false);
@@ -2294,8 +2532,20 @@ function DraggableLead({
     };
     return (
         <Card
-            className="mt-3 border hover:border-primary hover:shadow-md transition-all duration-200 cursor-pointer"
+            className="mt-3 border hover:border-primary relative hover:shadow-md transition-all duration-200 cursor-pointer"
         >
+            <LeadActionMenu
+                leadId={lead._id}
+                lead={lead}
+                currentStage={lead.stage || ""}
+                canEdit={canEdit("Leads")}
+                canDelete={canDelete("Leads")}
+                canMove={canDrag}
+                onDeleteSuccess={onLeadDeleted}
+                onMoveSuccess={onLeadMoved}
+                onEditClick={onLeadEdit}
+            />
+
             <div
                 ref={canDrag ? setNodeRef : undefined}
                 {...(canDrag ? attributes : {})}
@@ -2303,7 +2553,8 @@ function DraggableLead({
                 className="p-3"
                 onClick={canView ? handleNavigate : undefined}
             >
-                <div className="flex justify-between items-start">
+
+                <div className="flex gap-4 items-start">
                     {showCheckboxes && (
                         <Checkbox
                             checked={isSelected}
@@ -2314,7 +2565,7 @@ function DraggableLead({
                     )}
                     <h3 className="font-medium text-sm line-clamp-2">{lead.title}</h3>
                     <div className="flex items-center gap-1">
-                        <Badge variant="outline" className="text-xs h-5">
+                        <Badge variant="outline" className="text-xs  h-5">
                             {lead.leadId}
                         </Badge>
 
@@ -2408,6 +2659,7 @@ function DroppableStage({
     canEditStage = true,
     canDeleteStage = true,
     showCheckboxes = false, // Add this prop
+    searchTerm = "", // Add search term pro
 }: {
     stage: Stage;
     children: React.ReactNode;
@@ -2420,6 +2672,7 @@ function DroppableStage({
     canEditStage?: boolean;
     canDeleteStage?: boolean;
     showCheckboxes?: boolean; //
+    searchTerm?: string; // Add this prop
 }) {
     const { setNodeRef, isOver } = useDroppable({
         id: stage.name,
@@ -2439,6 +2692,15 @@ function DroppableStage({
     const handleBulkDeleteToggle = (stageName: string) => {
         if (onBulkDeleteToggle) onBulkDeleteToggle(stageName);
     };
+
+
+    const filteredChildren = React.Children.toArray(children).filter(child => {
+        if (!searchTerm.trim()) return true;
+        // We can't directly access the lead prop, so we'll rely on the key
+        // This assumes the key contains the lead ID or other searchable content
+        return React.isValidElement(child) &&
+            String(child.key).toLowerCase().includes(searchTerm.toLowerCase());
+    });
 
     return (
         <Card
@@ -2535,7 +2797,8 @@ function DroppableStage({
                     </div>
                 )}
 
-                {children}
+                {/* Use filtered children instead of all children */}
+                {searchTerm.trim() ? filteredChildren : children}
 
                 {stage.leads?.length === 0 && (
                     <div className="flex flex-col items-center justify-center h-40 text-center border border-dashed rounded-md p-4">
@@ -2559,7 +2822,13 @@ function DroppableStage({
                     </div>
                 )}
 
-
+                {(stage.leads?.length === 0 || (searchTerm.trim() && filteredChildren.length === 0)) && (
+                    <div className="flex flex-col items-center justify-center h-40 text-center border border-dashed rounded-md p-4">
+                        <p className="text-sm text-muted-foreground mb-2">
+                            {searchTerm.trim() ? "No matching leads found" : "No leads in this stage"}
+                        </p>
+                    </div>
+                )}
             </div>
         </Card>
     );

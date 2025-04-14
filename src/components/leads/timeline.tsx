@@ -186,205 +186,200 @@ export default function LeadTimeline({ leadId, onlyStages = false }: { leadId: s
         };
     }
     return (
-        <Card className="border-blue-100 dark:border-blue-900 shadow-sm ">
-            <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-b px-6 py-4">
-                <div className="flex justify-between items-center">
-                    <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                        <Clock className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                        {onlyStages ? "Stage History" : "Activity Timeline"}
-                    </CardTitle>
+        <Card className="border-blue-100 dark:border-blue-900 shadow-md overflow-hidden">
+        <CardHeader className="bg-gradient-to-r from-blue-50/80 to-indigo-50/80 dark:from-blue-950/50 dark:to-indigo-950/50 border-b px-6 py-4">
+            <div className="flex justify-between items-center">
+                <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                    <Clock className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                    {onlyStages ? "Stage History" : "Activity Timeline"}
+                </CardTitle>
 
-                    <div className="flex items-center gap-2">
-                        {!onlyStages && (
-                            <Select
-                                value={timelineFilter}
-                                onValueChange={(value) => setTimelineFilter(value as any)}
-                            >
-                                <SelectTrigger className="h-8 w-[140px] text-xs bg-white dark:bg-gray-900">
-                                    <SelectValue placeholder="Filter" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Activities</SelectItem>
-                                    <SelectItem value="stage">Stage Changes</SelectItem>
-                                    <SelectItem value="followup">Follow-ups</SelectItem>
-                                    <SelectItem value="note">Notes</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        )}
+                <div className="flex items-center gap-2">
+                    {!onlyStages && (
+                        <Select
+                            value={timelineFilter}
+                            onValueChange={(value) => setTimelineFilter(value as any)}
+                        >
+                            <SelectTrigger className="h-8 w-[140px] text-xs bg-white/90 dark:bg-gray-900/90 rounded-full">
+                                <SelectValue placeholder="Filter" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Activities</SelectItem>
+                                <SelectItem value="stage">Stage Changes</SelectItem>
+                                <SelectItem value="followup">Follow-ups</SelectItem>
+                                <SelectItem value="note">Notes</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    )}
 
-                        <TooltipProvider>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <Button
-                                        variant="outline"
-                                        size="icon"
-                                        className="h-8 w-8 bg-white dark:bg-gray-900"
-                                        onClick={handleRefresh}
-                                        disabled={isRefreshing}
-                                    >
-                                        <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
-                                    </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    <p>Refresh timeline</p>
-                                </TooltipContent>
-                            </Tooltip>
-                        </TooltipProvider>
-                    </div>
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    className="h-8 w-8 bg-white/90 dark:bg-gray-900/90 rounded-full"
+                                    onClick={handleRefresh}
+                                    disabled={isRefreshing}
+                                >
+                                    <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Refresh timeline</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
                 </div>
-            </CardHeader>
+            </div>
+        </CardHeader>
 
-            <CardContent className="p-0">
-                <ScrollArea className="h-[calc(300vh-400px)] max-h-[500px]">
-                    <div className="p-6">
-                        {isLoading ? (
-                            <div className="space-y-8">
-                                {[1, 2, 3].map((i) => (
-                                    <div key={i} className="flex gap-4">
-                                        <div className="relative">
-                                            <Skeleton className="h-10 w-10 rounded-full" />
-                                            <Skeleton className="h-[calc(100%-40px)] w-0.5 absolute top-12 left-5 transform -translate-x-1/2" />
-                                        </div>
-                                        <div className="space-y-2 flex-1">
-                                            <Skeleton className="h-5 w-32" />
-                                            <Skeleton className="h-4 w-full" />
-                                            <Skeleton className="h-4 w-3/4" />
-                                        </div>
+        <CardContent className="p-0">
+            <ScrollArea className="h-[calc(300vh-400px)] max-h-[500px]">
+                <div className="p-6">
+                    {isLoading ? (
+                        <div className="space-y-8">
+                            {[1, 2, 3].map((i) => (
+                                <div key={i} className="flex gap-4">
+                                    <div className="relative">
+                                        <Skeleton className="h-10 w-10 rounded-full" />
+                                        <Skeleton className="h-[calc(100%-40px)] w-1 absolute top-12 left-5 transform -translate-x-1/2" />
                                     </div>
-                                ))}
-                            </div>
-                        ) : filteredTimeline.length === 0 ? (
-                            <div className="text-center py-12 bg-muted/20 rounded-lg border border-dashed">
-                                <Clock className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-                                <h3 className="font-medium text-lg mb-1">No timeline entries</h3>
-                                <p className="text-muted-foreground text-sm max-w-xs mx-auto mb-4">
-                                    {timelineFilter === "all"
-                                        ? "No activity has been recorded for this lead yet."
-                                        : `No ${timelineFilter} activities found for this lead.`}
-                                </p>
-                                {timelineFilter !== "all" && (
-                                    <Button
-                                        variant="outline"
-                                        onClick={() => setTimelineFilter("all")}
-                                        className="gap-1"
-                                    >
-                                        <FaSyncAlt className="h-3 w-3" />
-                                        Show All Activities
-                                    </Button>
-                                )}
-                            </div>
-                        ) : (
-                            <div className="relative pl-6  space-y-6">
-                                {/* Timeline line */}
-                                <div className="absolute left-0  border-black  top-4 bottom-0 w-[2px] bg-gradient-to-b from-blue-500 via-blue-400 to-blue-300 dark:from-blue-700 dark:via-blue-600 dark:to-blue-500 rounded-full"></div>
+                                    <div className="space-y-2 flex-1">
+                                        <Skeleton className="h-5 w-32" />
+                                        <Skeleton className="h-4 w-full" />
+                                        <Skeleton className="h-4 w-3/4" />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : filteredTimeline.length === 0 ? (
+                        <div className="text-center py-12 bg-muted/20 rounded-lg border border-dashed">
+                            <Clock className="h-10 w-10 mx-auto text-muted-foreground mb-3 opacity-70" />
+                            <h3 className="font-medium text-lg mb-1">No timeline entries</h3>
+                            <p className="text-muted-foreground text-sm max-w-xs mx-auto mb-4">
+                                {timelineFilter === "all"
+                                    ? "No activity has been recorded for this lead yet."
+                                    : `No ${timelineFilter} activities found for this lead.`}
+                            </p>
+                            {timelineFilter !== "all" && (
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setTimelineFilter("all")}
+                                    className="gap-1 rounded-full"
+                                >
+                                    <FaSyncAlt className="h-3 w-3" />
+                                    Show All Activities
+                                </Button>
+                            )}
+                        </div>
+                    ) : (
+                        <div className="relative pl-6 space-y-8">
+                            {/* Timeline line - more stylish gradient line */}
+                            <div className="absolute left-0 top-4 bottom-4 w-[3px] bg-gradient-to-b from-blue-500 via-indigo-400 to-blue-300 dark:from-blue-600 dark:via-indigo-500 dark:to-blue-400 rounded-full opacity-60"></div>
 
-                                <AnimatePresence>
-                                    {filteredTimeline.map((entry, index) => {
-                                        const itemProps = getTimelineItemProps(entry.type, entry.followupType, entry) || {
-                                            icon: <FaExclamationTriangle className="h-4 w-4" />,
-                                            color: "text-gray-500",
-                                            bgColor: "bg-gray-100 dark:bg-gray-900/30",
-                                            borderColor: "border-gray-300 dark:border-gray-700",
-                                            label: "Unknown Activity"
-                                        };
-                                        const { icon, color, bgColor, borderColor, label } = itemProps;
+                            <AnimatePresence>
+                                {filteredTimeline.map((entry, index) => {
+                                    const itemProps = getTimelineItemProps(entry.type, entry.followupType, entry);
+                                    const { icon, color, bgColor, borderColor, label } = itemProps;
 
-                                        const formattedDate = format(
-                                            new Date(entry.timestamp),
-                                            "MMM d, yyyy 'at' h:mm a"
-                                        );
-                                        const timeAgo = formatDistanceToNow(
-                                            new Date(entry.timestamp),
-                                            { addSuffix: true }
-                                        );
+                                    const formattedDate = format(
+                                        new Date(entry.timestamp),
+                                        "MMM d, yyyy 'at' h:mm a"
+                                    );
+                                    const timeAgo = formatDistanceToNow(
+                                        new Date(entry.timestamp),
+                                        { addSuffix: true }
+                                    );
 
-                                        return (
-                                            <motion.div
-                                                key={`${entry.type}-${entry.timestamp}-${index}`}
-                                                initial={{ opacity: 0, x: -10 }}
-                                                animate={{ opacity: 1, x: 0 }}
-                                                exit={{ opacity: 0, x: 10 }}
-                                                transition={{ duration: 0.2 }}
-                                                className="relative"
-                                            >
-                                                {/* Timeline node */}
-                                                <div className={`absolute -left-[18px] top-0 w-[34px] h-[34px] rounded-full flex items-center justify-center -ml-5 ${bgColor} ${borderColor} border-2`}>
-                                                    <span className={color}>
-                                                        {icon}
-                                                    </span>
-                                                </div>
+                                    return (
+                                        <motion.div
+                                            key={`${entry.type}-${entry.timestamp}-${index}`}
+                                            initial={{ opacity: 0, y: 20 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: -20 }}
+                                            transition={{ duration: 0.3, type: "spring", stiffness: 100 }}
+                                            className="relative"
+                                        >
+                                            {/* Timeline node - larger, more prominent */}
+                                            <div className={`absolute -left-[20px] top-0 w-[40px] h-[40px] rounded-full flex items-center justify-center -ml-5 ${bgColor} ${borderColor} border-2 shadow-md z-10 transition-all duration-200 hover:scale-110`}>
+                                                <span className={`${color} transition-transform`}>
+                                                    {icon}
+                                                </span>
+                                            </div>
 
-                                                {/* Timeline content */}
-                                                <div className="ml-5 bg-card dark:bg-card rounded-lg border border-border p-4 shadow-sm">
-                                                    <div className="flex justify-between items-start mb-2">
-                                                        <div className="flex items-center gap-2">
-                                                            <Badge
-                                                                variant="outline"
-                                                                className={`${color} ${bgColor} border-0`}
-                                                            >
-                                                                {label}
-                                                            </Badge>
+                                            {/* Timeline content - glass morphism effect */}
+                                            <div className="ml-6 bg-white/70 dark:bg-gray-900/70 backdrop-blur-sm rounded-xl border border-blue-100/80 dark:border-blue-900/30 p-5 shadow-sm hover:shadow-md transition-all duration-200">
+                                                <div className="flex justify-between items-start mb-3">
+                                                    <div className="flex items-center gap-2">
+                                                        <Badge
+                                                            variant="outline"
+                                                            className={`${color} ${bgColor} border-0 rounded-full px-3 py-0.5 font-medium`}
+                                                        >
+                                                            {label}
+                                                        </Badge>
 
-                                                            {entry.type === "stage" && entry.stage && (
-                                                                <div className="flex items-center gap-1.5">
-                                                                    <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
-                                                                    <Badge variant="outline" className="bg-blue-50 dark:bg-blue-900/20 text-blue-600">
-                                                                        {entry.stage}
-                                                                    </Badge>
-                                                                </div>
-                                                            )}
-                                                        </div>
-
-                                                        <TooltipProvider>
-                                                            <Tooltip>
-                                                                <TooltipTrigger asChild>
-                                                                    <span className="text-xs text-muted-foreground">
-                                                                        {timeAgo}
-                                                                    </span>
-                                                                </TooltipTrigger>
-                                                                <TooltipContent>
-                                                                    <p>{formattedDate}</p>
-                                                                </TooltipContent>
-                                                            </Tooltip>
-                                                        </TooltipProvider>
-                                                    </div>
-
-                                                    <p className="text-sm">{entry.action}</p>
-
-                                                    {entry.remark && (
-                                                        <div className="mt-2 text-xs bg-muted/30 p-2 rounded-md text-muted-foreground">
-                                                            <span className="font-medium">Remark:</span> {entry.remark}
-                                                        </div>
-                                                    )}
-
-                                                    <div className="mt-2 flex justify-between items-center">
-                                                        {entry.movedBy || entry.addedBy ? (
-                                                            <div className="flex items-center gap-2">
-                                                                <Avatar className="h-5 w-5">
-                                                                    <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
-                                                                        {(entry.movedBy || entry.addedBy).charAt(0)}
-                                                                    </AvatarFallback>
-                                                                </Avatar>
-                                                                <span className="text-xs text-muted-foreground">
-                                                                    {entry.type === "stage"
-                                                                        ? `Moved by ${entry.movedBy}`
-                                                                        : `Added by ${entry.addedBy}`}
-                                                                </span>
+                                                        {entry.type === "stage" && entry.stage && (
+                                                            <div className="flex items-center gap-1.5">
+                                                                <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
+                                                                <Badge variant="outline" className="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full px-3">
+                                                                    {entry.stage}
+                                                                </Badge>
                                                             </div>
-                                                        ) : (
-                                                            <span></span>
                                                         )}
                                                     </div>
+
+                                                    <TooltipProvider>
+                                                        <Tooltip>
+                                                            <TooltipTrigger asChild>
+                                                                <span className="text-xs text-muted-foreground flex items-center gap-1 bg-muted/30 px-2 py-1 rounded-full">
+                                                                    <Calendar className="h-3 w-3" />
+                                                                    {timeAgo}
+                                                                </span>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent>
+                                                                <p>{formattedDate}</p>
+                                                            </TooltipContent>
+                                                        </Tooltip>
+                                                    </TooltipProvider>
                                                 </div>
-                                            </motion.div>
-                                        );
-                                    })}
-                                </AnimatePresence>
-                            </div>
-                        )}
-                    </div>
-                </ScrollArea>
-            </CardContent>
-        </Card>
+
+                                                <p className="text-sm font-medium">{entry.action}</p>
+
+                                                {entry.remark && (
+                                                    <div className="mt-3 text-sm bg-muted/20 p-3 rounded-lg text-muted-foreground border-l-2 border-blue-300 dark:border-blue-700">
+                                                        <span className="font-medium">Remark:</span> {entry.remark}
+                                                    </div>
+                                                )}
+
+                                                <div className="mt-3 flex justify-between items-center pt-2 border-t border-muted/30">
+                                                    {entry.movedBy || entry.addedBy ? (
+                                                        <div className="flex items-center gap-2">
+                                                            <Avatar className="h-6 w-6 border-2 border-white dark:border-gray-800 shadow-sm">
+                                                                <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
+                                                                    {(entry.movedBy || entry.addedBy).charAt(0)}
+                                                                </AvatarFallback>
+                                                            </Avatar>
+                                                            <span className="text-xs text-muted-foreground">
+                                                                {entry.type === "stage"
+                                                                    ? `Moved by ${entry.movedBy}`
+                                                                    : `Added by ${entry.addedBy}`}
+                                                            </span>
+                                                        </div>
+                                                    ) : (
+                                                        <span></span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    );
+                                })}
+                            </AnimatePresence>
+                        </div>
+                    )}
+                </div>
+            </ScrollArea>
+        </CardContent>
+    </Card>
     );
 }
