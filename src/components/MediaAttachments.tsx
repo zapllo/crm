@@ -69,14 +69,14 @@ const MediaAttachments = ({
     };
 
     return (
-        <div className="mt-4">
+        <div className="mt-4">  
             <Tabs defaultValue="files">
                 <TabsList className="grid gap-2 bg-accent grid-cols-3 mb-4">
-                    <TabsTrigger value="files">
+                    <TabsTrigger className='border-none' value="files">
                         <File className='h-4' /> Files</TabsTrigger>
-                    <TabsTrigger value="audio">
+                    <TabsTrigger className='border-none' value="audio">
                         <Music className='h-4' /> Audio</TabsTrigger>
-                    <TabsTrigger value="links">
+                    <TabsTrigger className='border-none' value="links">
                         <Link className='h-4' /> Links</TabsTrigger>
                 </TabsList>
 

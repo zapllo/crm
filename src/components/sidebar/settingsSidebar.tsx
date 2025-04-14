@@ -13,7 +13,8 @@ import {
   ShieldCheck,
   Users,
   CreditCard,
-  Code
+  Code,
+  Mail
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 
@@ -72,13 +73,12 @@ const SettingsSidebar: React.FC = () => {
       icon: <Palette className="h-5 w-5" />,
       description: "Personalize your workspace appearance"
     },
-    // {
-    //   title: "Security",
-    //   href: "/settings/security",
-    //   icon: <ShieldCheck className="h-5 w-5" />,
-    //   description: "Configure security settings and permissions",
-    //   badge: { text: "Important", variant: "destructive" }
-    // },
+    {
+      title: "Email Channels",
+      href: "/settings/channels",
+      icon: <Mail className="h-5 w-5" />,
+      description: "Configure security settings and permissions",
+    },
     {
       title: "Integrations",
       href: "/settings/integrations",

@@ -160,7 +160,7 @@ export default function EditContactTagModal({
             </TooltipProvider>
           </div>
 
-          <ScrollArea className="h-32 rounded-md border">
+          <ScrollArea className="h-36 rounded-md border">
             <div className="grid grid-cols-6 gap-2 p-3">
               {colorOptions.map((c) => (
                 <TooltipProvider key={c.value}>
@@ -170,7 +170,7 @@ export default function EditContactTagModal({
                         type="button"
                         onClick={() => setColor(c.value)}
                         className={cn(
-                          "relative w-full aspect-square rounded-full border-2 transition-all hover:scale-110",
+                          "relative h-10 aspect-square rounded-full border-2 transition-all hover:scale-110",
                           color === c.value
                             ? "border-ring shadow-md"
                             : "border-transparent"
@@ -199,20 +199,7 @@ export default function EditContactTagModal({
           </ScrollArea>
         </div>
 
-        <div className="py-3">
-          <Label className="text-sm mb-2">Preview</Label>
-          <div className="flex items-center justify-center border rounded-md p-4">
-            <Badge
-              className="text-md px-3 py-1"
-              style={{
-                backgroundColor: color,
-                color: ["#FFFFFF", "#FFDD00", "#E7E7E7"].includes(color) ? "black" : "white"
-              }}
-            >
-              {name || tag.name}
-            </Badge>
-          </div>
-        </div>
+
       </div>
 
       <div className="flex justify-between items-center pt-2">

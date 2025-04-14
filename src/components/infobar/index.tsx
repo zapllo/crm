@@ -325,61 +325,15 @@ export default function InfoBar() {
                 </SheetHeader>
 
                 <Tabs defaultValue="all" className="mt-4">
-                  <TabsList className="grid grid-cols-3 mb-4">
-                    <TabsTrigger value="all">All</TabsTrigger>
-                    <TabsTrigger value="unread">Unread</TabsTrigger>
-                    <TabsTrigger value="mentions">Mentions</TabsTrigger>
+                  <TabsList className="grid bg-accent gap-2 grid-cols-3 mb-4">
+                    <TabsTrigger className='border-none' value="all">All</TabsTrigger>
+                    <TabsTrigger className='border-none' value="unread">Unread</TabsTrigger>
+                    <TabsTrigger className='border-none' value="mentions">Mentions</TabsTrigger>
                   </TabsList>
 
-                  <TabsContent value="all" className="space-y-3">
-                    {notifications.map((notification) => (
-                      <div
-                        key={notification.id}
-                        className={cn(
-                          "flex gap-3 p-3 rounded-lg transition-colors",
-                          notification.read ? "bg-background" : "bg-primary/5"
-                        )}
-                      >
-                        <div className="p-2 rounded-full bg-muted flex items-center justify-center h-9 w-9">
-                          {getNotificationIcon(notification.type)}
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex justify-between items-start">
-                            <h4 className="font-medium text-sm">{notification.title}</h4>
-                            <span className="text-xs text-muted-foreground">{notification.time}</span>
-                          </div>
-                          <p className="text-sm text-muted-foreground mt-1">{notification.description}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </TabsContent>
 
-                  <TabsContent value="unread" className="space-y-3">
-                    {notifications.filter(n => !n.read).map((notification) => (
-                      <div
-                        key={notification.id}
-                        className="flex gap-3 p-3 rounded-lg bg-primary/5"
-                      >
-                        <div className="p-2 rounded-full bg-muted flex items-center justify-center h-9 w-9">
-                          {getNotificationIcon(notification.type)}
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex justify-between items-start">
-                            <h4 className="font-medium text-sm">{notification.title}</h4>
-                            <span className="text-xs text-muted-foreground">{notification.time}</span>
-                          </div>
-                          <p className="text-sm text-muted-foreground mt-1">{notification.description}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </TabsContent>
-
-                  <TabsContent value="mentions" className="p-4 text-center text-muted-foreground">
-                    <MessageSquare className="h-12 w-12 mx-auto mb-2 opacity-20" />
-                    <p>No mentions yet</p>
-                  </TabsContent>
                 </Tabs>
-
+                <h1 className="flex justify-center text-xl mt-32">Coming Soon</h1>
                 <Button variant="ghost" className="w-full mt-4">
                   View all notifications
                 </Button>

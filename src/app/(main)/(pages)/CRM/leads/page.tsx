@@ -896,19 +896,24 @@ export default function LeadsDashboard() {
 
     // Add new lead from the modal
     const handleAddLead = async () => {
-        if (!leadTitle.trim()) {
-            toast({
-                title: "Missing information",
-                description: "Lead title is required",
-                variant: "destructive",
-            });
-            return;
-        }
+        // Validate required fields
+        const errors = [];
 
-        if (!modalPipeline || !modalStage) {
+        if (!modalPipeline) errors.push("Pipeline is required");
+        if (!modalStage) errors.push("Stage is required");
+        if (!leadTitle.trim()) errors.push("Lead title is required");
+        if (!selectedContact || selectedContact === "NONE") errors.push("Contact is required");
+
+        if (errors.length > 0) {
             toast({
-                title: "Missing information",
-                description: "Pipeline and stage are required",
+                title: "Missing required fields",
+                description: (
+                    <ul className="list-disc pl-4 space-y-1 mt-2">
+                        {errors.map((error, index) => (
+                            <li key={index} className="text-sm">{error}</li>
+                        ))}
+                    </ul>
+                ),
                 variant: "destructive",
             });
             return;
@@ -919,21 +924,38 @@ export default function LeadsDashboard() {
         const closeDateStr = closeDate ? format(closeDate, "yyyy-MM-dd") : "";
 
         try {
-            await axios.post("/api/leads", {
+            // Prepare the data object, only including valid fields
+            const leadData: any = {
                 pipeline: modalPipeline,
                 stage: modalStage,
                 title: leadTitle,
                 description,
-                product: selectedProduct,
                 contact: selectedContact,
-                assignedTo: assignedTo,
-                estimateAmount,
                 closeDate: closeDateStr,
-                source: source,
                 files,
                 audioRecordings,
                 links
-            });
+            };
+
+            // Only add these fields if they have valid values
+            if (selectedProduct && selectedProduct !== "NONE") {
+                leadData.product = selectedProduct;
+            }
+
+            if (assignedTo && assignedTo !== "NONE") {
+                leadData.assignedTo = assignedTo;
+            }
+
+            if (estimateAmount !== "") {
+                leadData.estimateAmount = estimateAmount;
+            }
+
+            // Only include source if it's a valid value
+            if (source && source.trim() !== "") {
+                leadData.source = source;
+            }
+
+            await axios.post("/api/leads", leadData);
 
             // refresh board if current pipeline == modalPipeline
             if (selectedPipeline && selectedPipeline === modalPipeline) {
@@ -948,6 +970,7 @@ export default function LeadsDashboard() {
 
             // reset fields
             resetAddLeadForm();
+            setIsLeadModalOpen(false);
         } catch (error) {
             console.error("Failed to create lead:", error);
             toast({
@@ -957,10 +980,8 @@ export default function LeadsDashboard() {
             });
         } finally {
             setIsCreatingLead(false);
-            setIsLeadModalOpen(false);
         }
     };
-
     // Reset form fields
     function resetAddLeadForm() {
         setLeadTitle("");
@@ -1343,7 +1364,7 @@ export default function LeadsDashboard() {
                                 </Tooltip>
                             </TooltipProvider>
                         )}
-                      
+
 
                         {/* Filter button */}
                         <Button
@@ -1543,8 +1564,8 @@ export default function LeadsDashboard() {
                     </div>
 
                     <div className="flex gap-2">
-                          {/* Add the Select Mode Toggle button here */}
-                          <Button
+                        {/* Add the Select Mode Toggle button here */}
+                        <Button
                             variant="outline"
                             onClick={() => setShowCheckboxes(!showCheckboxes)}
                             className="gap-1"
@@ -1580,33 +1601,33 @@ export default function LeadsDashboard() {
                         ref={scrollContainerRef}
                         className="w-full overflow-x-auto scrollbar-hide h-[calc(100vh-380px)]" // Adjusted height for sleeker cards
                     >
-                        
+
                         <div className="flex gap-4 p-2 mb-12 min-w-max">
-                            
+
                             {stages?.map((stage) => (
                                 <DroppableStage
-                                key={stage._id || stage.name}
-                                stage={stage}
-                                onAddLead={canAdd("Leads") ? handleAddLeadToStage : undefined}
-                                onEditStage={canEdit("Leads") ? handleEditStage : undefined}
-                                onDeleteStage={canDelete("Leads") ? handleDeleteStage : undefined}
-                                onBulkDeleteToggle={canDelete("Leads") ? handleBulkDeleteToggle : undefined}
-                                isBulkDeleteEnabled={isBulkDeleteEnabled && canDelete("Leads")}
-                                canAddLead={canAdd("Leads")}
-                                canEditStage={canEdit("Leads")}
-                                canDeleteStage={canDelete("Leads")}
-                                showCheckboxes={showCheckboxes} // Add this prop
-                            >
+                                    key={stage._id || stage.name}
+                                    stage={stage}
+                                    onAddLead={canAdd("Leads") ? handleAddLeadToStage : undefined}
+                                    onEditStage={canEdit("Leads") ? handleEditStage : undefined}
+                                    onDeleteStage={canDelete("Leads") ? handleDeleteStage : undefined}
+                                    onBulkDeleteToggle={canDelete("Leads") ? handleBulkDeleteToggle : undefined}
+                                    isBulkDeleteEnabled={isBulkDeleteEnabled && canDelete("Leads")}
+                                    canAddLead={canAdd("Leads")}
+                                    canEditStage={canEdit("Leads")}
+                                    canDeleteStage={canDelete("Leads")}
+                                    showCheckboxes={showCheckboxes} // Add this prop
+                                >
                                     {stage.leads?.map((lead) => (
-                                       <DraggableLead
-                                       key={lead._id}
-                                       lead={lead}
-                                       setDraggedLead={setDraggedLead}
-                                       canDrag={canEdit("Leads")}
-                                       canView={canView("Leads")}
-                                       onSelectChange={toggleLeadSelection}
-                                       showCheckboxes={showCheckboxes} // Pass it to each lead
-                                   />
+                                        <DraggableLead
+                                            key={lead._id}
+                                            lead={lead}
+                                            setDraggedLead={setDraggedLead}
+                                            canDrag={canEdit("Leads")}
+                                            canView={canView("Leads")}
+                                            onSelectChange={toggleLeadSelection}
+                                            showCheckboxes={showCheckboxes} // Pass it to each lead
+                                        />
                                     ))}
                                 </DroppableStage>
                             ))}
@@ -1668,7 +1689,7 @@ export default function LeadsDashboard() {
                             {/* Pipeline & Stage Row */}
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <label className="text-sm font-medium">Pipeline</label>
+                                    <label className="text-sm font-medium">Pipeline *</label>
                                     <Select
                                         value={modalPipeline}
                                         onValueChange={(val) => setModalPipeline(val)}
@@ -1751,7 +1772,7 @@ export default function LeadsDashboard() {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label className="text-sm font-medium">Contact</label>
+                                    <label className="text-sm font-medium">Contact *</label>
                                     <Select
                                         value={selectedContact ?? "NONE"}
                                         onValueChange={(val) => setSelectedContact(val)}
@@ -1805,7 +1826,7 @@ export default function LeadsDashboard() {
                             {/* Assigned To & Source Row */}
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <label className="text-sm font-medium">Assigned To</label>
+                                    <label className="text-sm font-medium">Assigned To *</label>
                                     <Select
                                         value={assignedTo}
                                         onValueChange={(val) => setAssignedTo(val)}
@@ -2127,7 +2148,7 @@ export default function LeadsDashboard() {
 
                         <div className="py-4">
                             <div className="flex items-center justify-between mb-4">
-                                
+
                                 <div className="flex items-center gap-2">
                                     <Badge
                                         className="px-3 py-1"
@@ -2238,7 +2259,7 @@ function DraggableLead({
     canDrag?: boolean;
     canView?: boolean;
     onSelectChange?: (lead: Lead, isSelected: boolean) => void; // Add this
-    showCheckboxes?: boolean; // 
+    showCheckboxes?: boolean; //
 }) {
     const router = useRouter();
     const [isSelected, setIsSelected] = useState(false);
@@ -2296,7 +2317,7 @@ function DraggableLead({
                         <Badge variant="outline" className="text-xs h-5">
                             {lead.leadId}
                         </Badge>
-                      
+
                     </div>
                 </div>
 
@@ -2398,7 +2419,7 @@ function DroppableStage({
     canAddLead?: boolean;
     canEditStage?: boolean;
     canDeleteStage?: boolean;
-    showCheckboxes?: boolean; // 
+    showCheckboxes?: boolean; //
 }) {
     const { setNodeRef, isOver } = useDroppable({
         id: stage.name,

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import axios from "axios";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface EditTagModalProps {
     tag: { _id: string; name: string; color: string };
@@ -35,9 +36,8 @@ export default function EditTagModal({ tag, onClose, onUpdate }: EditTagModalPro
         <form onSubmit={handleSubmit} className="space-y-4">
             {/* <h2 className="text-lg font-semibold dark:text-white">Edit Tag</h2> */}
             <div>
-                {/* <label className="text-sm text-gray-400">Tag Name</label> */}
+                <Label>Tag Name</Label>
                 <Input
-                    label="Tag Name"
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}

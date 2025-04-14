@@ -15,7 +15,7 @@ import {
 import CreatePipelineForm from "@/components/modals/pipelines/pipelineModal";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { CrossCircledIcon } from "@radix-ui/react-icons";
-import { Pencil, Trash2, Database, Tag, Users, Sparkles, Settings2, ListPlus, Plus, Filter, Loader2 } from "lucide-react";
+import { Pencil, Trash2, Database, Tag, Users, Sparkles, Settings2, ListPlus, Plus, Filter, Loader2, LayoutTemplateIcon } from "lucide-react";
 import EditPipelineForm from "@/components/modals/pipelines/editPipelineModal";
 import AddFieldForm from "@/components/modals/pipelines/addFieldModal";
 import EditFieldForm from "@/components/modals/pipelines/editFieldModal";
@@ -424,13 +424,16 @@ export default function CustomizePage() {
             >
                 {/* Tabs List */}
                 <div className="flex justify-center">
-                    <TabsList className="grid grid-cols-3  w-full max-w-md gap-x-4 bg-accent  ">
+                    <TabsList className="grid grid-cols-4  w-full  gap-x-6 bg-accent  ">
 
                         <TabsTrigger value="pipelines" className="  flex gap-2 items-center border-none ">
                             <Database className="h-4 w-4" />
                             <span>Pipelines</span>
                         </TabsTrigger>
-
+                        <TabsTrigger value="pipelineTemplates" className="  flex gap-2 items-center border-none ">
+                            <LayoutTemplateIcon className="h-4 w-4" />
+                            <span>Pipeline Templates</span>
+                        </TabsTrigger>
 
 
                         <TabsTrigger value="leads" className="  flex gap-2 items-center border-none">
@@ -595,13 +598,7 @@ export default function CustomizePage() {
                         </Card>
                     </motion.div>
                     {/* Pipeline Templates Section - ADD THIS PART */}
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.3, delay: 0.2 }}
-                    >
-                        <PipelineTemplates />
-                    </motion.div>
+
                     <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
                         <DialogContent className="z-[100] p-6 max-w-lg w-full">
                             <DialogHeader>
@@ -626,7 +623,15 @@ export default function CustomizePage() {
                         </DialogContent>
                     </Dialog>
                 </TabsContent>
-
+                <TabsContent value="pipelineTemplates" className="space-y-6">
+                <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, delay: 0.2 }}
+                    >
+                        <PipelineTemplates />
+                    </motion.div>
+                </TabsContent>
                 {/* Leads Tab Content */}
                 <TabsContent value="leads" className="space-y-6">
                     <motion.div

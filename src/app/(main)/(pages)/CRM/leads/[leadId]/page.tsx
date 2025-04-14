@@ -352,7 +352,7 @@ export default function LeadDetails() {
                                     <p className="text-xs text-muted-foreground mb-1">Amount</p>
                                     <div className="flex items-center">
                                         <FaRupeeSign className="mr-2 h-3 w-3 text-primary" />
-                                        <p className="text-sm">₹{leadDetails.amount.toLocaleString('en-IN')}</p>
+                                        <p className="text-sm">₹{leadDetails.amount?.toLocaleString('en-IN')}</p>
                                     </div>
                                 </div>
 
@@ -539,7 +539,7 @@ export default function LeadDetails() {
                                     <p className="text-xs text-muted-foreground mt-1">Active for {formatDistanceToNow(new Date(leadDetails.createdAt))}</p>
                                 </div>
                             </div>
-{/* 
+{/*
                             <div className="mt-4">
                                 <Button variant="outline" size="sm" className="w-full" onClick={() => {
                                     const tabsElement = document.querySelector('[data-value="timeline"]');

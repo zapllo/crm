@@ -12,6 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 
 interface AddFieldFormProps {
     pipelines: { _id: string; name: string }[];
@@ -86,9 +87,9 @@ export default function AddFieldForm({ pipelines, onClose, onUpdate }: AddFieldF
                 </Select>
             </div>
             <div>
-                {/* <label className="text-sm text-gray-400">Field Name</label> */}
+                <Label>Field Name</Label>
                 <Input
-                    label="Field Name"
+
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
