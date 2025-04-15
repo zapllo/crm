@@ -59,6 +59,7 @@ import { AlertDialog as Alert, AlertDialogDescription as AlertDescription, Alert
 
 import QuotationPreview from '@/components/quotations/QuotationPreview';
 import TemplateRenderer from '@/components/quotations/TemplateRenderer';
+import { FaWhatsapp } from 'react-icons/fa';
 
 interface QuotationData {
   _id: string;
@@ -216,7 +217,7 @@ export default function QuotationDetailPage() {
       case 'approved':
         return <Badge variant="secondary" className="bg-green-500 hover:bg-green-600 text-white">Approved</Badge>;
       case 'rejected':
-        return <Badge variant="secondary" className="bg-red-500 hover:bg-red-600 text-white">Rejected</Badge>;
+        return <Badge variant="secondary" className="bg-red-500 hover:bg-red-600 text-white">Changes Requested </Badge>;
       case 'expired':
         return <Badge variant="secondary" className="bg-gray-500 hover:bg-gray-600 text-white">Expired</Badge>;
       default:
@@ -300,6 +301,45 @@ export default function QuotationDetailPage() {
       setIsSending(false);
     }
   };
+
+
+  // Add this new function to handle sending WhatsApp
+  const handleSendWhatsApp = async () => {
+    if (!quotation?.contact?.whatsappNumber) {
+      toast({
+        title: 'Error',
+        description: 'WhatsApp number not available',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      setIsSending(true);
+
+      await axios.post(`/api/quotations/${quotationId}/send/whatsapp`, {
+        whatsappNumber: quotation.contact.whatsappNumber,
+        message: sendEmailForm.message, // We can reuse the message from the email form
+      });
+
+      setIsShareDialogOpen(false);
+
+      toast({
+        title: 'Success',
+        description: 'Quotation sent via WhatsApp successfully',
+      });
+    } catch (error) {
+      console.error('Error sending quotation via WhatsApp:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to send quotation via WhatsApp',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSending(false);
+    }
+  };
+
 
   const handleDownloadPDF = async () => {
     try {
@@ -610,6 +650,9 @@ export default function QuotationDetailPage() {
               <DropdownMenuItem onClick={() => setIsShareDialogOpen(true)}>
                 <Send className="h-4 w-4 mr-2" /> Send by Email
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleSendWhatsApp}>
+                <FaWhatsapp className="h-4 text-green-500 w-4 mr-2" /> Send by WhatsApp
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
@@ -910,7 +953,7 @@ export default function QuotationDetailPage() {
                 )}
               </div>
 
-              <div className="space-y-3">
+              {/* <div className="space-y-3">
                 <Textarea
                   placeholder="Add a comment..."
                   value={comment}
@@ -922,7 +965,7 @@ export default function QuotationDetailPage() {
                     <MessageSquare className="h-4 w-4 mr-2" /> Add Comment
                   </Button>
                 </div>
-              </div>
+              </div> */}
             </CardContent>
           </Card>
 
@@ -958,6 +1001,13 @@ export default function QuotationDetailPage() {
                 onClick={() => setIsShareDialogOpen(true)}
               >
                 <Send className="h-4 w-4 mr-2" /> Send by Email
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={handleSendWhatsApp}
+              >
+                <FaWhatsapp className="h-4 w-4 text-green-500 mr-2" /> Send by WhatsApp
               </Button>
             </CardContent>
           </Card>

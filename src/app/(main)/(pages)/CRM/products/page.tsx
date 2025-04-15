@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { Plus, Pencil, Trash, Download, LayoutGrid, List, Loader2, Tag, Barcode, Weight, Search, SlidersHorizontal } from "lucide-react";
+import { Plus, Pencil, Trash, Download, LayoutGrid, List, Loader2, Tag, Barcode, Weight, Search, SlidersHorizontal, QrCode } from "lucide-react";
 import AddProduct from "@/components/modals/products/addProduct";
 import EditProduct from "@/components/modals/products/editProduct";
 import {
@@ -42,6 +42,8 @@ import { usePermissions } from "@/hooks/use-permissions";
 import { canView, canAdd, canDelete, canEdit, usePermissionStatus } from "@/contexts/permissionsContext";
 import { NoPermissionFallback } from "@/components/ui/no-permission-fallback";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import BarcodeDisplay from "@/components/ui/barcode-display";
 
 // Interface definitions remain the same
 interface Category {
@@ -65,6 +67,7 @@ interface Product {
     _id: string;
     productName: string;
     hsnCode: string;
+    barcode?: string;
     category: Category;
     unit: Unit;
     rate: number;
@@ -243,7 +246,7 @@ export default function ProductsPage() {
                                 <TooltipTrigger asChild>
                                     <Button
                                         className="bg-primary/50 hover:bg-primary/20 cursor-not-allowed"
-                                        
+
                                     >
                                         <Plus className="mr-2 h-4 w-4" /> Add Product
                                     </Button>
@@ -319,6 +322,7 @@ export default function ProductsPage() {
                                         <TableHead>Product</TableHead>
                                         <TableHead>HSN Code</TableHead>
                                         <TableHead>Category</TableHead>
+                                        <TableHead>Barcode</TableHead> {/* New column */}
                                         <TableHead>Rate</TableHead>
                                         <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
@@ -336,6 +340,51 @@ export default function ProductsPage() {
                                                 <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
                                                     {product.category?.name || "N/A"}
                                                 </Badge>
+                                            </TableCell>
+                                            <TableCell>
+                                                {product.barcode ? (
+                                                    <Popover>
+                                                        <PopoverTrigger asChild>
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                className="flex items-center gap-1 h-8"
+                                                                onClick={(e) => e.stopPropagation()}
+                                                            >
+                                                                <QrCode className="h-3.5 w-3.5" />
+                                                                <span className="truncate max-w-[100px]">
+                                                                    {product.barcode}
+                                                                </span>
+                                                            </Button>
+                                                        </PopoverTrigger>
+                                                        <PopoverContent className="w-auto p-3" onClick={(e) => e.stopPropagation()}>
+                                                            <div className="text-center mb-2">
+                                                                <h4 className="font-semibold">{product.productName}</h4>
+                                                                <p className="text-sm text-muted-foreground">{product.barcode}</p>
+                                                            </div>
+                                                            <BarcodeDisplay
+                                                                value={product.barcode}
+                                                                productName={product.productName}
+                                                                height={70}
+                                                            />
+                                                            <Button
+                                                                size="sm"
+                                                                variant="outline"
+                                                                className="mt-2 w-full"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    // Copy barcode to clipboard
+                                                                    navigator.clipboard.writeText(product.barcode || '');
+                                                                    // You could add a toast notification here
+                                                                }}
+                                                            >
+                                                                Copy Barcode
+                                                            </Button>
+                                                        </PopoverContent>
+                                                    </Popover>
+                                                ) : (
+                                                    <span className="text-muted-foreground text-sm italic">Not assigned</span>
+                                                )}
                                             </TableCell>
                                             <TableCell className="font-medium">₹{product.rate.toLocaleString()}</TableCell>
                                             <TableCell className="text-right">

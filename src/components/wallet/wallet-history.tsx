@@ -2,12 +2,12 @@
 
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle 
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
 } from "@/components/ui/card";
 import {
   Select,
@@ -25,13 +25,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { 
-  ArrowUpRight, 
-  ArrowDownLeft, 
-  Download, 
-  Filter, 
-  Search, 
-  Loader2, 
+import {
+  ArrowUpRight,
+  ArrowDownLeft,
+  Download,
+  Filter,
+  Search,
+  Loader2,
   ChevronLeft,
   ChevronRight,
   Info
@@ -72,7 +72,7 @@ export default function WalletHistory() {
     totalPages: 1,
     totalCount: 0
   });
-  
+
   const fetchTransactions = async (page = 1, type = filterType, query = searchQuery) => {
     try {
       setIsLoading(true);
@@ -80,7 +80,7 @@ export default function WalletHistory() {
       if (query) {
         url += `&search=${encodeURIComponent(query)}`;
       }
-      
+
       const response = await axios.get(url);
       setTransactions(response.data.transactions);
       setPagination({
@@ -100,32 +100,32 @@ export default function WalletHistory() {
       setIsLoading(false);
     }
   };
-  
+
   useEffect(() => {
     fetchTransactions(1, filterType, searchQuery);
   }, [filterType]);
-  
+
   const handleTypeChange = (value: string) => {
     setFilterType(value);
   };
-  
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     fetchTransactions(1, filterType, searchQuery);
   };
-  
+
   const handlePreviousPage = () => {
     if (pagination.page > 1) {
       fetchTransactions(pagination.page - 1, filterType, searchQuery);
     }
   };
-  
+
   const handleNextPage = () => {
     if (pagination.page < pagination.totalPages) {
       fetchTransactions(pagination.page + 1, filterType, searchQuery);
     }
   };
-  
+
   const exportTransactions = async () => {
     try {
       // In a real implementation, you would call an API endpoint that returns CSV data
@@ -142,7 +142,7 @@ export default function WalletHistory() {
       });
     }
   };
-  
+
   // Format date from string or Date object
   const formatDate = (dateString: string) => {
     try {
@@ -152,7 +152,7 @@ export default function WalletHistory() {
       return 'Invalid date';
     }
   };
-  
+
   return (
     <Card>
       <CardHeader>
@@ -163,7 +163,7 @@ export default function WalletHistory() {
               View all your wallet transactions
             </CardDescription>
           </div>
-          
+
           <div className="flex flex-col sm:flex-row gap-2">
             <div className="relative">
               <form onSubmit={handleSearch}>
@@ -177,9 +177,9 @@ export default function WalletHistory() {
                 />
               </form>
             </div>
-            
+
             <Select value={filterType} onValueChange={handleTypeChange}>
-              <SelectTrigger className="w-full sm:w-[130px]">
+              <SelectTrigger className="w-full ">
                 <div className="flex items-center">
                   <Filter className="mr-2 h-4 w-4" />
                   <SelectValue placeholder="All" />
@@ -191,14 +191,14 @@ export default function WalletHistory() {
                 <SelectItem value="debit">Debits</SelectItem>
               </SelectContent>
             </Select>
-            
+
             <Button variant="outline" size="icon" onClick={exportTransactions}>
               <Download className="h-4 w-4" />
             </Button>
           </div>
         </div>
       </CardHeader>
-      
+
       <CardContent>
         {isLoading ? (
           <div className="space-y-3">
@@ -267,7 +267,7 @@ export default function WalletHistory() {
                 ))}
               </TableBody>
             </Table>
-            
+
             {/* Pagination controls */}
             <div className="flex items-center justify-between mt-4">
               <div className="text-sm text-muted-foreground">

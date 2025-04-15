@@ -5,6 +5,7 @@ import { getDataFromToken } from '@/lib/getDataFromToken';
 import { User } from '@/models/userModel';
 
 // POST: Create Product
+
 export async function POST(request: Request) {
     try {
         await connectDB();
@@ -22,10 +23,18 @@ export async function POST(request: Request) {
 
         const productData = await request.json();
 
-        // Add organization ID to the product data
+        // Generate a unique barcode for the product
+        // Format: ORG prefix (first 3 chars of org ID) + timestamp + random 4-digit number
+        const orgPrefix = user.organization.toString().substring(0, 3).toUpperCase();
+        const timestamp = Date.now().toString().substring(7, 13); // Use part of timestamp
+        const randomSuffix = Math.floor(1000 + Math.random() * 9000); // 4-digit random number
+        const barcode = `${orgPrefix}${timestamp}${randomSuffix}`;
+
+        // Add organization ID and barcode to the product data
         const newProductData = {
             ...productData,
-            organization: user.organization
+            organization: user.organization,
+            barcode: barcode
         };
 
         const newProduct = new Product(newProductData);

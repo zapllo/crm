@@ -91,7 +91,7 @@ interface PaginationInfo {
 export default function MyQuotationsPage() {
   const router = useRouter();
   const { toast } = useToast();
-  
+
   // State
   const [quotations, setQuotations] = useState<QuotationItem[]>([]);
   const [pagination, setPagination] = useState<PaginationInfo>({
@@ -104,24 +104,24 @@ export default function MyQuotationsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [selectedQuotation, setSelectedQuotation] = useState<string | null>(null);
-  
+
   // Load quotations on component mount and when filters change
   useEffect(() => {
     fetchQuotations();
   }, [pagination.currentPage, statusFilter]);
-  
+
   const fetchQuotations = async () => {
     try {
       setIsLoading(true);
-      
+
       let url = `/api/quotations/mine?page=${pagination.currentPage}&limit=${pagination.limit}`;
-      
+
       if (statusFilter) {
         url += `&status=${statusFilter}`;
       }
-      
+
       const { data } = await axios.get(url);
-      
+
       setQuotations(data.quotations);
       setPagination(data.pagination);
     } catch (error) {
@@ -135,36 +135,36 @@ export default function MyQuotationsPage() {
       setIsLoading(false);
     }
   };
-  
+
   const handlePageChange = (page: number) => {
     setPagination({ ...pagination, currentPage: page });
   };
-  
+
   const handleStatusFilterChange = (status: string) => {
     setStatusFilter(status);
     setPagination({ ...pagination, currentPage: 0 }); // Reset to first page when filter changes
   };
-  
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     // For simplicity, we're just handling client-side filtering here
     // In a real app, you might want to send the search term to the API
     fetchQuotations();
   };
-  
+
   const handleViewQuotation = (id: string) => {
     router.push(`/quotations/${id}`);
   };
-  
+
   const handleEditQuotation = (id: string) => {
     router.push(`/quotations/${id}/edit`);
   };
-  
+
   const handleCopyLink = async (id: string) => {
     try {
       const { data } = await axios.get(`/api/quotations/${id}`);
       const shareableLink = `${window.location.origin}/share/quotation/${data.publicAccessToken}`;
-      
+
       await navigator.clipboard.writeText(shareableLink);
       toast({
         title: 'Success',
@@ -179,18 +179,18 @@ export default function MyQuotationsPage() {
       });
     }
   };
-  
+
   const handleDownloadPDF = async (id: string) => {
     try {
       toast({
         title: 'Generating PDF',
         description: 'Your quotation PDF is being generated...',
       });
-      
+
       const response = await axios.get(`/api/quotations/${id}/pdf`, {
         responseType: 'blob',
       });
-      
+
       // Create a download link and trigger it
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
@@ -199,7 +199,7 @@ export default function MyQuotationsPage() {
       document.body.appendChild(link);
       link.click();
       link.remove();
-      
+
       toast({
         title: 'Success',
         description: 'Quotation PDF downloaded successfully',
@@ -213,15 +213,15 @@ export default function MyQuotationsPage() {
       });
     }
   };
-  
+
   const handleSendQuotation = async (id: string) => {
     try {
       // This would send the quotation by email or update its status to 'sent'
       await axios.post(`/api/quotations/${id}/send`);
-      
+
       // Refresh the list to show updated status
       fetchQuotations();
-      
+
       toast({
         title: 'Success',
         description: 'Quotation sent successfully',
@@ -235,18 +235,18 @@ export default function MyQuotationsPage() {
       });
     }
   };
-  
+
   const handleDeleteQuotation = async (id: string) => {
     if (!confirm('Are you sure you want to delete this quotation?')) {
       return;
     }
-    
+
     try {
       await axios.delete(`/api/quotations/${id}`);
-      
+
       // Remove the deleted quotation from the list
       setQuotations(quotations.filter(quote => quote._id !== id));
-      
+
       toast({
         title: 'Success',
         description: 'Quotation deleted successfully',
@@ -260,7 +260,7 @@ export default function MyQuotationsPage() {
       });
     }
   };
-  
+
   // Format currency for display
   const formatCurrency = (amount: number, currency: string) => {
     return new Intl.NumberFormat('en-US', {
@@ -268,7 +268,7 @@ export default function MyQuotationsPage() {
       currency: currency || 'USD',
     }).format(amount);
   };
-  
+
   // Format date for display
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -277,7 +277,7 @@ export default function MyQuotationsPage() {
       day: 'numeric',
     });
   };
-  
+
   // Get status badge color
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -288,16 +288,16 @@ export default function MyQuotationsPage() {
       case 'approved':
         return <Badge variant="secondary" className="bg-green-500 hover:bg-green-600 text-white">Approved</Badge>;
       case 'rejected':
-        return <Badge variant="secondary" className="bg-red-500 hover:bg-red-600 text-white">Rejected</Badge>;
+        return <Badge variant="secondary" className="bg-red-500 hover:bg-red-600 text-white">Changes Requested</Badge>;
       case 'expired':
         return <Badge variant="secondary" className="bg-gray-500 hover:bg-gray-600 text-white">Expired</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
   };
-  
+
   // Filter quotations by search term
-  const filteredQuotations = quotations.filter(quote => 
+  const filteredQuotations = quotations.filter(quote =>
     quote.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     quote.quotationNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
     quote.lead.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -312,7 +312,7 @@ export default function MyQuotationsPage() {
           <FileText className="mr-2 h-4 w-4" /> Create New Quotation
         </Button>
       </div>
-      
+
       <Card className="mb-6">
         <CardHeader className="pb-3">
           <CardTitle>Quick Stats</CardTitle>
@@ -344,7 +344,7 @@ export default function MyQuotationsPage() {
           </div>
         </CardContent>
       </Card>
-      
+
       <div className="bg-card rounded-md border shadow-sm">
         {/* Filters */}
         <div className="p-4 border-b">
@@ -384,7 +384,7 @@ export default function MyQuotationsPage() {
             </div>
           </div>
         </div>
-        
+
         {/* Table */}
         {isLoading ? (
           <div className="flex justify-center items-center p-12">
@@ -477,7 +477,7 @@ export default function MyQuotationsPage() {
                             </DropdownMenuItem>
                           )}
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem 
+                          <DropdownMenuItem
                             onClick={() => handleDeleteQuotation(quote._id)}
                             className="text-red-600 focus:text-red-600"
                           >
@@ -492,7 +492,7 @@ export default function MyQuotationsPage() {
             </Table>
           </div>
         )}
-        
+
         {/* Pagination */}
         {pagination.pages > 1 && (
           <div className="p-4 border-t">

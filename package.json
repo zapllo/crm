@@ -58,6 +58,7 @@
     "embla-carousel-react": "^8.5.2",
     "framer-motion": "^12.4.1",
     "googleapis": "^148.0.0",
+    "jsbarcode": "^3.11.6",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.483.0",
     "mongoose": "^8.9.2",

@@ -346,7 +346,7 @@ export default function InfoBar() {
                 <Button variant="ghost" className="p-0 hover:bg-transparent h-9">
                   <div className="flex items-center gap-2 rounded-full px-2 :bg-accent transition-colors">
                     <Avatar className="h-8 w-8 border-2 border-primary/20">
-                      {/* <AvatarImage src={user?.profileImage} /> */}
+                      <AvatarImage src={user?.profileImage} />
                       <AvatarFallback className="bg-primary/10 text-primary">
                         {getInitials()}
                       </AvatarFallback>

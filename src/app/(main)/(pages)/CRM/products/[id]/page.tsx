@@ -22,7 +22,9 @@ import {
     Percent,
     RefreshCw,
     ZoomIn,
-    PencilLine
+    PencilLine,
+    Printer,
+    QrCode
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -63,6 +65,7 @@ import { usePermissions } from "@/hooks/use-permissions";
 import { canView, canAdd, canDelete, canEdit, usePermissionStatus } from "@/contexts/permissionsContext";
 import { NoPermissionFallback } from "@/components/ui/no-permission-fallback";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import BarcodeDisplay from "@/components/ui/barcode-display";
 
 
 interface Category {
@@ -87,6 +90,7 @@ interface IProduct {
     productName: string;
     description: string;
     hsnCode: string;
+    barcode: string;
     category: Category;
     unit: Unit;
     rate: number;
@@ -239,6 +243,89 @@ export default function ProductDetails() {
         }
     };
 
+// ... existing code ...
+
+// Modify the printBarcode function
+const printBarcode = () => {
+    // Create a new window for printing just the barcode
+    const printWindow = window.open('', '_blank');
+
+    if (printWindow) {
+        // Create the content with proper styling
+        printWindow.document.write(`
+            <html>
+                <head>
+                    <title>Print Barcode - ${product.productName}</title>
+                    <style>
+                        body {
+                            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                            margin: 0;
+                            padding: 20px;
+                            text-align: center;
+                        }
+                        .barcode-container {
+                            margin: 0 auto;
+                            max-width: 300px;
+                            padding: 10px;
+                            border: 1px solid #e5e7eb;
+                            border-radius: 8px;
+                        }
+                        .product-name {
+                            font-size: 14px;
+                            margin-bottom: 15px;
+                            font-weight: bold;
+                        }
+                        .barcode-number {
+                            font-size: 12px;
+                            margin-top: 10px;
+                            color: #4b5563;
+                        }
+                        @media print {
+                            @page {
+                                margin: 0;
+                                size: auto;
+                            }
+                            body {
+                                margin: 1cm;
+                            }
+                        }
+                    </style>
+                    <!-- Import JsBarcode library -->
+                    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+                </head>
+                <body>
+                    <div class="barcode-container">
+                        <div class="product-name">${product.productName}</div>
+                        <svg id="barcode"></svg>
+                        <div class="barcode-number">${product.barcode}</div>
+                    </div>
+
+                    <script>
+                        // Render the barcode using JsBarcode
+                        JsBarcode("#barcode", "${product.barcode}", {
+                            format: "CODE128",
+                            width: 2,
+                            height: 100,
+                            displayValue: false,
+                            margin: 10
+                        });
+
+                        // Print and close after a short delay to ensure rendering
+                        setTimeout(() => {
+                            window.print();
+                            window.close();
+                        }, 500);
+                    </script>
+                </body>
+            </html>
+        `);
+
+        printWindow.document.close();
+        printWindow.focus();
+    }
+};
+
+
     return (
         <div className="p-6 lg:p-8 max-w-7xl mx-auto">
             {/* Back button and actions */}
@@ -371,6 +458,41 @@ export default function ProductDetails() {
                                             <div className="text-sm text-muted-foreground">Price</div>
                                             <div className="font-medium text-lg">₹{product.rate.toLocaleString()}</div>
                                         </div>
+
+                                        {/* Add barcode display */}
+                                        <div className="md:col-span-2 space-y-2 border rounded-md p-4">
+                                            <div className="text-sm flex items-center gap-1 text-muted-foreground">
+                                                <QrCode className="h-3.5 w-3.5" /> Barcode
+                                            </div>
+                                            <div className="flex justify-center py-2">
+                                                {product.barcode ? (
+                                                    <BarcodeDisplay
+                                                        value={product.barcode}
+                                                        productName={product.productName}
+                                                    />
+                                                ) : (
+                                                    <div className="text-center p-4 border border-dashed rounded-md w-full">
+                                                        <p className="text-muted-foreground italic">No barcode assigned to this product</p>
+
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {product.barcode && (
+                                                <div className="flex justify-end gap-2 mt-2">
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={printBarcode}
+                                                        className="flex items-center gap-1"
+                                                    >
+                                                        <Printer className="h-3.5 w-3.5" /> Print Barcode
+                                                    </Button>
+                                                </div>
+                                            )}
+
+                                        </div>
+
 
                                         <div className="space-y-2">
                                             <div className="text-sm flex items-center gap-1 text-muted-foreground">
@@ -658,17 +780,19 @@ export default function ProductDetails() {
             </Dialog>
 
             {/* Edit Product Modal */}
-            {isEditModalOpen && (
-                <EditProduct
-                    isOpen={isEditModalOpen}
-                    onProductUpdated={() => {
-                        fetchProductDetails();
-                        fetchLeads();
-                    }}
-                    setIsOpen={setIsEditModalOpen}
-                    product={product as any}
-                />
-            )}
-        </div>
+            {
+                isEditModalOpen && (
+                    <EditProduct
+                        isOpen={isEditModalOpen}
+                        onProductUpdated={() => {
+                            fetchProductDetails();
+                            fetchLeads();
+                        }}
+                        setIsOpen={setIsEditModalOpen}
+                        product={product as any}
+                    />
+                )
+            }
+        </div >
     );
 }
