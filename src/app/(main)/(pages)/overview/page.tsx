@@ -25,6 +25,7 @@ import {
     Trophy,
     Sparkles,
     Users2,
+    ArrowRight,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -49,15 +50,33 @@ const OverviewPage = () => {
     const [searchQuery, setSearchQuery] = useState("");
     const [hoveredCard, setHoveredCard] = useState<string | null>(null);
 
+    // Add state to track onboarding completion
+    const [onboardingCompleted, setOnboardingCompleted] = useState(false);
+    const [onboardingProgress, setOnboardingProgress] = useState(0);
+
     useEffect(() => {
         const timer = setTimeout(() => setProgress(68), 500);
+
+        // Check onboarding completion from localStorage
+        const checkOnboardingStatus = () => {
+            const savedTasks = localStorage.getItem('onboarding_tasks');
+            if (savedTasks) {
+                const tasks = JSON.parse(savedTasks);
+                const completedCount = tasks.filter((task: any) => task.completed).length;
+                const progressPercentage = Math.round((completedCount / tasks.length) * 100);
+                setOnboardingProgress(progressPercentage);
+                setOnboardingCompleted(progressPercentage === 100);
+            }
+        };
+
+        checkOnboardingStatus();
+
         return () => clearTimeout(timer);
     }, []);
 
     const navigateToModule = (path: string) => {
         router.push(path);
     };
-
     // Main CRM modules
     const mainModules = [
         {
@@ -209,39 +228,50 @@ const OverviewPage = () => {
             <div className=" w- mt-8 space-y-6">
 
                 <div className="grid grid-cols-1 gap-6">
-                    {/* Quick access section */}
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-                        transition={{ duration: 0.5, delay: 0.4 }}
-                    >
-                        <Card className="border-2 border-primary/10 shadow-sm">
-                            <CardHeader className="pb-3">
-                                <CardTitle className="text-xl flex items-center gap-2">
-                                    <Sparkles className="h-5 w-5 text-primary" />
-                                    Quick Access
-                                </CardTitle>
-                                <CardDescription>Tools you'll need frequently</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                    {quickModules.map((module) => (
-                                        <Button
-                                            key={module.id}
-                                            variant="outline"
-                                            className="h-auto flex flex-col items-center justify-center py-4 gap-2 hover:border-primary/50 hover:bg-primary/5 transition-all duration-300"
-                                            onClick={() => navigateToModule(module.path)}
-                                        >
-                                            <div className={`h-10 w-10 rounded-full ${module.color} flex items-center justify-center text-white shadow-sm`}>
-                                                {module.icon}
-                                            </div>
-                                            <span className="text-sm font-medium">{module.title}</span>
-                                        </Button>
-                                    ))}
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </motion.div>
+                   {/* Replace Quick access section with Onboarding card but only if not completed */}
+                   {!onboardingCompleted && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+                            transition={{ duration: 0.5, delay: 0.4 }}
+                        >
+                            <Card className="border-2 border-primary/10 shadow-sm">
+                                <CardHeader className="pb-3">
+                                    <CardTitle className="text-xl flex items-center gap-2">
+                                        <CheckCircle2 className="h-5 w-5 text-primary" />
+                                        Complete Your Setup
+                                    </CardTitle>
+                                    <CardDescription>
+                                        {onboardingProgress < 50
+                                            ? "Get started by completing these essential setup tasks"
+                                            : "You're making great progress! Complete remaining tasks to finish setup"
+                                        }
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="mb-4">
+                                        <div className="flex justify-between mb-2 items-center">
+                                            <span className="text-sm text-muted-foreground">Setup Progress</span>
+                                            <span className="text-sm font-medium">{onboardingProgress}%</span>
+                                        </div>
+                                        <Progress value={onboardingProgress} className="h-2" />
+                                    </div>
+                                    <Button
+                                        onClick={() => router.push('/checklist')}
+                                        className="w-"
+                                    >
+                                        {onboardingProgress === 0
+                                            ? "Start Onboarding"
+                                            : onboardingProgress < 100
+                                                ? "Continue Setup"
+                                                : "View Completed Tasks"
+                                        }
+                                        <ArrowRight className="ml-2 h-4 w-4" />
+                                    </Button>
+                                </CardContent>
+                            </Card>
+                        </motion.div>
+                    )}
 
                     {/* Main modules section */}
                     <div>

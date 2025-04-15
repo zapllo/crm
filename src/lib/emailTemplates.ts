@@ -377,3 +377,100 @@ interface FollowupReminderEmailProps {
       html
     });
   }
+
+
+  // Add this new interface and function for support ticket emails
+interface TicketCreationEmailProps {
+    to: string;
+    firstName: string;
+    ticketDetails: {
+      ticketId: string;
+      subject: string;
+      category: string;
+      priority: string;
+      message: string;
+    };
+  }
+
+  export async function sendTicketCreationEmail({
+    to,
+    firstName,
+    ticketDetails
+  }: TicketCreationEmailProps): Promise<void> {
+    const subject = `🎫 Support Ticket Created: ${ticketDetails.subject}`;
+
+    const priorityColor = {
+      high: '#EA5455',
+      medium: '#FFB547',
+      low: '#28C76F'
+    }[ticketDetails.priority.toLowerCase()] || '#7451F8';
+
+    const html = `
+    <body style="margin: 0; padding: 0; font-family: Arial, sans-serif;">
+        <div style="background-color: #f0f4f8; padding: 20px;">
+            <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">
+                <div style="padding: 20px; text-align: center;">
+                    <img src="https://res.cloudinary.com/dndzbt8al/image/upload/v1724000375/orjojzjia7vfiycfzfly.png" alt="Zapllo Logo" style="max-width: 150px; height: auto;">
+                </div>
+                <div style="background: linear-gradient(90deg, #7451F8, #F57E57); color: #ffffff; padding: 20px 40px; font-size: 16px; font-weight: bold; text-align: center; border-radius: 12px; margin: 20px auto; max-width: 80%;">
+                    <h1 style="margin: 0; font-size: 20px;">Support Ticket Received</h1>
+                </div>
+                <div style="padding: 20px;">
+                    <p><strong>Dear ${firstName},</strong></p>
+                    <p>Thank you for submitting your support ticket. Our team has received your request and will respond as soon as possible.</p>
+                    <div style="border-radius:8px; margin-top:4px; color:#000000; padding:10px; background-color:#ECF1F6">
+                        <p><strong>Ticket ID:</strong> ${ticketDetails.ticketId}</p>
+                        <p><strong>Subject:</strong> ${ticketDetails.subject}</p>
+                        <p><strong>Category:</strong> ${ticketDetails.category}</p>
+                        <p><strong>Priority:</strong> <span style="color: ${priorityColor}; font-weight: bold;">${ticketDetails.priority}</span></p>
+                        <p><strong>Message:</strong></p>
+                        <div style="background-color: #ffffff; padding: 10px; border-radius: 4px; margin-top: 5px;">
+                            ${ticketDetails.message.replace(/\n/g, '<br>')}
+                        </div>
+                    </div>
+                    <div style="text-align: center; margin-top: 20px;">
+                        <a href="https://crm.zapllo.com/help/tickets" style="background-color: #0C874B; color: #ffffff; padding: 10px 20px; text-decoration: none; border-radius: 5px;">View Ticket Status</a>
+                    </div>
+                    <p style="margin-top: 20px;">
+                        We'll update you as soon as there are developments with your ticket. You can also check the status of your ticket by logging into your account.
+                    </p>
+                    <p style="margin-top: 20px; text-align: center; font-size: 12px; color: #888888;">This is an automated notification. Please do not reply.</p>
+                </div>
+            </div>
+        </div>
+    </body>
+    `;
+
+    const text = `
+    Dear ${firstName},
+
+    Thank you for submitting your support ticket. Our team has received your request and will respond as soon as possible.
+
+    TICKET DETAILS:
+    Ticket ID: ${ticketDetails.ticketId}
+    Subject: ${ticketDetails.subject}
+    Category: ${ticketDetails.category}
+    Priority: ${ticketDetails.priority}
+
+    Message:
+    ${ticketDetails.message}
+
+    You can check the status of your ticket by visiting:
+    https://crm.zapllo.com/help/tickets
+
+    We'll update you as soon as there are developments with your ticket.
+
+    Best regards,
+    The Zapllo Support Team
+
+    ---
+    This is an automated notification. Please do not reply.
+    `;
+
+    await sendEmail({
+      to,
+      subject,
+      text,
+      html
+    });
+  }

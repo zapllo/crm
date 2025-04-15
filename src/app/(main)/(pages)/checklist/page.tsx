@@ -37,6 +37,7 @@ import {
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
+import Link from 'next/link'
 
 // Define the task type
 interface Task {
@@ -54,21 +55,21 @@ interface Task {
 
 // Function to get icon component by name
 const getIconByName = (iconName: string) => {
-    switch (iconName) {
-      case 'Users': return <Users className="h-5 w-5 text-blue-500" />;
-      case 'Building': return <Building className="h-5 w-5 text-blue-500" />;
-      case 'UserPlus': return <UserPlus className="h-5 w-5 text-green-500" />;
-      case 'Briefcase': return <Briefcase className="h-5 w-5 text-green-500" />;
-      case 'Mail': return <Mail className="h-5 w-5 text-purple-500" />;
-      case 'Settings': return <Settings className="h-5 w-5 text-amber-500" />;
-      case 'FileText': return <FileText className="h-5 w-5 text-green-500" />;
-      case 'BarChart3': return <BarChart3 className="h-5 w-5 text-amber-500" />;
-      case 'HeartHandshake': return <HeartHandshake className="h-5 w-5 text-purple-500" />;
-      case 'Megaphone': return <Megaphone className="h-5 w-5 text-amber-500" />;
-      case 'CalendarClock': return <CalendarClock className="h-5 w-5 text-purple-500" />;
-      default: return <Circle className="h-5 w-5 text-blue-500" />;
-    }
-  };
+  switch (iconName) {
+    case 'Users': return <Users className="h-5 w-5 text-blue-500" />;
+    case 'Building': return <Building className="h-5 w-5 text-blue-500" />;
+    case 'UserPlus': return <UserPlus className="h-5 w-5 text-green-500" />;
+    case 'Briefcase': return <Briefcase className="h-5 w-5 text-green-500" />;
+    case 'Mail': return <Mail className="h-5 w-5 text-purple-500" />;
+    case 'Settings': return <Settings className="h-5 w-5 text-amber-500" />;
+    case 'FileText': return <FileText className="h-5 w-5 text-green-500" />;
+    case 'BarChart3': return <BarChart3 className="h-5 w-5 text-amber-500" />;
+    case 'HeartHandshake': return <HeartHandshake className="h-5 w-5 text-purple-500" />;
+    case 'Megaphone': return <Megaphone className="h-5 w-5 text-amber-500" />;
+    case 'CalendarClock': return <CalendarClock className="h-5 w-5 text-purple-500" />;
+    default: return <Circle className="h-5 w-5 text-blue-500" />;
+  }
+};
 
 export default function ChecklistPage() {
   const { toast } = useToast();
@@ -214,30 +215,30 @@ export default function ChecklistPage() {
               link: '/settings/api'
             }
           },
-        //   {
-        //     id: 'emailTemplate',
-        //     title: 'Create an email template',
-        //     description: 'Save time by creating reusable email templates for common scenarios.',
-        //     completed: false,
-        //     category: 'advanced',
-        //     iconName: <Megaphone className="h-5 w-5 text-amber-500" />,
-        //     action: {
-        //       text: 'Create Template',
-        //       link: '/settings/email-templates'
-        //     }
-        //   },
-        //   {
-        //     id: 'scheduleDemo',
-        //     title: 'Schedule your first meeting',
-        //     description: 'Set up a meeting or demo with a contact using our calendar integration.',
-        //     completed: false,
-        //     category: 'connect',
-        //     iconName: <CalendarClock className="h-5 w-5 text-purple-500" />,
-        //     action: {
-        //       text: 'Schedule',
-        //       link: '/calendar'
-        //     }
-        //   },
+          //   {
+          //     id: 'emailTemplate',
+          //     title: 'Create an email template',
+          //     description: 'Save time by creating reusable email templates for common scenarios.',
+          //     completed: false,
+          //     category: 'advanced',
+          //     iconName: <Megaphone className="h-5 w-5 text-amber-500" />,
+          //     action: {
+          //       text: 'Create Template',
+          //       link: '/settings/email-templates'
+          //     }
+          //   },
+          //   {
+          //     id: 'scheduleDemo',
+          //     title: 'Schedule your first meeting',
+          //     description: 'Set up a meeting or demo with a contact using our calendar integration.',
+          //     completed: false,
+          //     category: 'connect',
+          //     iconName: <CalendarClock className="h-5 w-5 text-purple-500" />,
+          //     action: {
+          //       text: 'Schedule',
+          //       link: '/calendar'
+          //     }
+          //   },
         ]);
       }
 
@@ -348,11 +349,11 @@ export default function ChecklistPage() {
   };
 
   return (
-    <div className="w-full pt-20 pb-16 px-4 mt-16 h-full overflow-y-auto scrollbar-hide md:px-6 lg:px-8"
-    style={{
+    <div className="w-full pt-12 pb-16 px-4 mt-12 h-full overflow-y-auto scrollbar-hide md:px-6 lg:px-8"
+      style={{
         maxHeight: 'calc(100vh - 16px)', // Adjust based on your layout
         scrollBehavior: 'auto' // Prevent smooth scrolling which can interfere
-    }}>
+      }}>
       <div>
         <h2 className="text-2xl font-bold tracking-tight">Getting Started</h2>
         <p className="text-muted-foreground">
@@ -381,10 +382,10 @@ export default function ChecklistPage() {
               </CardTitle>
               <CardDescription>
                 {progress < 25 ? "Let's start setting up your CRM! Complete these tasks to get started." :
-                 progress < 50 ? "Good start! Keep going to customize your CRM further." :
-                 progress < 75 ? "You're making great progress! Just a few more tasks to go." :
-                 progress < 100 ? "Almost there! Complete the remaining tasks to finish your setup." :
-                 "Congratulations! You've completed all the recommended tasks."}
+                  progress < 50 ? "Good start! Keep going to customize your CRM further." :
+                    progress < 75 ? "You're making great progress! Just a few more tasks to go." :
+                      progress < 100 ? "Almost there! Complete the remaining tasks to finish your setup." :
+                        "Congratulations! You've completed all the recommended tasks."}
               </CardDescription>
             </div>
 
@@ -394,13 +395,12 @@ export default function ChecklistPage() {
               </div>
               <div className="w-32 h-2 bg-muted rounded-full overflow-hidden">
                 <div
-                  className={`h-full rounded-full ${
-                    progress < 25 ? 'bg-blue-500' :
+                  className={`h-full rounded-full ${progress < 25 ? 'bg-blue-500' :
                     progress < 50 ? 'bg-indigo-500' :
-                    progress < 75 ? 'bg-purple-500' :
-                    progress < 100 ? 'bg-pink-500' :
-                    'bg-gradient-to-r from-yellow-500 to-amber-500'
-                  }`}
+                      progress < 75 ? 'bg-purple-500' :
+                        progress < 100 ? 'bg-pink-500' :
+                          'bg-gradient-to-r from-yellow-500 to-amber-500'
+                    }`}
                   style={{ width: `${progress}%` }}
                 />
               </div>
@@ -484,11 +484,10 @@ export default function ChecklistPage() {
               {filteredTasks.map((task) => (
                 <div
                   key={task.id}
-                  className={`p-4 border rounded-lg transition-all duration-300 ${
-                    task.completed
-                      ? 'bg-muted/40 border-muted'
-                      : 'hover:border-primary/50 hover:bg-accent cursor-pointer'
-                  } ${recentlyCompleted === task.id ? 'animate-pulse border-green-500 bg-green-50 dark:bg-green-900/20' : ''}`}
+                  className={`p-4 border rounded-lg transition-all duration-300 ${task.completed
+                    ? 'bg-muted/40 border-muted'
+                    : 'hover:border-primary/50 hover:bg-accent cursor-pointer'
+                    } ${recentlyCompleted === task.id ? 'animate-pulse border-green-500 bg-green-50 dark:bg-green-900/20' : ''}`}
                   onClick={() => {
                     if (!task.completed) {
                       toggleTask(task.id);
@@ -582,7 +581,7 @@ export default function ChecklistPage() {
       </Card>
 
       {/* Pro Tips Card */}
-      <Card>
+      <Card className='mt-4'>
         <CardHeader>
           <CardTitle>Pro Tips</CardTitle>
           <CardDescription>
@@ -601,9 +600,9 @@ export default function ChecklistPage() {
               <p className="text-sm text-muted-foreground">
                 Organize your contacts and deals with tags for easy filtering and segmentation.
               </p>
-              <Button variant="link" className="p-0 h-auto mt-2">
+              {/* <Button variant="link" className="p-0 h-auto mt-2">
                 Learn about tags <ArrowRight className="h-3 w-3 ml-1" />
-              </Button>
+              </Button> */}
             </div>
 
             <div className="p-4 border rounded-lg">
@@ -616,9 +615,9 @@ export default function ChecklistPage() {
               <p className="text-sm text-muted-foreground">
                 Never miss a follow-up by scheduling tasks and reminders for your deals.
               </p>
-              <Button variant="link" className="p-0 h-auto mt-2">
+              {/* <Button variant="link" className="p-0 h-auto mt-2">
                 View calendar <ArrowRight className="h-3 w-3 ml-1" />
-              </Button>
+              </Button> */}
             </div>
 
             <div className="p-4 border rounded-lg">
@@ -631,50 +630,14 @@ export default function ChecklistPage() {
               <p className="text-sm text-muted-foreground">
                 Check your weekly reports to gain insights into your sales pipeline and activities.
               </p>
-              <Button variant="link" className="p-0 h-auto mt-2">
+              {/* <Button variant="link" className="p-0 h-auto mt-2">
                 Go to reports <ArrowRight className="h-3 w-3 ml-1" />
-              </Button>
+              </Button> */}
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Quick Help Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Need Help?</CardTitle>
-          <CardDescription>
-            Get assistance with setting up your CRM
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-3">
-            <Button variant="outline" className="h-auto py-4 flex flex-col items-center justify-center gap-2">
-              <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
-                <FileText className="h-5 w-5 text-blue-600" />
-              </div>
-              <span className="font-medium">View Documentation</span>
-              <span className="text-xs text-muted-foreground">Browse our detailed guides</span>
-            </Button>
-
-            <Button variant="outline" className="h-auto py-4 flex flex-col items-center justify-center gap-2">
-              <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center">
-                <Users className="h-5 w-5 text-purple-600" />
-              </div>
-              <span className="font-medium">Book a Demo</span>
-              <span className="text-xs text-muted-foreground">Schedule a walkthrough</span>
-            </Button>
-
-            <Button variant="outline" className="h-auto py-4 flex flex-col items-center justify-center gap-2">
-              <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center">
-                <HeartHandshake className="h-5 w-5 text-amber-600" />
-              </div>
-              <span className="font-medium">Contact Support</span>
-              <span className="text-xs text-muted-foreground">Get help from our team</span>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Reset Button at the bottom */}
       {tasks.some(task => task.completed) && (
