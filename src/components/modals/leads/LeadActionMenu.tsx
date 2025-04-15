@@ -117,15 +117,7 @@ export default function LeadActionMenu({
             </DropdownMenuItem>
           )}
 
-          {canMove && (
-            <MoveLeadDialog
-              leadId={leadId}
-              currentStage={currentStage}
-              onLeadMoved={() => {
-                if (onMoveSuccess) onMoveSuccess();
-              }}
-            />
-          )}
+        
 
           {canDelete && (
             <>

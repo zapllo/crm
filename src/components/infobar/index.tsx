@@ -289,7 +289,7 @@ export default function InfoBar() {
                     variant="ghost"
                     size="icon"
                     className="rounded-full"
-                    onClick={() => router.push("/help/tutorials")}
+                    onClick={() => router.push("/help")}
                   >
                     <HelpCircle className="h-5 w-5" />
                   </Button>

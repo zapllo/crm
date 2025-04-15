@@ -86,7 +86,11 @@ function HelpPageContent() {
   }
 
   return (
-    <div className="container max-w-7xl h-full overflow-y-scroll max-h-screen mx-auto p-10 mt-12 py-8">
+    <div className="w-full pt-16 pb-16 px-4 mt-8 p-10 h-full overflow-y-auto scrollbar-hide md:px-6 lg:px-8"
+        style={{
+            maxHeight: 'calc(100vh - 16px)', // Adjust based on your layout
+            scrollBehavior: 'auto' // Prevent smooth scrolling which can interfere
+        }}>
       <HelpHeader setSearchOpen={setSearchOpen} />
 
       <Tabs defaultValue={activeTab} value={activeTab} onValueChange={setActiveTab} className="mt-10">
@@ -313,7 +317,7 @@ function GettingStartedTab() {
               />
             </div> */}
 
-            {/* <Card className="bg-primary/5 border-primary/20">
+            <Card className="bg-primary/5 border-primary/20">
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <CheckCircle className="h-5 w-5 mr-2 text-primary" />
@@ -324,11 +328,11 @@ function GettingStartedTab() {
                 <p className="text-muted-foreground">
                   Follow our guided checklist to set up your CRM completely. Our step-by-step process ensures you get the most from Zapllo CRM.
                 </p>
-                {/* <Button className="mt-4" variant="outline" onClick={() => router.push('/checklist')}>
+                <Button className="mt-4" variant="outline" onClick={() => router.push('/checklist')}>
                   View Onboarding Checklist
-                </Button> */}
-              {/* </CardContent>
-            </Card> */}
+                </Button>
+            </CardContent>
+            </Card>
           </div>
         </div>
 
@@ -1473,7 +1477,7 @@ function ContactSupportTab() {
                   <h3 className="font-medium text-sm">Phone Support</h3>
                   <p className="text-sm text-muted-foreground">+91 8910748670</p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Monday - Friday, 9:00 AM - 5:00 PM ET
+                    Monday - Friday, 9:00 AM - 5:00 PM IST
                   </p>
                 </div>
               </div>
@@ -1515,11 +1519,11 @@ function ContactSupportTab() {
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <span className="text-sm">Monday - Friday</span>
-                  <span className="text-sm font-medium">9:00 AM - 8:00 PM ET</span>
+                  <span className="text-sm font-medium">9:00 AM - 8:00 PM IST</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm">Saturday</span>
-                  <span className="text-sm font-medium">10:00 AM - 6:00 PM ET</span>
+                  <span className="text-sm font-medium">10:00 AM - 6:00 PM IST</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm">Sunday</span>

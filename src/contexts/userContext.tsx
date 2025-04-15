@@ -9,6 +9,10 @@ interface Organization {
   isPro: boolean;
   subscribedPlan?: string;
   subscriptionExpires?: string;
+  subscribedUserCount?: number; // Added this field
+  activeSubscriptions?: string[]; // Added this field
+  credits: number; // Make sure this field is included
+  subscriptionDetails?: any; // Optional additional subscription details
 }
 
 interface IUser {

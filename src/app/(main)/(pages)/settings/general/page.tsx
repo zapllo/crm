@@ -1,15 +1,15 @@
 "use client";
 import React, { useState } from 'react';
-import { 
-  CloudUpload, 
-  ShieldPlus, 
-  Settings, 
-  UserCog, 
-  Globe, 
-  Database, 
-  Bell, 
-  RefreshCw, 
-  HardDrive, 
+import {
+  CloudUpload,
+  ShieldPlus,
+  Settings,
+  UserCog,
+  Globe,
+  Database,
+  Bell,
+  RefreshCw,
+  HardDrive,
   LayoutDashboard,
   ChevronRight,
   PlusCircle
@@ -22,10 +22,10 @@ import AddRole from '@/components/modals/roles/AddRole';
 
 export default function GeneralSettings() {
   const [isAddRoleOpen, setIsAddRoleOpen] = useState(false);
-  
+
   // Dummy organization ID - in a real app this would come from your auth context
   const orgId = "org_12345";
-  
+
   // Define settings categories for better organization
   const settingsCategories = [
     {
@@ -42,57 +42,57 @@ export default function GeneralSettings() {
         },
       ]
     },
-    {
-      title: "Data Management",
-      description: "Import, export and manage your data",
-      icon: <Database className="h-5 w-5" />,
-      items: [
-        {
-          title: "Bulk Data Import",
-          description: "Import data from CSV, Excel or other sources",
-          icon: <CloudUpload className="h-4 w-4" />,
-          action: () => console.log("Import data"),
-          badge: { text: "Data", variant: "outline" as const }
-        },
-        {
-          title: "Data Backup",
-          description: "Configure automatic backups of your data",
-          icon: <HardDrive className="h-4 w-4" />,
-          action: () => console.log("Backup settings")
-        },
-        {
-          title: "Activity Logs",
-          description: "View system and user activity history",
-          icon: <RefreshCw className="h-4 w-4" />,
-          action: () => console.log("View logs")
-        }
-      ]
-    },
-    {
-      title: "System Settings",
-      description: "Configure global system preferences",
-      icon: <Settings className="h-5 w-5" />,
-      items: [
-        {
-          title: "Notification Preferences",
-          description: "Configure email and in-app notifications",
-          icon: <Bell className="h-4 w-4" />,
-          action: () => console.log("Notification settings")
-        },
-        {
-          title: "Regional Settings",
-          description: "Configure timezone, date format and language",
-          icon: <Globe className="h-4 w-4" />,
-          action: () => console.log("Regional settings")
-        },
-        {
-          title: "Dashboard Layout",
-          description: "Configure default views and dashboard layout",
-          icon: <LayoutDashboard className="h-4 w-4" />,
-          action: () => console.log("Dashboard settings")
-        }
-      ]
-    }
+    // {
+    //   title: "Data Management",
+    //   description: "Import, export and manage your data",
+    //   icon: <Database className="h-5 w-5" />,
+    //   items: [
+    //     {
+    //       title: "Bulk Data Import",
+    //       description: "Import data from CSV, Excel or other sources",
+    //       icon: <CloudUpload className="h-4 w-4" />,
+    //       action: () => console.log("Import data"),
+    //       badge: { text: "Data", variant: "outline" as const }
+    //     },
+    //     {
+    //       title: "Data Backup",
+    //       description: "Configure automatic backups of your data",
+    //       icon: <HardDrive className="h-4 w-4" />,
+    //       action: () => console.log("Backup settings")
+    //     },
+    //     {
+    //       title: "Activity Logs",
+    //       description: "View system and user activity history",
+    //       icon: <RefreshCw className="h-4 w-4" />,
+    //       action: () => console.log("View logs")
+    //     }
+    //   ]
+    // },
+    // {
+    //   title: "System Settings",
+    //   description: "Configure global system preferences",
+    //   icon: <Settings className="h-5 w-5" />,
+    //   items: [
+    //     {
+    //       title: "Notification Preferences",
+    //       description: "Configure email and in-app notifications",
+    //       icon: <Bell className="h-4 w-4" />,
+    //       action: () => console.log("Notification settings")
+    //     },
+    //     {
+    //       title: "Regional Settings",
+    //       description: "Configure timezone, date format and language",
+    //       icon: <Globe className="h-4 w-4" />,
+    //       action: () => console.log("Regional settings")
+    //     },
+    //     {
+    //       title: "Dashboard Layout",
+    //       description: "Configure default views and dashboard layout",
+    //       icon: <LayoutDashboard className="h-4 w-4" />,
+    //       action: () => console.log("Dashboard settings")
+    //     }
+    //   ]
+    // }
   ];
 
   const handleRoleAdded = () => {
@@ -127,8 +127,8 @@ export default function GeneralSettings() {
             <CardContent className="p-0">
               <div className="divide-y">
                 {category.items.map((item, itemIndex) => (
-                  <div 
-                    key={itemIndex} 
+                  <div
+                    key={itemIndex}
                     className="flex items-center justify-between p-4 hover:bg-muted/30 transition-colors cursor-pointer"
                     onClick={item.action}
                   >
@@ -155,8 +155,8 @@ export default function GeneralSettings() {
             </CardContent>
             {index === 0 && ( // Only add this for the first card
               <CardFooter className="bg-muted/10 border-t flex justify-center p-2">
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   className="w-full text-[#815BF5] hover:bg-[#815BF5]/10 hover:text-[#815BF5]"
                   onClick={() => setIsAddRoleOpen(true)}
                 >

@@ -61,6 +61,47 @@ export default function CallHistory({ contactId, limit = 5 }: { contactId?: stri
     const [filter, setFilter] = useState<'all' | 'inbound' | 'outbound'>('all');
     const [searchTerm, setSearchTerm] = useState('');
 
+    const downloadRecording = async (url: string, filename: string) => {
+        try {
+            // Show loading toast
+            toast({
+                title: "Downloading recording...",
+                description: "Please wait while we prepare your download.",
+            });
+
+            // Fetch the audio file
+            const response = await fetch(url);
+            const blob = await response.blob();
+
+            // Create download link
+            const downloadUrl = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = downloadUrl;
+            link.setAttribute('download', filename);
+
+            // Append to the body, click and remove
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+
+            // Clean up the object URL
+            window.URL.revokeObjectURL(downloadUrl);
+
+            // Success toast
+            toast({
+                title: "Download complete",
+                description: "Your recording has been downloaded successfully.",
+            });
+        } catch (error) {
+            console.error('Download failed:', error);
+            toast({
+                title: "Download failed",
+                description: "There was a problem downloading the recording. Please try again.",
+                variant: "destructive",
+            });
+        }
+    };
+
     useEffect(() => {
         fetchCalls();
     }, [contactId]);
@@ -254,6 +295,10 @@ export default function CallHistory({ contactId, limit = 5 }: { contactId?: stri
                                                                         href={call.recordingUrl}
                                                                         download
                                                                         className="flex items-center w-full"
+                                                                        onClick={(e) => {
+                                                                            e.preventDefault();
+                                                                            downloadRecording(call.recordingUrl || '', `ZC_Recording_${call._id}.mp3`);
+                                                                        }}
                                                                     >
                                                                         Download Recording
                                                                     </a>
@@ -350,7 +395,7 @@ export default function CallHistory({ contactId, limit = 5 }: { contactId?: stri
                                 </div>
                             </div>
 
-                            {selectedCall.recordingUrl && (
+                            {selectedCall?.recordingUrl && (
                                 <div className="space-y-2">
                                     <p className="text-sm font-medium">Call Recording</p>
                                     <div className="bg-muted rounded-md p-3">
@@ -358,7 +403,7 @@ export default function CallHistory({ contactId, limit = 5 }: { contactId?: stri
                                             <source src={selectedCall.recordingUrl} type="audio/mpeg" />
                                             Your browser does not support the audio element.
                                         </audio>
-                                        <Button
+                                        {/* <Button
                                             variant="outline"
                                             size="sm"
                                             className="w-full mt-2 gap-2"
@@ -372,7 +417,7 @@ export default function CallHistory({ contactId, limit = 5 }: { contactId?: stri
                                                 Download Recording
                                             </a>
 
-                                        </Button>
+                                        </Button> */}
                                     </div>
                                 </div>
                             )}

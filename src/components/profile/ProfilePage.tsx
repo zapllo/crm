@@ -49,7 +49,11 @@ export function ProfilePage() {
   }
 
   return (
-    <div className="container mt-12  h-full max-h-screen scrollbar-hide overflow-y-scroll mx-auto py-10 px-4 max-w-5xl">
+    <div className="w-full pt-12 pb-16 px-4 mt-12 h-full overflow-y-auto scrollbar-hide md:px-6 lg:px-8"
+    style={{
+        maxHeight: 'calc(100vh - 16px)', // Adjust based on your layout
+        scrollBehavior: 'auto' // Prevent smooth scrolling which can interfere
+    }}>
       <h1 className="text-3xl font-bold mb-8 text-start">My Profile</h1>
 
       <div className="grid md:grid-cols-[300px_1fr] gap-8">
@@ -72,13 +76,13 @@ export function ProfilePage() {
               <CardTitle className="text-xl">Quick Links</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <Link href="/tickets">
+              <Link href="/help/tickets">
                 <Button variant="ghost" className="w-full justify-start">
                   <Ticket className="mr-2 h-4 w-4" />
                   My Tickets
                 </Button>
               </Link>
-              <Link href="/tutorials">
+              <Link href="https://zapllo.com/tutorials-zapllo">
                 <Button variant="ghost" className="w-full justify-start">
                   <BookOpen className="mr-2 h-4 w-4" />
                   Tutorials

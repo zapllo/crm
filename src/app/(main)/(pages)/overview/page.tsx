@@ -201,9 +201,13 @@ const OverviewPage = () => {
     };
 
     return (
-        <div className="w-full pt-8 pb-16  px-4 mt-8 h-full max-h-screen overflow-y-auto scrollbar-hide md:px-6 lg:px-8" ref={ref}>
+        <div className="w-full pt-8 pb-16 px-4 mt-8 h-full overflow-y-auto scrollbar-hide md:px-6 lg:px-8"
+        style={{
+            maxHeight: 'calc(100vh - 16px)', // Adjust based on your layout
+            scrollBehavior: 'auto' // Prevent smooth scrolling which can interfere
+        }} ref={ref}>
             <div className=" w- mt-8 space-y-6">
-               
+
                 <div className="grid grid-cols-1 gap-6">
                     {/* Quick access section */}
                     <motion.div
@@ -305,7 +309,7 @@ const OverviewPage = () => {
                                                                 transition={{ duration: 0.2 }}
                                                                 className="text-sm text-muted-foreground"
                                                             >
-                                                              
+
                                                             </motion.div>
                                                         )}
                                                     </AnimatePresence>

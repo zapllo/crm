@@ -4,29 +4,29 @@ import { useState, useEffect } from 'react'
 import { useToast } from "@/hooks/use-toast"
 import confetti from 'canvas-confetti'
 import { Progress } from "@/components/ui/progress"
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { 
-  CheckCircle2, 
-  Circle, 
-  Sparkles, 
-  ArrowRight, 
-  Trophy, 
-  UserPlus, 
-  Settings, 
-  Mail, 
-  Phone, 
-  Users, 
-  Building, 
-  FileText, 
-  CalendarClock, 
+import {
+  CheckCircle2,
+  Circle,
+  Sparkles,
+  ArrowRight,
+  Trophy,
+  UserPlus,
+  Settings,
+  Mail,
+  Phone,
+  Users,
+  Building,
+  FileText,
+  CalendarClock,
   Briefcase,
   HeartHandshake,
   Megaphone,
@@ -83,12 +83,12 @@ export default function ChecklistPage() {
   useEffect(() => {
     const loadTasks = async () => {
       setLoading(true);
-      
+
       // Simulate fetching from API
       await new Promise(resolve => setTimeout(resolve, 800));
-      
+
       const savedTasks = localStorage.getItem('onboarding_tasks');
-      
+
       if (savedTasks) {
         setTasks(JSON.parse(savedTasks));
       } else {
@@ -240,10 +240,10 @@ export default function ChecklistPage() {
         //   },
         ]);
       }
-      
+
       setLoading(false);
     };
-    
+
     loadTasks();
   }, []);
 
@@ -253,7 +253,7 @@ export default function ChecklistPage() {
       const completedCount = tasks.filter(task => task.completed).length;
       const newProgress = Math.round((completedCount / tasks.length) * 100);
       setProgress(newProgress);
-      
+
       // Save tasks to localStorage
       localStorage.setItem('onboarding_tasks', JSON.stringify(tasks));
     }
@@ -280,13 +280,13 @@ export default function ChecklistPage() {
   // Trigger the confetti animation
   const triggerConfetti = () => {
     setShowConfetti(true);
-    
+
     confetti({
       particleCount: 100,
       spread: 70,
       origin: { y: 0.6 }
     });
-    
+
     setTimeout(() => {
       setShowConfetti(false);
     }, 4000);
@@ -298,17 +298,17 @@ export default function ChecklistPage() {
       const updatedTasks = prevTasks.map(task => {
         if (task.id === id) {
           const newCompleted = !task.completed;
-          
+
           // If newly completed, trigger animation and notification
           if (newCompleted) {
             setRecentlyCompleted(id);
             setTimeout(() => setRecentlyCompleted(null), 3000);
-            
+
             toast({
               title: "✅ Task completed!",
               description: `You've completed: ${task.title}`,
             });
-            
+
             // Small confetti for individual task completion
             confetti({
               particleCount: 30,
@@ -316,19 +316,19 @@ export default function ChecklistPage() {
               origin: { y: 0.8 }
             });
           }
-          
+
           return { ...task, completed: newCompleted };
         }
         return task;
       });
-      
+
       return updatedTasks;
     });
   };
 
   // Filter tasks by category
-  const filteredTasks = activeCategory === 'all' 
-    ? tasks 
+  const filteredTasks = activeCategory === 'all'
+    ? tasks
     : tasks.filter(task => task.category === activeCategory);
 
   // Count tasks in each category
@@ -348,7 +348,11 @@ export default function ChecklistPage() {
   };
 
   return (
-    <div className="space-y-6 p-10 h-full max-h-screen overflow-y-scroll mt-12">
+    <div className="w-full pt-20 pb-16 px-4 mt-16 h-full overflow-y-auto scrollbar-hide md:px-6 lg:px-8"
+    style={{
+        maxHeight: 'calc(100vh - 16px)', // Adjust based on your layout
+        scrollBehavior: 'auto' // Prevent smooth scrolling which can interfere
+    }}>
       <div>
         <h2 className="text-2xl font-bold tracking-tight">Getting Started</h2>
         <p className="text-muted-foreground">
@@ -356,13 +360,13 @@ export default function ChecklistPage() {
         </p>
       </div>
 
-      <Card className="relative overflow-hidden">
+      <Card className="relative mt-6 overflow-hidden">
         {showConfetti && (
           <div className="absolute inset-0 pointer-events-none z-10 flex items-center justify-center">
             <Sparkles className="h-16 w-16 text-yellow-500 animate-bounce" />
           </div>
         )}
-        
+
         <CardHeader>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
@@ -383,18 +387,18 @@ export default function ChecklistPage() {
                  "Congratulations! You've completed all the recommended tasks."}
               </CardDescription>
             </div>
-            
+
             <div className="flex items-center gap-2">
               <div className="text-2xl font-bold">
                 {progress}%
               </div>
               <div className="w-32 h-2 bg-muted rounded-full overflow-hidden">
-                <div 
+                <div
                   className={`h-full rounded-full ${
-                    progress < 25 ? 'bg-blue-500' : 
-                    progress < 50 ? 'bg-indigo-500' : 
-                    progress < 75 ? 'bg-purple-500' : 
-                    progress < 100 ? 'bg-pink-500' : 
+                    progress < 25 ? 'bg-blue-500' :
+                    progress < 50 ? 'bg-indigo-500' :
+                    progress < 75 ? 'bg-purple-500' :
+                    progress < 100 ? 'bg-pink-500' :
                     'bg-gradient-to-r from-yellow-500 to-amber-500'
                   }`}
                   style={{ width: `${progress}%` }}
@@ -403,19 +407,19 @@ export default function ChecklistPage() {
             </div>
           </div>
         </CardHeader>
-        
+
         <CardContent>
           <div className="flex flex-wrap gap-2 mb-6 overflow-x-auto pb-2">
-            <Button 
-              variant={activeCategory === 'all' ? "default" : "outline"} 
+            <Button
+              variant={activeCategory === 'all' ? "default" : "outline"}
               size="sm"
               onClick={() => setActiveCategory('all')}
               className="rounded-full"
             >
               All Tasks ({tasks.filter(t => t.completed).length}/{tasks.length})
             </Button>
-            <Button 
-              variant={activeCategory === 'setup' ? "default" : "outline"} 
+            <Button
+              variant={activeCategory === 'setup' ? "default" : "outline"}
               size="sm"
               onClick={() => setActiveCategory('setup')}
               className={`rounded-full ${activeCategory !== 'setup' && categoryCompletedCounts.setup === categoryCounts.setup ? 'border-green-200 text-green-700 dark:border-green-800 dark:text-green-400' : ''}`}
@@ -425,8 +429,8 @@ export default function ChecklistPage() {
               ) : null}
               Setup ({categoryCompletedCounts.setup}/{categoryCounts.setup})
             </Button>
-            <Button 
-              variant={activeCategory === 'data' ? "default" : "outline"} 
+            <Button
+              variant={activeCategory === 'data' ? "default" : "outline"}
               size="sm"
               onClick={() => setActiveCategory('data')}
               className={`rounded-full ${activeCategory !== 'data' && categoryCompletedCounts.data === categoryCounts.data ? 'border-green-200 text-green-700 dark:border-green-800 dark:text-green-400' : ''}`}
@@ -436,8 +440,8 @@ export default function ChecklistPage() {
               ) : null}
               Data Entry ({categoryCompletedCounts.data}/{categoryCounts.data})
             </Button>
-            <Button 
-              variant={activeCategory === 'connect' ? "default" : "outline"} 
+            <Button
+              variant={activeCategory === 'connect' ? "default" : "outline"}
               size="sm"
               onClick={() => setActiveCategory('connect')}
               className={`rounded-full ${activeCategory !== 'connect' && categoryCompletedCounts.connect === categoryCounts.connect ? 'border-green-200 text-green-700 dark:border-green-800 dark:text-green-400' : ''}`}
@@ -447,8 +451,8 @@ export default function ChecklistPage() {
               ) : null}
               Connections ({categoryCompletedCounts.connect}/{categoryCounts.connect})
             </Button>
-            <Button 
-              variant={activeCategory === 'advanced' ? "default" : "outline"} 
+            <Button
+              variant={activeCategory === 'advanced' ? "default" : "outline"}
               size="sm"
               onClick={() => setActiveCategory('advanced')}
               className={`rounded-full ${activeCategory !== 'advanced' && categoryCompletedCounts.advanced === categoryCounts.advanced ? 'border-green-200 text-green-700 dark:border-green-800 dark:text-green-400' : ''}`}
@@ -478,11 +482,11 @@ export default function ChecklistPage() {
           ) : (
             <div className="space-y-4">
               {filteredTasks.map((task) => (
-                <div 
+                <div
                   key={task.id}
                   className={`p-4 border rounded-lg transition-all duration-300 ${
-                    task.completed 
-                      ? 'bg-muted/40 border-muted' 
+                    task.completed
+                      ? 'bg-muted/40 border-muted'
                       : 'hover:border-primary/50 hover:bg-accent cursor-pointer'
                   } ${recentlyCompleted === task.id ? 'animate-pulse border-green-500 bg-green-50 dark:bg-green-900/20' : ''}`}
                   onClick={() => {
@@ -492,7 +496,7 @@ export default function ChecklistPage() {
                   }}
                 >
                   <div className="flex items-start gap-4">
-                    <button 
+                    <button
                       className="mt-0.5 flex-shrink-0 focus:outline-none"
                       onClick={(e) => {
                         e.stopPropagation();
@@ -505,11 +509,11 @@ export default function ChecklistPage() {
                         <Circle className="h-5 w-5 text-muted-foreground transition-transform duration-300 hover:scale-110 hover:text-primary" />
                       )}
                     </button>
-                    
+
                     <div className="flex-1">
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                         <div className="flex items-center gap-2">
-                          <div className="rounded-full p-1.5 bg-muted">{task.iconName}</div>
+                          <div className="rounded-full p-1.5 bg-muted">{getIconByName(task.iconName)}</div>
                           <h3 className={`font-medium ${task.completed ? 'text-muted-foreground' : ''}`}>
                             {task.title}
                           </h3>
@@ -520,10 +524,10 @@ export default function ChecklistPage() {
                             </Badge>
                           )}
                         </div>
-                        
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
+
+                        <Button
+                          variant="outline"
+                          size="sm"
                           className="h-8 gap-1"
                           onClick={(e) => {
                             e.stopPropagation();
@@ -543,14 +547,14 @@ export default function ChecklistPage() {
               ))}
             </div>
           )}
-          
+
           {!loading && filteredTasks.length === 0 && (
             <div className="text-center py-8">
               <p className="text-muted-foreground">No tasks in this category.</p>
             </div>
           )}
         </CardContent>
-        
+
         {progress === 100 && (
           <CardFooter className="bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-950/30 dark:to-amber-950/30 border-t border-yellow-200 dark:border-yellow-800">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between w-full gap-4">
@@ -601,7 +605,7 @@ export default function ChecklistPage() {
                 Learn about tags <ArrowRight className="h-3 w-3 ml-1" />
               </Button>
             </div>
-            
+
             <div className="p-4 border rounded-lg">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center">
@@ -616,7 +620,7 @@ export default function ChecklistPage() {
                 View calendar <ArrowRight className="h-3 w-3 ml-1" />
               </Button>
             </div>
-            
+
             <div className="p-4 border rounded-lg">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/50 flex items-center justify-center">
@@ -652,7 +656,7 @@ export default function ChecklistPage() {
               <span className="font-medium">View Documentation</span>
               <span className="text-xs text-muted-foreground">Browse our detailed guides</span>
             </Button>
-            
+
             <Button variant="outline" className="h-auto py-4 flex flex-col items-center justify-center gap-2">
               <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center">
                 <Users className="h-5 w-5 text-purple-600" />
@@ -660,7 +664,7 @@ export default function ChecklistPage() {
               <span className="font-medium">Book a Demo</span>
               <span className="text-xs text-muted-foreground">Schedule a walkthrough</span>
             </Button>
-            
+
             <Button variant="outline" className="h-auto py-4 flex flex-col items-center justify-center gap-2">
               <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center">
                 <HeartHandshake className="h-5 w-5 text-amber-600" />
@@ -675,9 +679,9 @@ export default function ChecklistPage() {
       {/* Reset Button at the bottom */}
       {tasks.some(task => task.completed) && (
         <div className="flex justify-center pt-4">
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => {
               const confirmReset = window.confirm("Are you sure you want to reset all your onboarding progress?");
               if (confirmReset) {

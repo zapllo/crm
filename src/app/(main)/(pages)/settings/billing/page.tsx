@@ -13,6 +13,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import PricingBreakdown from "@/components/billing/PricingBreakdown";
 import FeaturesList from "@/components/billing/FeaturesList";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useUserContext } from "@/contexts/userContext";
 
 // Constants for pricing
 const CRM_PRICE_PER_USER = 5999; // ₹5,999 per user per year
@@ -32,6 +33,7 @@ interface Product {
 }
 
 export default function BillingPage() {
+  const { user } = useUserContext();
   const [selectedProduct, setSelectedProduct] = useState<ProductType>("crm");
   const [userCounts, setUserCounts] = useState({
     crm: 5,
@@ -42,6 +44,40 @@ export default function BillingPage() {
   const { toast } = useToast();
   const router = useRouter();
   //   const { data: session } = useSession();
+  // Check if organization has subscriptions and update the counts accordingly
+  useEffect(() => {
+    if (user?.organization) {
+      const org = user.organization;
+      const newUserCounts = { ...userCounts };
+
+      // If the organization has a subscribedUserCount, use it for the subscribed modules
+      if (org.subscribedUserCount) {
+        // Check active subscriptions
+        if (org.activeSubscriptions?.includes('crm')) {
+          newUserCounts.crm = org.subscribedUserCount;
+        } else {
+          newUserCounts.crm = 1; // Default to 1 if not subscribed
+        }
+
+        if (org.activeSubscriptions?.includes('quotation')) {
+          newUserCounts.quotation = org.subscribedUserCount;
+        } else {
+          newUserCounts.quotation = 1; // Default to 1 if not subscribed
+        }
+      }
+
+      setUserCounts(newUserCounts);
+
+      // Set the initial selected product based on active subscriptions
+      if (org.activeSubscriptions?.length) {
+        if (org.activeSubscriptions.includes('crm')) {
+          setSelectedProduct('crm');
+        } else if (org.activeSubscriptions.includes('quotation')) {
+          setSelectedProduct('quotation');
+        }
+      }
+    }
+  }, [user]);
 
   const products: Product[] = [
     {
@@ -154,8 +190,8 @@ export default function BillingPage() {
         description: `${planName} Subscription - ${userCount} Users`, // Use planName here too
         order_id: orderData.orderId,
         // prefill information as needed...
-        handler: function(response: any) {
-          handlePaymentSuccess(response, orderData.orderId, planName); // Pass 
+        handler: function (response: any) {
+          handlePaymentSuccess(response, orderData.orderId, planName); // Pass
         },
         modal: {
           ondismiss: function () {
@@ -216,6 +252,59 @@ export default function BillingPage() {
     }
   };
 
+  // You may want to add information about current subscription
+  const renderCurrentSubscription = () => {
+    if (!user?.organization) return null;
+
+    const org = user.organization;
+    const hasActiveSubscription = org.activeSubscriptions && org.activeSubscriptions.length > 0;
+
+    if (!hasActiveSubscription) return null;
+
+    return (
+      <Card className="mb-8 bg-gradient-to-r from-purple-600/10 to-orange-500/10">
+        <CardHeader>
+          <CardTitle>Your Current Subscription</CardTitle>
+          <CardDescription>
+            {org.subscribedPlan || "Active Subscription"}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col space-y-2">
+            <div className="flex justify-between">
+              <span>Subscribed Users:</span>
+              <span className="font-medium">{org.subscribedUserCount || "N/A"}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Status:</span>
+              <Badge variant="outline" className="bg-green-500/10 text-green-600 dark:text-green-400">
+                Active
+              </Badge>
+            </div>
+            <div className="flex justify-between">
+              <span>Expires:</span>
+              <span className="font-medium">
+                {org.subscriptionExpires
+                  ? new Date(org.subscriptionExpires).toLocaleDateString()
+                  : "N/A"}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span>Active Modules:</span>
+              <div className="flex gap-2">
+                {org.activeSubscriptions?.map(sub => (
+                  <Badge key={sub} variant="secondary">
+                    {sub === 'crm' ? 'CRM' : 'Quotation'}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="text-center mb-10">
@@ -226,6 +315,9 @@ export default function BillingPage() {
           Choose the perfect Zapllo solution for your business needs
         </p>
       </div>
+
+      {/* Display current subscription information */}
+      {renderCurrentSubscription()}
 
       <Tabs
         defaultValue="crm"

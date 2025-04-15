@@ -116,6 +116,7 @@ import MediaAttachments from "@/components/MediaAttachments";
 import { Checkbox } from "@/components/ui/checkbox";
 import BulkEmailDialog from "@/components/leads/bulkEmail";
 import LeadActionMenu from "@/components/modals/leads/LeadActionMenu";
+import MoveLeadDialog from "@/components/modals/leads/moveLeads2";
 
 
 /* ---------------- TYPES ---------------- */
@@ -134,6 +135,10 @@ interface Lead {
     updatedAt?: string;
     tags?: string[];
     company?: string;
+    source?: string;
+    files?: string[];
+    audioRecordings?: string[];
+    links?: { url: string; title: string }[];
 }
 
 interface Stage {
@@ -1064,6 +1069,7 @@ export default function LeadsDashboard() {
     const [leadToEdit, setLeadToEdit] = useState<Lead | null>(null);
 
     // Add this function to handle editing a lead
+    // Add this function to handle editing a lead
     const handleEditLead = (lead: Lead) => {
         setLeadToEdit(lead);
         setIsEditMode(true);
@@ -1073,17 +1079,35 @@ export default function LeadsDashboard() {
         setDescription(lead.description || "");
         setEstimateAmount(lead.amount || "");
         setCloseDate(lead.closeDate ? new Date(lead.closeDate) : undefined);
+        setEstimateAmount(lead.amount || "");
+
+        // Pipeline & Stage
+        setModalPipeline(selectedPipeline || ""); // Set to current pipeline or empty
         setModalStage(lead.stage || "");
+
+        // Contact & Product
+        setSelectedContact(lead.contact?._id || null);
+        setSelectedProduct(lead.product || null);
+
+        // Assignment
         setAssignedTo(lead.assignedTo?._id || "");
 
+        // Source - need to set both the ID and the display name
+        if (lead.source) {
+            setSource(lead.source);
+            // Find the source name for display
+            const sourceName = sources.find(s => s._id === lead.source)?.name || "";
+            setPopoverSourceInputValue(sourceName);
+        }
 
-
-
+        // Media attachments if available
+        if (lead.files) setFiles(lead.files);
+        if (lead.audioRecordings) setAudioRecordings(lead.audioRecordings);
+        if (lead.links) setLinks(lead.links);
 
         // Open the modal
         setIsLeadModalOpen(true);
     };
-
     // Modify the existing handleAddLead function to handle both add and edit
     const handleAddOrUpdateLead = async () => {
         // Validate required fields
@@ -2133,10 +2157,10 @@ export default function LeadsDashboard() {
                                 {isCreatingLead ? (
                                     <>
                                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        Creating...
+                                        {isEditMode ? "Updating... " : "Creating..."}
                                     </>
                                 ) : (
-                                    <>Create Lead</>
+                                    isEditMode ? "Update Lead" : "Create Lead"
                                 )}
                             </Button>
                         </DialogFooter>
@@ -2534,6 +2558,17 @@ function DraggableLead({
         <Card
             className="mt-3 border hover:border-primary relative hover:shadow-md transition-all duration-200 cursor-pointer"
         >
+             <div
+              className="absolute right-8  items-center flex">
+
+            <MoveLeadDialog
+                leadId={lead._id}
+                currentStage={lead.stage || ""}
+                onLeadMoved={() => {
+                    if (onLeadMoved) onLeadMoved();
+                }}
+            />
+            </div>
             <LeadActionMenu
                 leadId={lead._id}
                 lead={lead}
@@ -2545,7 +2580,6 @@ function DraggableLead({
                 onMoveSuccess={onLeadMoved}
                 onEditClick={onLeadEdit}
             />
-
             <div
                 ref={canDrag ? setNodeRef : undefined}
                 {...(canDrag ? attributes : {})}
