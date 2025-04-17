@@ -2721,7 +2721,9 @@ function DraggableLead({
                             className="h-4 w-4"
                         />
                     )}
-                    <h3 className="font-medium text-sm line-clamp-2">{lead.title}</h3>
+                    <h3 className="font-medium text-sm line-clamp-2">
+                        {lead.title.length > 20 ? `${lead.title.slice(0, 20)}...` : lead.title}
+                    </h3>
                     <div className="flex items-center gap-1">
                         <Badge variant="outline" className="text-xs  h-5">
                             {lead.leadId}

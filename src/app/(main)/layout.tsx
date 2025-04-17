@@ -15,7 +15,7 @@ const Layout = (props: Props) => {
     const router = useRouter();
     const pathname = usePathname();
     const { user } = useUserContext();
-    
+
     // Check if trial is expired
     const isTrialExpired = () => {
         if (!user?.organization?.trialExpires) return false;
@@ -28,9 +28,9 @@ const Layout = (props: Props) => {
     const isPremium = () => {
         return user?.organization?.isPro === true;
     };
-    
+
     // Check if current page is billing page
-    const isBillingPage = () => {
+    const isBillingPage = (): boolean => {
         return pathname.includes('/settings/billing');
     };
 
@@ -47,7 +47,7 @@ const Layout = (props: Props) => {
                    - (Trial hasn't expired OR we're on the billing page)
                 */}
                 {!isPremium() && (!isTrialExpired() || isBillingPage()) && <PremiumTrialBanner />}
-                
+
                 {/* Optionally show a special expired notice on the billing page */}
                 {isTrialExpired() && !isPremium() && isBillingPage() && (
                     <div className="bg-red-600 text-white py-2 px-4 text-center text-sm font-medium">
@@ -62,7 +62,7 @@ const Layout = (props: Props) => {
                     <div className="ml-16">{props.children}</div>
                 </div>
             </div>
-            
+
             {/* Floating announcements component */}
             <DynamicAnnouncement />
         </div>

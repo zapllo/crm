@@ -452,7 +452,7 @@ export default function SubmissionsPageContent() {
         open={showSubmissionDetails}
         onOpenChange={setShowSubmissionDetails}
       >
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl z-[100] max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Submission Details</DialogTitle>
           </DialogHeader>

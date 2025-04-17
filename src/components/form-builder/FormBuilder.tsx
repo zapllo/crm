@@ -1,7 +1,11 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Settings, Eye, Trash2, Copy, Save, CheckCircle, ArrowDown } from 'lucide-react';
+import {
+  Plus, Settings, Eye, Trash2, Copy, Save, CheckCircle, ArrowDown, PanelLeftClose,
+  PanelLeftOpen, PanelRightClose, PanelRightOpen, Layers, ChevronDown,
+  ChevronRight, GripVertical, Check
+} from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -21,6 +25,7 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
+import { cn } from '@/lib/utils';
 import { IFormField } from '@/models/formBuilderModel';
 import FieldProperties from './FieldProperties';
 import FormSettings from './FormSettings';
@@ -30,6 +35,21 @@ import FormThemeSettings from './FormThemeSettings';
 import FormIntegrationPanel from './FormIntegrationPanel';
 import { fieldTypes } from './fieldTypes';
 import axios from 'axios';
+import FormCoverImage from './FormCoverImage';
+import { Separator } from '@/components/ui/separator';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface FormBuilderProps {
   initialForm?: any;
@@ -60,6 +80,7 @@ export default function FormBuilder({ initialForm, isTemplate = false, onSave }:
     buttonStyle: 'filled',
     logoPosition: 'center',
   });
+
   const [formSettings, setFormSettings] = useState(initialForm?.settings || {
     captcha: true,
     allowAnonymous: true,
@@ -78,9 +99,36 @@ export default function FormBuilder({ initialForm, isTemplate = false, onSave }:
   });
   const [isSaving, setIsSaving] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
+  const [coverImage, setCoverImage] = useState(initialForm?.coverImage || null);
 
-    // ... existing state variables
-    const [coverImage, setCoverImage] = useState(initialForm?.coverImage || null);
+  // States for collapsible panels
+  const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
+  const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
+  const [fieldGroupsCollapsed, setFieldGroupsCollapsed] = useState<Record<string, boolean>>({});
+
+  // Group field types
+  const fieldGroups = [
+    {
+      id: 'basic',
+      name: 'Basic Fields',
+      types: ['text', 'textarea', 'number', 'email', 'phone']
+    },
+    {
+      id: 'choice',
+      name: 'Choice Fields',
+      types: ['select', 'radio', 'checkbox', 'toggle']
+    },
+    {
+      id: 'advanced',
+      name: 'Advanced Fields',
+      types: ['date', 'time', 'file', 'rating', 'signature']
+    },
+    {
+      id: 'layout',
+      name: 'Layout Elements',
+      types: ['heading', 'paragraph', 'divider', 'spacer']
+    }
+  ];
 
   // Sensors for drag and drop
   const pointerSensor = useSensor(PointerSensor, {
@@ -115,6 +163,12 @@ export default function FormBuilder({ initialForm, isTemplate = false, onSave }:
 
     setFields([...fields, newField]);
     setSelectedFieldId(newField.id);
+
+    // Show a subtle toast notification
+    toast({
+      title: "Field added",
+      description: `Added a new ${fieldConfig.label} field`,
+    });
   };
 
   const updateField = (updatedField: IFormField) => {
@@ -124,10 +178,19 @@ export default function FormBuilder({ initialForm, isTemplate = false, onSave }:
   };
 
   const removeField = (id: string) => {
+    const fieldToRemove = fields.find(field => field.id === id);
+    if (!fieldToRemove) return;
+
     setFields(fields.filter(field => field.id !== id));
     if (selectedFieldId === id) {
       setSelectedFieldId(fields.length > 1 ? fields[0].id : null);
     }
+
+    toast({
+      title: "Field removed",
+      description: `Removed ${fieldToRemove.label} field`,
+      variant: "default"
+    });
   };
 
   const duplicateField = (id: string) => {
@@ -143,6 +206,11 @@ export default function FormBuilder({ initialForm, isTemplate = false, onSave }:
 
     setFields([...fields, duplicatedField]);
     setSelectedFieldId(duplicatedField.id);
+
+    toast({
+      title: "Field duplicated",
+      description: `Created a copy of ${fieldToDuplicate.label}`,
+    });
   };
 
   const handleDragStart = (event: any) => {
@@ -153,33 +221,60 @@ export default function FormBuilder({ initialForm, isTemplate = false, onSave }:
     }
   };
 
+  useEffect(() => {
+    // Set first field as selected if available and none selected
+    if (fields.length > 0 && !selectedFieldId) {
+      setSelectedFieldId(fields[0].id);
+    }
+
+    // Ensure the right panel shows Field tab when a field is selected
+    if (selectedFieldId && activeTab !== 'fields') {
+      setActiveTab('fields');
+    }
+  }, [fields, selectedFieldId]);
+
+  // Update the handleDragEnd function to properly handle drag and drop
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     setDraggedField(null);
 
     if (!over) return;
 
-    // Move the field to a new position
-    const activeField = fields.find(f => f.id === active.id);
-    const overField = fields.find(f => f.id === over.id);
+    // Check if we're dragging an existing field
+    if (typeof active.id === 'string' && typeof over.id === 'string') {
+      const activeField = fields.find(f => f.id === active.id);
+      const overField = fields.find(f => f.id === over.id);
 
-    if (!activeField || !overField || activeField.id === overField.id) return;
+      if (!activeField || !overField || activeField.id === overField.id) return;
 
-    // Reorder the fields
-    const activeIndex = fields.findIndex(f => f.id === activeField.id);
-    const overIndex = fields.findIndex(f => f.id === overField.id);
+      // Reorder the fields
+      const activeIndex = fields.findIndex(f => f.id === activeField.id);
+      const overIndex = fields.findIndex(f => f.id === overField.id);
 
-    const reorderedFields = [...fields];
-    reorderedFields.splice(activeIndex, 1);
-    reorderedFields.splice(overIndex, 0, activeField);
+      const reorderedFields = [...fields];
+      reorderedFields.splice(activeIndex, 1);
+      reorderedFields.splice(overIndex, 0, activeField);
 
-    // Update order property
-    const updatedFields = reorderedFields.map((field, index) => ({
-      ...field,
-      order: index
-    }));
+      // Update order property
+      const updatedFields = reorderedFields.map((field, index) => ({
+        ...field,
+        order: index
+      }));
 
-    setFields(updatedFields);
+      setFields(updatedFields);
+      // Show a subtle toast notification for feedback
+      toast({
+        title: "Field moved",
+        description: "Field order has been updated",
+        variant: "default"
+      });
+    }
+  };
+  const toggleFieldGroup = (groupId: string) => {
+    setFieldGroupsCollapsed({
+      ...fieldGroupsCollapsed,
+      [groupId]: !fieldGroupsCollapsed[groupId]
+    });
   };
 
   const saveForm = async () => {
@@ -208,6 +303,7 @@ export default function FormBuilder({ initialForm, isTemplate = false, onSave }:
         id: initialForm?._id,
         name: formTitle,
         description: formDescription,
+        coverImage,
         fields: fields.sort((a, b) => a.order - b.order),
         theme,
         settings: formSettings,
@@ -255,119 +351,278 @@ export default function FormBuilder({ initialForm, isTemplate = false, onSave }:
 
   if (previewMode) {
     return (
-      <div className="w-full h-full flex flex-col">
-        <div className="flex justify-between items-center p-4 border-b">
-          <h2 className="text-xl font-semibold">Preview: {formTitle}</h2>
-          <Button onClick={() => setPreviewMode(false)} variant="outline">Exit Preview</Button>
+      <div className="w-full h-full flex flex-col bg-background">
+        <div className="flex justify-between items-center p-4 border-b bg-card/50">
+          <h2 className="text-xl font-medium flex items-center">
+            <Eye className="h-4 w-4 mr-2 text-muted-foreground" />
+            Preview: {formTitle}
+          </h2>
+          <Button onClick={() => setPreviewMode(false)} variant="outline" size="sm">
+            Exit Preview
+          </Button>
         </div>
         <div className="flex-grow overflow-auto p-4">
-          <FormPreview
-            fields={fields}
-            theme={theme}
-            formTitle={formTitle}
-            formDescription={formDescription}
-            settings={formSettings}
-            thankYouPage={thankYouPage}
-            multiPage={formSettings.multiPage}
-          />
+          <div className="max-w-3xl mx-auto">
+            <FormPreview
+              fields={fields}
+              theme={theme}
+              formTitle={formTitle}
+              formDescription={formDescription}
+              settings={formSettings}
+              thankYouPage={thankYouPage}
+              multiPage={formSettings.multiPage}
+              coverImage={coverImage}
+            />
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-full w-full overflow-hidden">
-      {/* Header with actions */}
-      <div className="flex justify-between items-center p-4 border-b">
+    <div className="flex flex-col h-full w-full overflow-hidden bg-background/95 rounded-md shadow-sm border">
+      {/* Header with actions - simplified and modernized */}
+      <div className="flex justify-between items-center p-4 border-b bg-card/50">
         <div className="flex-1">
           <div className="flex flex-col gap-1">
             <input
               type="text"
               value={formTitle}
               onChange={(e) => setFormTitle(e.target.value)}
-              className="text-xl font-semibold bg-transparent border-0 outline-none focus:ring-0 px-0 w-full"
+              className="text-xl font-semibold bg-transparent border-0 outline-none focus:ring-0 px-0 w-full transition-all"
               placeholder="Enter form title..."
             />
             <input
               type="text"
               value={formDescription}
               onChange={(e) => setFormDescription(e.target.value)}
-              className="text-sm text-muted-foreground bg-transparent border-0 outline-none focus:ring-0 px-0 w-full"
+              className="text-sm text-muted-foreground bg-transparent border-0 outline-none focus:ring-0 px-0 w-full transition-all"
               placeholder="Enter form description..."
             />
           </div>
         </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setPreviewMode(true)}
-          >
-            <Eye className="h-4 w-4 mr-1" />
-            Preview
-          </Button>
-          <Button
-            variant="default"
-            size="sm"
-            onClick={saveForm}
-            disabled={isSaving}
-          >
-            {isSaving ? (
-              <>
-                <span className="animate-spin mr-1">⏳</span> Saving...
-              </>
-            ) : (
-              <>
-                <Save className="h-4 w-4 mr-1" />
-                Save Form
-              </>
-            )}
-          </Button>
+        <div className="flex gap-2 items-center">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={() => setPreviewMode(true)}
+                >
+                  <Eye className="h-4 w-4" />
+                  Preview
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Preview your form as users will see it</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={saveForm}
+                  disabled={isSaving}
+                >
+                  {isSaving ? (
+                    <>
+                      <span className="animate-spin">⏳</span> Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4" />
+                      Save
+                    </>
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Save your form changes</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       </div>
 
-      {/* Main content */}
-      <div className="flex flex-1 max-h-screen overflow-y-scroll h-full">
-        {/* Left sidebar with field types */}
-        <div className="w-64 border-r p-4 overflow-y-auto">
-          <h3 className="text-sm font-medium mb-3">Add Fields</h3>
-          <FieldSelector onSelectField={addField} />
+      {/* Main content with collapsible panels */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Left sidebar with field types - collapsible */}
+        <div
+          className={cn(
+            "border-r bg-card/30 transition-all duration-300 ease-in-out relative",
+            leftPanelCollapsed ? "w-14" : "w-72"
+          )}
+        >
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute right-0 top-3 -mr-3 z-10 h-6 w-6 rounded-full border bg-background shadow-sm"
+            onClick={() => setLeftPanelCollapsed(!leftPanelCollapsed)}
+          >
+            {leftPanelCollapsed ?
+              <PanelRightOpen className="h-3 w-3" /> :
+              <PanelLeftClose className="h-3 w-3" />
+            }
+          </Button>
+
+          {leftPanelCollapsed ? (
+            <div className="h-full flex flex-col items-center py-12 space-y-6">
+              {fieldGroups.map((group) => (
+                <TooltipProvider key={group.id}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="space-y-2">
+                        <div className="text-xs text-center text-muted-foreground">
+                          {group.name.split(' ')[0]}
+                        </div>
+                        <div className="space-y-1">
+                          {group.types.slice(0, 3).map((type) => {
+                            const fieldType = fieldTypes.find(f => f.type === type);
+                            if (!fieldType) return null;
+
+                            return (
+                              <Button
+                                key={type}
+                                variant="ghost"
+                                size="icon"
+                                className="w-8 h-8"
+                                onClick={() => addField(type)}
+                              >
+                                {fieldType.icon && <fieldType.icon className="h-4 w-4" />}
+                              </Button>
+                            );
+                          })}
+                          {group.types.length > 3 && (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="w-8 h-8">
+                                  <Plus className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent>
+                                {group.types.slice(3).map((type) => {
+                                  const fieldType = fieldTypes.find(f => f.type === type);
+                                  if (!fieldType) return null;
+
+                                  return (
+                                    <DropdownMenuItem
+                                      key={type}
+                                      onClick={() => addField(type)}
+                                      className="cursor-pointer"
+                                    >
+                                      {fieldType.icon && <fieldType.icon className="h-4 w-4 mr-2" />}
+                                      {fieldType.label}
+                                    </DropdownMenuItem>
+                                  );
+                                })}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          )}
+                        </div>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">
+                      <p>{group.name}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              ))}
+            </div>
+          ) : (
+            <ScrollArea className="h-full">
+              <div className="p-4 space-y-6">
+                <h3 className="text-sm font-medium px-2">Add Fields</h3>
+
+                {fieldGroups.map((group) => (
+                  <div key={group.id} className="space-y-2">
+                    <div
+                      className="flex items-center justify-between cursor-pointer px-2"
+                      onClick={() => toggleFieldGroup(group.id)}
+                    >
+                      <h4 className="text-sm font-medium text-muted-foreground">{group.name}</h4>
+                      {fieldGroupsCollapsed[group.id] ?
+                        <ChevronRight className="h-4 w-4" /> :
+                        <ChevronDown className="h-4 w-4" />
+                      }
+                    </div>
+
+                    {!fieldGroupsCollapsed[group.id] && (
+                      <div className="grid grid-cols-2 gap-2">
+                        {group.types.map((type) => {
+                          const fieldType = fieldTypes.find(f => f.type === type);
+                          if (!fieldType) return null;
+
+                          return (
+                            <Button
+                              key={type}
+                              variant="ghost"
+                              size="sm"
+                              className="justify-start h-10 px-3 hover:bg-accent"
+                              onClick={() => addField(type)}
+                            >
+                              {fieldType.icon && <fieldType.icon className="h-4 w-4 mr-2" />}
+                              <span className="truncate">{fieldType.label}</span>
+                            </Button>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    <Separator className="my-2" />
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+          )}
         </div>
 
         {/* Center area with form canvas */}
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 flex flex-col overflow-hidden bg-accent/20">
           <DndContext
             sensors={sensors}
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
           >
-            <div className="flex-1 p-4 overflow-y-auto space-y-2">
-              {fields.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
-                  <Plus className="h-12 w-12 mb-2" />
-                  <h3 className="text-lg font-medium">Your form is empty</h3>
-                  <p className="max-w-xs">Add form elements from the left panel to get started</p>
-                </div>
-              ) : (
-                fields
-                  .sort((a, b) => a.order - b.order)
-                  .map((field) => (
-                    <DraggableField
-                      key={field.id}
-                      field={field}
-                      onRemove={removeField}
-                      onDuplicate={duplicateField}
-                      isSelected={selectedFieldId === field.id}
-                      onSelect={() => setSelectedFieldId(field.id)}
-                    />
-                  ))
-              )}
-            </div>
+            <ScrollArea className="flex-1">
+              <div className="max-w-3xl mx-auto p-6 space-y-4">
+                {/* Add cover image component at the top */}
+                <FormCoverImage
+                  coverImage={coverImage}
+                  onImageChange={setCoverImage}
+                />
+
+                {fields.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-20 text-center text-muted-foreground bg-card/40 rounded-lg border border-dashed">
+                    <Plus className="h-12 w-12 mb-4 text-muted-foreground/50" />
+                    <h3 className="text-lg font-medium">Your form is empty</h3>
+                    <p className="max-w-xs mt-2">Add form elements from the left panel to get started</p>
+                  </div>
+                ) : (
+                  fields
+                    .sort((a, b) => a.order - b.order)
+                    .map((field) => (
+                      <DraggableField
+                        key={field.id}
+                        field={field}
+                        onRemove={removeField}
+                        onDuplicate={duplicateField}
+                        isSelected={selectedFieldId === field.id}
+                        onSelect={() => setSelectedFieldId(field.id)}
+                      />
+                    ))
+                )}
+              </div>
+            </ScrollArea>
 
             {/* Drag overlay */}
             <DragOverlay>
               {draggedField ? (
-                <div className="border rounded-md p-3 bg-card opacity-80 w-full max-w-md">
+                <div className="border rounded-md p-3 bg-card opacity-80 w-full max-w-md shadow-md">
                   <div className="flex items-center justify-between mb-2">
                     <span className="font-medium flex items-center">
                       {draggedField.label}
@@ -380,54 +635,216 @@ export default function FormBuilder({ initialForm, isTemplate = false, onSave }:
           </DndContext>
         </div>
 
-        {/* Right sidebar with settings */}
-        <div className="w-80 border-l overflow-y-auto">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList  className="w-full bg-accent gap-4">
-              <TabsTrigger value="fields" className="flex-1 border-none">Field</TabsTrigger>
-              <TabsTrigger value="theme" className="flex-1 border-none">Theme</TabsTrigger>
-              <TabsTrigger value="settings" className="flex-1 border-none">Settings</TabsTrigger>
-            </TabsList>
-            <div className="p-4">
-              <TabsContent value="fields">
-                {selectedFieldId ? (
-                  <FieldProperties
-                    field={fields.find(f => f.id === selectedFieldId)!}
-                    onUpdate={updateField}
-                  />
-                ) : (
-                  <p className="text-center text-muted-foreground py-8">
-                    Select a field to edit its properties
-                  </p>
-                )}
-              </TabsContent>
-              <TabsContent value="theme">
-                <FormThemeSettings
-                  theme={theme}
-                  onChange={setTheme}
-                />
-              </TabsContent>
-              <TabsContent value="settings">
-                <FormSettings
-                  settings={formSettings}
-                  onChange={setFormSettings}
-                  thankYouPage={thankYouPage}
-                  onThankYouPageChange={setThankYouPage}
-                  integrations={integrations}
-                  onIntegrationsChange={setIntegrations}
-                  notifications={notifications}
-                  onNotificationsChange={setNotifications}
-                />
-              </TabsContent>
+        {/* Right sidebar with settings - collapsible */}
+        <div
+          className={cn(
+            "border-l bg-card/30 transition-all duration-300 ease-in-out relative",
+            rightPanelCollapsed ? "w-14" : "w-80"
+          )}
+        >
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute left-0 top-3 -ml-3 z-10 h-6 w-6 rounded-full border bg-background shadow-sm"
+            onClick={() => setRightPanelCollapsed(!rightPanelCollapsed)}
+          >
+            {rightPanelCollapsed ?
+              <PanelLeftOpen className="h-3 w-3" /> :
+              <PanelRightClose className="h-3 w-3" />
+            }
+          </Button>
+
+          {rightPanelCollapsed ? (
+            <div className="h-full flex flex-col items-center pt-12 space-y-4">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant={activeTab === "fields" ? "secondary" : "ghost"}
+                      size="icon"
+                      className="w-8 h-8"
+                      onClick={() => {
+                        setActiveTab("fields");
+                        setRightPanelCollapsed(false);
+                      }}
+                    >
+                      <Layers className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="left">
+                    <p>Field Properties</p>
+                  </TooltipContent>
+                </Tooltip>
+
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant={activeTab === "theme" ? "secondary" : "ghost"}
+                      size="icon"
+                      className="w-8 h-8"
+                      onClick={() => {
+                        setActiveTab("theme");
+                        setRightPanelCollapsed(false);
+                      }}
+                    >
+                      <Palette className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="left">
+                    <p>Theme Settings</p>
+                  </TooltipContent>
+                </Tooltip>
+
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant={activeTab === "settings" ? "secondary" : "ghost"}
+                      size="icon"
+                      className="w-8 h-8"
+                      onClick={() => {
+                        setActiveTab("settings");
+                        setRightPanelCollapsed(false);
+                      }}
+                    >
+                      <Cog className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="left">
+                    <p>Form Settings</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
-          </Tabs>
+          ) : (
+            <div className="h-full flex flex-col">
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full h-full">
+                <TabsList className="w-full rounded-none border-b bg-transparent">
+                  <TabsTrigger
+                    value="fields"
+                    className="flex-1 data-[state=active]:bg-background rounded-none border-b-2 border-transparent data-[state=active]:border-primary"
+                  >
+                    <Layers className="h-4 w-4 mr-2" />
+                    Field
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="theme"
+                    className="flex-1 data-[state=active]:bg-background rounded-none border-b-2 border-transparent data-[state=active]:border-primary"
+                  >
+                    <Palette className="h-4 w-4 mr-2" />
+                    Theme
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="settings"
+                    className="flex-1 data-[state=active]:bg-background rounded-none border-b-2 border-transparent data-[state=active]:border-primary"
+                  >
+                    <Cog className="h-4 w-4 mr-2" />
+                    Settings
+                  </TabsTrigger>
+                </TabsList>
+
+                <div className="flex-1 overflow-hidden">
+                  <ScrollArea className="h-full">
+                    <div className="p-4">
+                      <TabsContent value="fields" className="mt-0 border-none p-0">
+                        {selectedFieldId ? (
+                          <FieldProperties
+                            field={fields.find(f => f.id === selectedFieldId)!}
+                            onUpdate={updateField}
+                          />
+                        ) : (
+                          <div className="text-center text-muted-foreground py-8">
+                            <Layers className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+                            <p>Select a field to edit its properties</p>
+                          </div>
+                        )}
+                      </TabsContent>
+                      <TabsContent value="theme" className="mt-0 border-none p-0">
+                        <FormThemeSettings
+                          theme={theme}
+                          onChange={setTheme}
+                        />
+                      </TabsContent>
+                      <TabsContent value="settings" className="mt-0 border-none p-0">
+                        <FormSettings
+                          settings={formSettings}
+                          onChange={setFormSettings}
+                          thankYouPage={thankYouPage}
+                          onThankYouPageChange={setThankYouPage}
+                          integrations={integrations}
+                          onIntegrationsChange={setIntegrations}
+                          notifications={notifications}
+                          onNotificationsChange={setNotifications}
+                        />
+                      </TabsContent>
+                    </div>
+                  </ScrollArea>
+                </div>
+              </Tabs>
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-// Draggable Field Component
+// Add these SVG icon components
+function Palette(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="13.5" cy="6.5" r=".5" />
+      <circle cx="17.5" cy="10.5" r=".5" />
+      <circle cx="8.5" cy="7.5" r=".5" />
+      <circle cx="6.5" cy="12.5" r=".5" />
+      <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z" />
+    </svg>
+  );
+}
+
+function Cog(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z" />
+      <path d="M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" />
+      <path d="M12 2v2" />
+      <path d="M12 22v-2" />
+      <path d="m17 20.66-1-1.73" />
+      <path d="M11 10.27 7 3.34" />
+      <path d="m20.66 17-1.73-1" />
+      <path d="m3.34 7 1.73 1" />
+      <path d="M14 12h8" />
+      <path d="M2 12h2" />
+      <path d="m20.66 7-1.73 1" />
+      <path d="m3.34 17 1.73-1" />
+      <path d="m17 3.34-1 1.73" />
+      <path d="m11 13.73-4 6.93" />
+    </svg>
+  );
+}
+
+// Modern and clean Draggable Field Component
 function DraggableField({
   field,
   onRemove,
@@ -443,51 +860,74 @@ function DraggableField({
 }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: field.id,
-    data: {
-      field
-    }
+    data: { field }
   });
 
   return (
     <div
       ref={setNodeRef}
-      {...attributes}
-      {...listeners}
-      className={`border rounded-md p-3 bg-card ${
-        isSelected ? 'ring-2 ring-primary' : ''
-      } ${isDragging ? 'opacity-50' : ''}`}
-      onClick={onSelect}
+      className={cn(
+        "group border rounded-md bg-card transition-all duration-200",
+        isSelected ? "ring-2 ring-primary shadow-sm" : "",
+        isDragging ? "opacity-50" : "",
+        "hover:shadow-md"
+      )}
+      onClick={(e) => {
+        e.stopPropagation();
+        onSelect();
+      }}
     >
-      <div className="flex items-center justify-between mb-2">
-        <span className="font-medium flex items-center">
-          {field.label}
-          {field.required && <span className="text-destructive ml-1">*</span>}
-        </span>
-        <div className="flex items-center space-x-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDuplicate(field.id);
-            }}
-          >
-            <Copy className="h-3.5 w-3.5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6 text-destructive hover:text-destructive/90"
-            onClick={(e) => {
-              e.stopPropagation();
-              onRemove(field.id);
-            }}
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
+      <div className="flex items-center justify-between p-3 bg-muted/20 border-b cursor-move" {...attributes} {...listeners}>
+        <div className="flex items-center">
+          <GripVertical className="h-4 w-4 mr-2 text-muted-foreground" />
+          <span className="font-medium text-sm flex items-center">
+            {field.label}
+            {field.required && <span className="text-destructive ml-1">*</span>}
+          </span>
+        </div>
+        <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 rounded-full hover:bg-background"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDuplicate(field.id);
+                  }}
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Duplicate field</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 rounded-full text-destructive hover:bg-destructive/10"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onRemove(field.id);
+                  }}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Delete field</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       </div>
+
 
       {/* Basic field preview */}
       <div className="text-sm text-muted-foreground">
@@ -496,20 +936,20 @@ function DraggableField({
             type="text"
             disabled
             placeholder={field.placeholder || 'Text input'}
-            className="w-full border rounded-md p-2 bg-muted/30 cursor-default"
+            className="w-full border rounded-md p-2 bg-muted/30 cursor-default focus:ring-0"
           />
         )}
         {field.type === 'textarea' && (
           <textarea
             disabled
             placeholder={field.placeholder || 'Text area'}
-            className="w-full border rounded-md p-2 bg-muted/30 h-16 resize-none cursor-default"
+            className="w-full border rounded-md p-2 bg-muted/30 h-16 resize-none cursor-default focus:ring-0"
           />
         )}
         {field.type === 'select' && (
           <select
             disabled
-            className="w-full border rounded-md p-2 bg-muted/30 cursor-default"
+            className="w-full border rounded-md p-2 bg-muted/30 cursor-default focus:ring-0"
           >
             <option>{field.placeholder || 'Select an option'}</option>
             {field.options?.map(option => (
@@ -518,7 +958,7 @@ function DraggableField({
           </select>
         )}
         {field.type === 'radio' && (
-          <div className="space-y-1">
+          <div className="space-y-1 p-2 bg-muted/20 rounded-md">
             {field.options?.map(option => (
               <div key={option.value} className="flex items-center">
                 <input
@@ -532,7 +972,7 @@ function DraggableField({
           </div>
         )}
         {field.type === 'checkbox' && (
-          <div className="space-y-1">
+          <div className="space-y-1 p-2 bg-muted/20 rounded-md">
             {field.options?.map(option => (
               <div key={option.value} className="flex items-center">
                 <input
@@ -550,7 +990,7 @@ function DraggableField({
             type="email"
             disabled
             placeholder={field.placeholder || 'Email address'}
-            className="w-full border rounded-md p-2 bg-muted/30 cursor-default"
+            className="w-full border rounded-md p-2 bg-muted/30 cursor-default focus:ring-0"
           />
         )}
         {field.type === 'phone' && (
@@ -558,14 +998,14 @@ function DraggableField({
             type="tel"
             disabled
             placeholder={field.placeholder || 'Phone number'}
-            className="w-full border rounded-md p-2 bg-muted/30 cursor-default"
+            className="w-full border rounded-md p-2 bg-muted/30 cursor-default focus:ring-0"
           />
         )}
         {field.type === 'date' && (
           <input
             type="date"
             disabled
-            className="w-full border rounded-md p-2 bg-muted/30 cursor-default"
+            className="w-full border rounded-md p-2 bg-muted/30 cursor-default focus:ring-0"
           />
         )}
         {field.type === 'file' && (
@@ -577,12 +1017,56 @@ function DraggableField({
           <h3 className="text-lg font-bold">{field.label}</h3>
         )}
         {field.type === 'paragraph' && (
-          <p>{field.label || 'Paragraph text'}</p>
+          <p className="text-muted-foreground">{field.label || 'Paragraph text'}</p>
         )}
-        {field.type === 'divider' && (
+        {(field.type as string) === 'divider' && (
           <hr className="my-2" />
+        )}
+        {(field.type as string) === 'spacer' && (
+          <div className="h-6 w-full bg-muted/20 rounded border-dashed border flex items-center justify-center">
+            <span className="text-xs text-muted-foreground">Spacer</span>
+          </div>
+        )}
+        {field.type === 'rating' && (
+          <div className="flex items-center space-x-1">
+            {[1, 2, 3, 4, 5].map(star => (
+              <Star key={star} className="h-5 w-5 text-muted" />
+            ))}
+          </div>
+        )}
+        {field.type === 'signature' && (
+          <div className="border rounded-md h-20 flex items-center justify-center bg-muted/30">
+            <span className="text-sm text-muted-foreground">Signature pad</span>
+          </div>
+        )}
+        {(field.type as string) === 'toggle' && (
+          <div className="flex items-center">
+            <div className="w-10 h-5 rounded-full bg-muted flex items-center p-0.5">
+              <div className="w-4 h-4 rounded-full bg-background"></div>
+            </div>
+            <span className="ml-2">Toggle option</span>
+          </div>
         )}
       </div>
     </div>
+  );
+}
+
+function Star(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+    </svg>
   );
 }

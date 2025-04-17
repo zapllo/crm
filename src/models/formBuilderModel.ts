@@ -62,6 +62,7 @@ export interface IForm extends Document {
   name: string;
   description?: string;
   organization: Types.ObjectId;
+  coverImage?: string; // Add coverImage field
   creator: Types.ObjectId;
   isPublished: boolean;
   publishedUrl?: string;
@@ -101,6 +102,7 @@ const formSchema = new Schema<IForm>(
   {
     name: { type: String, required: true },
     description: { type: String },
+    coverImage: { type: String }, // Add coverImage to schema
     organization: {
       type: Schema.Types.ObjectId,
       ref: 'Organization',

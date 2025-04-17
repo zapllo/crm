@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { IFormField } from '@/models/formBuilderModel';
 import { Plus, Trash2, GripVertical } from 'lucide-react';
 import {
@@ -20,6 +20,7 @@ import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
 import { Checkbox } from '../ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 
 interface FieldPropertiesProps {
   field: IFormField;
@@ -95,6 +96,14 @@ export default function FieldProperties({ field, onUpdate }: FieldPropertiesProp
       activationConstraint: { distance: 5 },
     })
   );
+
+  const [activeTab, setActiveTab] = useState<string>("basic");
+
+  // Update local field whenever the input field changes
+  useEffect(() => {
+    setLocalField(field);
+  }, [field.id]); // Only re-initialize when field ID changes
+
 
   const updateLocalField = (updates: Partial<IFormField>) => {
     const updated = { ...localField, ...updates };
@@ -940,10 +949,38 @@ export default function FieldProperties({ field, onUpdate }: FieldPropertiesProp
 
   return (
     <div className="space-y-6 pb-4">
-      {renderBasicSettings()}
-      {renderOptionsSettings()}
-      {renderAdvancedSettings()}
-      {!['heading', 'paragraph', 'divider'].includes(localField.type) && renderConditionalLogic()}
-    </div>
+    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+      <TabsList className="w-full grid grid-cols-3 mb-4">
+        <TabsTrigger value="basic">Basic</TabsTrigger>
+        {(['select', 'checkbox', 'radio', 'multiSelect'].includes(localField.type)) && (
+          <TabsTrigger value="options">Options</TabsTrigger>
+        )}
+        <TabsTrigger value="advanced">Advanced</TabsTrigger>
+        {!['heading', 'paragraph', 'divider'].includes(localField.type) && (
+          <TabsTrigger value="conditional">Logic</TabsTrigger>
+        )}
+      </TabsList>
+
+      <TabsContent value="basic" className="space-y-4">
+        {renderBasicSettings()}
+      </TabsContent>
+
+      {(['select', 'checkbox', 'radio', 'multiSelect'].includes(localField.type)) && (
+        <TabsContent value="options" className="space-y-4">
+          {renderOptionsSettings()}
+        </TabsContent>
+      )}
+
+      <TabsContent value="advanced" className="space-y-4">
+        {renderAdvancedSettings()}
+      </TabsContent>
+
+      {!['heading', 'paragraph', 'divider'].includes(localField.type) && (
+        <TabsContent value="conditional" className="space-y-4">
+          {renderConditionalLogic()}
+        </TabsContent>
+      )}
+    </Tabs>
+  </div>
   );
 }

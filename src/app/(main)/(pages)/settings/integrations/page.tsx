@@ -53,7 +53,6 @@ const FREE_INTEGRATIONS = [
   "indiamart",
   "tradeindia",
   "gmail",
-  "zapllo-caller",
 ];
 
 export default function IntegrationsPage() {
@@ -72,7 +71,7 @@ export default function IntegrationsPage() {
           href: "/settings/integrations/zapllo-caller",
           imageSrc: "/integrations/zapllo-caller.png",
           category: ["Communication"],
-          status: "free",
+          status: "premium",
           popular: true,
         },
         {

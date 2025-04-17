@@ -64,7 +64,7 @@ export default function PreviewFormPageContent() {
   }
 
   return (
-    <div className="container h-full flex flex-col py-4 max-w-full px-0 md:px-4">
+    <div className="container h-full  flex flex-col py-4 max-w-full px-0 md:px-4">
       <div className="flex justify-between items-center py-2 px-4 border-b">
         <div className="flex items-center">
           <Button
@@ -116,9 +116,9 @@ export default function PreviewFormPageContent() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto bg-gray-100 dark:bg-gray-800 p-4 flex justify-center">
+      <div className="flex-1 h-full max-h-screen py-4 overflow-auto bg-gray-100 dark:bg-gray-800 p-4 flex justify-center">
         <div
-          className={`bg-background rounded-lg shadow-lg transition-all duration-300 ${
+          className={`bg-background rounded-lg p-4 h-full max-h-screen overflow-y-scroll shadow-lg transition-all duration-300 ${
             viewport === 'desktop' ? 'w-full max-w-3xl' :
             viewport === 'tablet' ? 'w-[768px]' :
             'w-[375px]'

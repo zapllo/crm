@@ -158,7 +158,7 @@ export default function EditFormPageContent() {
   }
 
   return (
-    <div className="container h-full max-h-screen sc overflow-y-scroll flex flex-col py-4 max-w-full px-0 md:px-4">
+    <div className="container mt-24 h-full max-h-screen sc overflow-y-scroll flex flex-col py-4 max-w-full px-0 md:px-4">
       <div className="flex justify-between items-center py-2 px-4 border-b">
         <div className="flex items-center">
           <Button

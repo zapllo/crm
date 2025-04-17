@@ -3,15 +3,17 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, ArrowRight, Check } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Sparkles } from 'lucide-react';
 import { IFormField } from '@/models/formBuilderModel';
 import FormRenderer from './FormRenderer';
+import { cn } from '@/lib/utils';
 
 interface FormPreviewProps {
   fields: IFormField[];
   theme: any;
   formTitle: string;
   formDescription: string;
+  coverImage?: string | null;
   settings: any;
   thankYouPage: any;
   multiPage?: boolean;
@@ -22,6 +24,7 @@ export default function FormPreview({
   theme,
   formTitle,
   formDescription,
+  coverImage,
   settings,
   thankYouPage,
   multiPage = false
@@ -87,44 +90,89 @@ export default function FormPreview({
     setSubmitted(true);
   };
 
+  // Apply custom button styles based on theme
+  const getButtonStyles = () => {
+    if (theme.buttonStyle === 'gradient') {
+      return {
+        background: `linear-gradient(to right, ${theme.primaryColor}, ${adjustColor(theme.primaryColor, 20)})`,
+        color: '#fff',
+        borderRadius: theme.borderRadius,
+        border: 'none',
+        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+      };
+    } else if (theme.buttonStyle === 'outlined') {
+      return {
+        backgroundColor: 'transparent',
+        color: theme.primaryColor,
+        borderRadius: theme.borderRadius,
+        border: `1px solid ${theme.primaryColor}`,
+      };
+    } else {
+      // Default filled
+      return {
+        backgroundColor: theme.primaryColor,
+        color: '#fff',
+        borderRadius: theme.borderRadius,
+        border: 'none',
+        boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)'
+      };
+    }
+  };
+
+  // Helper function to adjust color brightness
+  const adjustColor = (color: string, amount: number) => {
+    return color;
+    // A more complex implementation would adjust the brightness
+    // This is simplified for this example
+  };
+
   // Show thank you page after submission
   if (submitted) {
     return (
       <Card
-        className="w-full max-w-xl mx-auto overflow-hidden"
+        className="w-full max-w-xl mx-auto overflow-hidden shadow-lg transition-all duration-500 ease-in-out"
         style={{
           backgroundColor: theme.backgroundColor,
           color: theme.textColor,
           fontFamily: theme.fontFamily,
-          borderRadius: theme.borderRadius
+          borderRadius: theme.borderRadius,
+          boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)'
         }}
       >
-        <CardContent className="pt-6 px-8 pb-8 text-center space-y-4">
-          <div className="mx-auto rounded-full bg-primary/10 p-3 w-12 h-12 flex items-center justify-center mb-4">
-            <Check className="h-6 w-6 text-primary" />
+        <CardContent className="pt-12 px-8 pb-12 text-center space-y-6 flex flex-col items-center">
+          <div
+            className="mx-auto rounded-full p-4 w-16 h-16 flex items-center justify-center mb-4 animate-in zoom-in-50 duration-500"
+            style={{
+              backgroundColor: `${theme.primaryColor}20`,
+              color: theme.primaryColor
+            }}
+          >
+            <Check className="h-8 w-8" />
           </div>
-          <CardTitle className="text-2xl font-bold">
+          <CardTitle
+            className="text-2xl sm:text-3xl font-bold animate-in fade-in-50 duration-500"
+            style={{ color: theme.textColor }}
+          >
             {thankYouPage.message || "Thank you for your submission!"}
           </CardTitle>
 
+          <CardDescription
+            className="text-base animate-in fade-in-50 duration-500 delay-200"
+            style={{ color: `${theme.textColor}99` }}
+          >
+            {thankYouPage.subMessage || "We've received your response and will process it shortly."}
+          </CardDescription>
+
           {thankYouPage.redirectUrl && (
-            <CardDescription>
+            <CardDescription className="animate-in fade-in-50 duration-500 delay-300">
               You will be redirected shortly...
             </CardDescription>
           )}
 
           {thankYouPage.buttonText && (
             <Button
-              className="mt-4"
-              style={{
-                backgroundColor: theme.buttonStyle === 'filled' ? theme.primaryColor : 'transparent',
-                color: theme.buttonStyle === 'filled' ? '#fff' : theme.primaryColor,
-                borderRadius: theme.borderRadius,
-                border: theme.buttonStyle === 'outlined' ? `1px solid ${theme.primaryColor}` : 'none',
-                background: theme.buttonStyle === 'gradient'
-                  ? `linear-gradient(to right, ${theme.primaryColor}, ${theme.accentColor})`
-                  : undefined
-              }}
+              className="mt-6 px-6 py-2 transition-all duration-300 hover:scale-105 animate-in fade-in-50 duration-500 delay-500"
+              style={getButtonStyles()}
             >
               {thankYouPage.buttonText}
             </Button>
@@ -136,7 +184,10 @@ export default function FormPreview({
 
   return (
     <Card
-      className="w-full max-w-xl mx-auto overflow-hidden"
+      className={cn(
+        "w-full max-w-xl mx-auto overflow-hidden shadow-lg transition-all duration-300",
+        coverImage ? "shadow-xl" : "shadow-md"
+      )}
       style={{
         backgroundColor: theme.backgroundColor,
         color: theme.textColor,
@@ -144,28 +195,81 @@ export default function FormPreview({
         borderRadius: theme.borderRadius
       }}
     >
-      <CardHeader className={`bg-primary/5 p-6 ${theme.logoPosition === 'center' ? 'text-center' : ''}`}>
-        <CardTitle className="text-2xl font-bold">{formTitle}</CardTitle>
+      {/* Display cover image if present */}
+      {coverImage && (
+        <div
+          className="w-full relative"
+          style={{
+            maxHeight: '240px',
+            overflow: 'hidden'
+          }}
+        >
+          <img
+            src={coverImage}
+            alt="Form cover"
+            className="w-full object-cover hover:scale-105 transition-transform duration-700 ease-in-out"
+            style={{ height: '240px' }}
+          />
+          <div
+            className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"
+            style={{ mixBlendMode: 'multiply' }}
+          ></div>
+        </div>
+      )}
+
+      <CardHeader
+        className={cn(
+          "p-6",
+          coverImage ? "-mt-16 relative z-10" : `bg-primary/5 ${theme.logoPosition === 'center' ? 'text-center' : ''}`
+        )}
+        style={{
+          backgroundColor: coverImage ? 'transparent' : `${theme.primaryColor}10`,
+        }}
+      >
+        <CardTitle
+          className={cn(
+            "text-2xl font-bold",
+            coverImage && "text-white drop-shadow-md"
+          )}
+          style={{
+            color: coverImage ? '#ffffff' : theme.textColor,
+          }}
+        >
+          {formTitle}
+        </CardTitle>
         {formDescription && (
-          <CardDescription>{formDescription}</CardDescription>
+          <CardDescription
+            className={cn(coverImage && "text-white/90 drop-shadow-md")}
+            style={{
+              color: coverImage ? 'rgba(255,255,255,0.9)' : `${theme.textColor}99`
+            }}
+          >
+            {formDescription}
+          </CardDescription>
         )}
       </CardHeader>
 
       {settings.multiPage && settings.progressBar && (
-        <div className="bg-muted h-1.5 w-full">
+        <div className="bg-muted h-1.5 w-full overflow-hidden">
           <div
-            className="h-full bg-primary transition-all"
+            className="h-full transition-all duration-500 ease-out"
             style={{
               width: `${((currentPage + 1) / totalPages) * 100}%`,
-              backgroundColor: theme.primaryColor
+              background: theme.buttonStyle === 'gradient'
+                ? `linear-gradient(to right, ${theme.primaryColor}, ${adjustColor(theme.primaryColor, 20)})`
+                : theme.primaryColor
             }}
           />
         </div>
       )}
 
-      <CardContent className="p-6">
+      <CardContent className="p-6 pt-8 space-y-6">
         {settings.multiPage && (
-          <div className="mb-4 text-sm text-muted-foreground">
+          <div
+            className="mb-4 text-sm text-muted-foreground flex items-center"
+            style={{ color: `${theme.textColor}80` }}
+          >
+            <Sparkles className="h-3.5 w-3.5 mr-2" style={{ color: theme.primaryColor }} />
             Page {currentPage + 1} of {totalPages}
           </div>
         )}
@@ -178,11 +282,16 @@ export default function FormPreview({
         />
       </CardContent>
 
-      <CardFooter className="p-6 pt-0 flex justify-between">
+      <CardFooter className="p-6 pt-0 flex justify-between items-center">
         {multiPage && currentPage > 0 ? (
           <Button
             variant="outline"
             onClick={handlePrevious}
+            className="flex items-center transition-all hover:-translate-x-1"
+            style={{
+              borderColor: `${theme.primaryColor}50`,
+              color: theme.primaryColor
+            }}
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Previous
@@ -194,15 +303,8 @@ export default function FormPreview({
         <Button
           onClick={handleNext}
           disabled={!validatePage()}
-          style={{
-            backgroundColor: theme.buttonStyle === 'filled' ? theme.primaryColor : 'transparent',
-            color: theme.buttonStyle === 'filled' ? '#fff' : theme.primaryColor,
-            borderRadius: theme.borderRadius,
-            border: theme.buttonStyle === 'outlined' ? `1px solid ${theme.primaryColor}` : 'none',
-            background: theme.buttonStyle === 'gradient'
-              ? `linear-gradient(to right, ${theme.primaryColor}, ${theme.accentColor})`
-              : undefined
-          }}
+          className="transition-all hover:translate-x-1 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+          style={getButtonStyles()}
         >
           {currentPage < totalPages - 1 ? (
             <>

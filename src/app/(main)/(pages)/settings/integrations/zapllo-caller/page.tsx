@@ -42,7 +42,8 @@ export default function ZaplloCallerIntegrationPage() {
             "Detailed call analytics and performance reports",
             "Click-to-call from any phone number in the CRM",
             "Call queuing and scheduling for better time management",
-            "Integration with existing phone systems (SIP/VoIP)"
+            "Integration with existing phone systems (SIP/VoIP)",
+            "500 minutes of free calling included with subscription"
         ],
         benefits: [
             {
@@ -116,7 +117,8 @@ export default function ZaplloCallerIntegrationPage() {
             "Real-time call notes and follow-up task creation",
             "Custom call dispositions for better categorization",
             "Detailed call analytics and performance reports",
-            "Integration with existing phone systems (SIP/VoIP)"
+            "Integration with existing phone systems (SIP/VoIP)",
+            "500 minutes of free calling included with your subscription"
         ],
         setupSteps: [
             {

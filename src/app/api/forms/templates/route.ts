@@ -4,6 +4,7 @@ import FormModel from '@/models/formBuilderModel';
 import FormTemplateModel from '@/models/formTemplateModel';
 import { getDataFromToken } from '@/lib/getDataFromToken';
 import { User } from '@/models/userModel';
+import msmeTemplates from '@/data/formTemplates';
 
 export async function GET(request: NextRequest) {
   try {
@@ -55,15 +56,25 @@ export async function GET(request: NextRequest) {
           organization: user.organization,
           isTemplate: true
         })
-          .select('name description category tags')
+          .select('name description category tags coverImage')
           .sort({ updatedAt: -1 });
       }
     }
 
+    // Include our hard-coded MSME templates
+    const msmeTemplatesList = msmeTemplates.map(template => ({
+      _id: template.name.toLowerCase().replace(/\s+/g, '-'),
+      name: template.name,
+      description: template.description,
+      category: template.category,
+      tags: template.tags,
+      previewImage: template.coverImage
+    }));
+
     return NextResponse.json({
       success: true,
       templates: {
-        public: publicTemplates,
+        public: [...publicTemplates, ...msmeTemplatesList],
         organization: orgTemplates
       }
     });
