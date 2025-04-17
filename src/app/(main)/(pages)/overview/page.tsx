@@ -156,7 +156,17 @@ const OverviewPage = () => {
             badge: "New",
             badgeColor: "text-indigo-700 bg-indigo-100 dark:text-indigo-300 dark:bg-indigo-900/30",
         },
-
+        {
+            id: "form",
+            title: "Form Builder",
+            description: "Create custom forms for lead generation, surveys, feedback and more.",
+            icon: <FormIcon className="h-6 w-6" />,
+            path: "/forms",
+            color: "bg-green-900",
+            count: 24,
+            badge: "New",
+            badgeColor: "text-indigo-700 bg-indigo-100 dark:text-indigo-300 dark:bg-indigo-900/30",
+        },
     ];
 
     // Quick access modules
@@ -373,6 +383,31 @@ const OverviewPage = () => {
 };
 
 export default OverviewPage;
+
+
+
+// Add this helper component
+function FormIcon(props: any) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect width="18" height="18" x="3" y="3" rx="2" />
+      <path d="M7 7h10" />
+      <path d="M7 12h10" />
+      <path d="M7 17h5" />
+    </svg>
+  );
+}
 
 // Helper components
 function CheckCircle2(props: any) {

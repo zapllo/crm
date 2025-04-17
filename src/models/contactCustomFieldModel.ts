@@ -6,6 +6,7 @@ interface IContactCustomFieldDefinition extends Document {
   fieldType: 'Text' | 'Number' | 'Date' | 'Dropdown';
   mandatory: boolean;    // if true, must be filled out in Add/Edit contact
   options?: string[];    // only relevant if fieldType = 'Dropdown'
+  organization: mongoose.Types.ObjectId; // Add this field to link to organization
 }
 
 const contactCustomFieldDefinitionSchema = new Schema<IContactCustomFieldDefinition>(
@@ -18,6 +19,11 @@ const contactCustomFieldDefinitionSchema = new Schema<IContactCustomFieldDefinit
     },
     mandatory: { type: Boolean, default: false },
     options: [{ type: String }], // for the dropdown choices, if any
+    organization: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Organization',
+      required: true,
+  },
   },
   { timestamps: true }
 );

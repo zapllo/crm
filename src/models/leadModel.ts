@@ -29,6 +29,7 @@ interface ILead extends Document {
     assignedTo: Schema.Types.ObjectId; // Reference to the pipeline
     remarks: string;
     pipeline: Schema.Types.ObjectId; // Reference to the pipeline
+    customFieldValues?: Record<string, any>; // Store values for custom fields
     organization: Schema.Types.ObjectId; // Reference to the pipeline
     stage: string; // Current stage
     timeline: ITimeline[]; // Stage change history
@@ -71,6 +72,7 @@ const leadSchema = new Schema<ILead>(
         assignedTo: { type: Schema.Types.ObjectId, ref: "User" },
         remarks: { type: String },
         pipeline: { type: Schema.Types.ObjectId, ref: 'Pipeline', required: true },
+        customFieldValues: { type: Object }, // Simple object to store custom field values
         organization: { type: Schema.Types.ObjectId, ref: "Organization" },
         stage: { type: String, required: true, default: "" },
         timeline: [timelineSchema], // Array of timeline entries

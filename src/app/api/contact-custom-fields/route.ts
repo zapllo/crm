@@ -35,23 +35,9 @@ export async function GET(request: Request) {
             return NextResponse.json({ error: "Missing orgId" }, { status: 400 });
         }
 
-        // 3. Get all companies belonging to the user's organization
-        const companies = await companyModel.find({ organization: user.organization });
-
-        // 4. Get all contacts belonging to those companies
-        const contactIds = await contactModel.find({
-            company: { $in: companies.map(company => company._id) }
-        }).distinct('_id');
-
-        // 5. Since custom fields are shared across all contacts in an organization,
-        // we can fetch all distinct custom field definitions used by the organization's contacts
-        const definitionIds = await contactModel.find({
-            _id: { $in: contactIds }
-        }).distinct('customFieldValues.definition');
-
-        // 6. Get the actual definitions
+        // Simply get all custom field definitions for this organization
         const definitions = await ContactCustomFieldDefinition.find({
-            _id: { $in: definitionIds }
+            organization: user.organization
         }).sort({ createdAt: -1 });
 
         return NextResponse.json(definitions, { status: 200 });
@@ -61,10 +47,26 @@ export async function GET(request: Request) {
     }
 }
 
-
 export async function POST(request: Request) {
     try {
         await connectDB();
+
+        // 1. Get userId from token
+        const userId = getDataFromToken(request);
+        if (!userId) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        // 2. Fetch the user from DB
+        const user = await User.findById(userId);
+        if (!user) {
+            return NextResponse.json({ error: "User not found" }, { status: 404 });
+        }
+
+        if (!user.organization) {
+            return NextResponse.json({ error: "Missing organization" }, { status: 400 });
+        }
+
         const { name, fieldType, mandatory, options } = await request.json();
 
         const newDef = new ContactCustomFieldDefinition({
@@ -72,6 +74,7 @@ export async function POST(request: Request) {
             fieldType,
             mandatory,
             options: fieldType === 'Dropdown' ? options || [] : [],
+            organization: user.organization // Add organization ID
         });
         await newDef.save();
         return NextResponse.json(newDef, { status: 201 });

@@ -45,6 +45,11 @@ interface LeadDetailsType {
         name: string;
         openStages: string[];
         closeStages: string[];
+        customFields?: { // Add custom field definitions here
+            name: string;
+            type: "Text" | "Date" | "Number" | "MultiSelect";
+            options?: string[];
+        }[];
     };
     stage: string;
     assignedTo: {
@@ -68,7 +73,7 @@ interface LeadDetailsType {
         email: string;
         phone: string;
         company?: {
-            id:string;
+            id: string;
             name: string;
             country: string;
             city: string;
@@ -82,6 +87,8 @@ interface LeadDetailsType {
         date: string;
         details: string;
     }[];
+    customFieldValues?: Record<string, any>; // Add this line for custom field values
+
     createdAt: Date;
     updatedAt: Date;
 }
@@ -220,26 +227,26 @@ export default function LeadDetails() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Lead Actions</DropdownMenuLabel> */}
-                            {canEdit("Leads") && (
-                                <MoveLeadDialog
-                                    leadId={leadId || ''}
-                                    currentStage={leadDetails.stage}
-                                    onLeadMoved={() => fetchLeadDetails()}
-                                // trigger={<DropdownMenuItem onSelect={(e) => e.preventDefault()}>Move Stage</DropdownMenuItem>}
-                                />
-                            )}
-                            {canAdd("Leads") && (
-                                <AddNoteDialog
-                                    leadId={leadId || ''}
-                                    onNoteAdded={() => fetchLeadDetails()}
-                                // trigger={<DropdownMenuItem onSelect={(e) => e.preventDefault()}>Add Note</DropdownMenuItem>}
-                                />
-                            )}
-                            {/* <AddFollowupDialog
+                    {canEdit("Leads") && (
+                        <MoveLeadDialog
+                            leadId={leadId || ''}
+                            currentStage={leadDetails.stage}
+                            onLeadMoved={() => fetchLeadDetails()}
+                        // trigger={<DropdownMenuItem onSelect={(e) => e.preventDefault()}>Move Stage</DropdownMenuItem>}
+                        />
+                    )}
+                    {canAdd("Leads") && (
+                        <AddNoteDialog
+                            leadId={leadId || ''}
+                            onNoteAdded={() => fetchLeadDetails()}
+                        // trigger={<DropdownMenuItem onSelect={(e) => e.preventDefault()}>Add Note</DropdownMenuItem>}
+                        />
+                    )}
+                    {/* <AddFollowupDialog
                                 onFollowupAdded={() => fetchLeadDetails()}
                             // trigger={<DropdownMenuItem onSelect={(e) => e.preventDefault()}>Schedule Follow-up</DropdownMenuItem>}
                             /> */}
-                        {/* </DropdownMenuContent>
+                    {/* </DropdownMenuContent>
                     </DropdownMenu> */}
                 </div>
             </div>
@@ -402,7 +409,57 @@ export default function LeadDetails() {
                             </div>
                         </CardContent>
                     </Card>
+                    {/* Add this card after the Lead Information card in the left panel */}
+                    {leadDetails.customFieldValues &&
+                        Object.keys(leadDetails.customFieldValues).length > 0 && (
+                            <Card className="shadow-sm border-muted">
+                                <CardHeader className="pb-2">
+                                    <CardTitle className="text-lg font-medium flex items-center">
+                                        <FaLayerGroup className="mr-2 h-4 w-4 text-primary" />
+                                        Custom Fields
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    {Object.entries(leadDetails.customFieldValues).map(([fieldName, value]) => {
+                                        // Find the field definition to determine the type
+                                        const fieldDef = leadDetails.pipeline.customFields?.find(
+                                            field => field.name === fieldName
+                                        );
 
+                                        return (
+                                            <div key={fieldName}>
+                                                <p className="text-xs text-muted-foreground mb-1">{fieldName}</p>
+                                                <div className="flex items-center">
+                                                    {/* Different icons based on field type */}
+                                                    {fieldDef?.type === "Date" ? (
+                                                        <FaCalendar className="mr-2 h-3 w-3 text-primary" />
+                                                    ) : fieldDef?.type === "Number" ? (
+                                                        <FaRupeeSign className="mr-2 h-3 w-3 text-primary" />
+                                                    ) : (
+                                                        <FaFileAlt className="mr-2 h-3 w-3 text-primary" />
+                                                    )}
+
+                                                    {/* Format the value based on field type */}
+                                                    {fieldDef?.type === "Date" && value ? (
+                                                        <p className="text-sm">{format(new Date(value), "dd MMM yyyy")}</p>
+                                                    ) : Array.isArray(value) ? (
+                                                        <div className="flex flex-wrap gap-1">
+                                                            {value.map((item, idx) => (
+                                                                <Badge key={idx} variant="outline" className="text-xs">
+                                                                    {item}
+                                                                </Badge>
+                                                            ))}
+                                                        </div>
+                                                    ) : (
+                                                        <p className="text-sm">{value?.toString() || "N/A"}</p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </CardContent>
+                            </Card>
+                        )}
                     {/* Contact Details Card */}
                     {leadDetails.contact && (
                         <Card className="shadow-sm border-muted">
@@ -450,7 +507,7 @@ export default function LeadDetails() {
                                         Email
                                     </Button> */}
 
-                                    <Button onClick={()=> router.push(`/CRM/contacts/${leadDetails.contact?.id}`)} variant="outline" size="sm" className="w-full">
+                                    <Button onClick={() => router.push(`/CRM/contacts/${leadDetails.contact?.id}`)} variant="outline" size="sm" className="w-full">
                                         <Eye className="mr-2 h-3 w-3" />
                                         View
                                     </Button>
@@ -507,7 +564,7 @@ export default function LeadDetails() {
                                     </div>
                                 </div>
 
-                                <Button onClick={()=> router.push(`/CRM/companies/${leadDetails.contact?.company?.id}`)} variant="outline" size="sm" className="w-full">
+                                <Button onClick={() => router.push(`/CRM/companies/${leadDetails.contact?.company?.id}`)} variant="outline" size="sm" className="w-full">
                                     <FaBuilding className="mr-2 h-3 w-3" />
                                     View Company Profile
 
@@ -539,7 +596,7 @@ export default function LeadDetails() {
                                     <p className="text-xs text-muted-foreground mt-1">Active for {formatDistanceToNow(new Date(leadDetails.createdAt))}</p>
                                 </div>
                             </div>
-{/*
+                            {/*
                             <div className="mt-4">
                                 <Button variant="outline" size="sm" className="w-full" onClick={() => {
                                     const tabsElement = document.querySelector('[data-value="timeline"]');

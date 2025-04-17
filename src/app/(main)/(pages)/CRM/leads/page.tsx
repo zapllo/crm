@@ -139,6 +139,7 @@ interface Lead {
     files?: string[];
     audioRecordings?: string[];
     links?: { url: string; title: string }[];
+    customFieldValues?: Record<string, any>; // Add this line for custom field values
 }
 
 interface Stage {
@@ -166,6 +167,11 @@ interface Pipeline {
         won?: boolean;
         lost?: boolean;
     }[];
+    customFields?: {
+        name: string;
+        type: "Text" | "Date" | "Number" | "MultiSelect";
+        options?: string[];
+    }[]; // Add this line for custom field definitions
 }
 
 interface Product {
@@ -1068,7 +1074,35 @@ export default function LeadsDashboard() {
     const [isEditMode, setIsEditMode] = useState(false);
     const [leadToEdit, setLeadToEdit] = useState<Lead | null>(null);
 
-    // Add this function to handle editing a lead
+
+    const [customFieldValues, setCustomFieldValues] = useState<Record<string, any>>({});
+
+    // Add this effect to fetch custom fields when pipeline changes
+    useEffect(() => {
+        if (!modalPipeline) {
+            setCustomFieldValues({});
+            return;
+        }
+
+        // Find the selected pipeline to get its custom field definitions
+        const selectedPipeline = pipelines.find(p => p._id === modalPipeline);
+
+        if (isEditMode && leadToEdit && leadToEdit.customFieldValues) {
+            // If editing, preserve existing values
+            setCustomFieldValues(leadToEdit.customFieldValues || {});
+        } else {
+            // If creating new, reset values
+            setCustomFieldValues({});
+        }
+    }, [modalPipeline, pipelines, isEditMode, leadToEdit]);
+
+    // Update handler to store custom field values
+    const handleCustomFieldChange = (fieldName: string, value: any) => {
+        setCustomFieldValues(prev => ({
+            ...prev,
+            [fieldName]: value
+        }));
+    };
     // Add this function to handle editing a lead
     const handleEditLead = (lead: Lead) => {
         setLeadToEdit(lead);
@@ -1104,10 +1138,23 @@ export default function LeadsDashboard() {
         if (lead.files) setFiles(lead.files);
         if (lead.audioRecordings) setAudioRecordings(lead.audioRecordings);
         if (lead.links) setLinks(lead.links);
+        // Load custom field values if available
+        if (lead.customFieldValues) {
+            setCustomFieldValues(lead.customFieldValues);
+        } else {
+            setCustomFieldValues({});
+        }
 
         // Open the modal
         setIsLeadModalOpen(true);
     };
+
+    // Add effect to reset custom fields when modal is closed
+    useEffect(() => {
+        if (!isLeadModalOpen) {
+            setCustomFieldValues({});
+        }
+    }, [isLeadModalOpen]);
     // Modify the existing handleAddLead function to handle both add and edit
     const handleAddOrUpdateLead = async () => {
         // Validate required fields
@@ -1150,6 +1197,10 @@ export default function LeadsDashboard() {
                 audioRecordings,
                 links
             };
+
+            if (Object.keys(customFieldValues).length > 0) {
+                leadData.customFieldValues = customFieldValues;
+            }
 
             // Only add these fields if they have valid values
             if (selectedProduct && selectedProduct !== "NONE") {
@@ -2131,6 +2182,79 @@ export default function LeadsDashboard() {
                                 </div>
                             </div>
                         </div>
+                        {modalPipeline && pipelines.find(p => p._id === modalPipeline)?.customFields && (pipelines.find(p => p._id === modalPipeline)?.customFields?.length ?? 0) > 0 && (
+                            <div className="space-y-4 mt-4">
+                                <Separator />
+                                <h3 className="text-sm font-medium">Custom Fields</h3>
+
+                                <div className="grid gap-4">
+                                    {pipelines.find(p => p._id === modalPipeline)?.customFields?.map((field) => (
+                                        <div key={field.name} className="space-y-2">
+                                            <label className="text-sm font-medium">{field.name}</label>
+
+                                            {field.type === "Text" && (
+                                                <Input
+                                                    value={customFieldValues[field.name] || ""}
+                                                    onChange={(e) => handleCustomFieldChange(field.name, e.target.value)}
+                                                    placeholder={`Enter ${field.name.toLowerCase()}`}
+                                                />
+                                            )}
+
+                                            {field.type === "Number" && (
+                                                <Input
+                                                    type="number"
+                                                    value={customFieldValues[field.name] || ""}
+                                                    onChange={(e) => handleCustomFieldChange(field.name, Number(e.target.value))}
+                                                    placeholder={`Enter ${field.name.toLowerCase()}`}
+                                                />
+                                            )}
+
+                                            {field.type === "Date" && (
+                                                <Popover>
+                                                    <PopoverTrigger asChild>
+                                                        <Button
+                                                            variant="outline"
+                                                            className="w-full justify-start text-left font-normal"
+                                                        >
+                                                            {customFieldValues[field.name] ? format(new Date(customFieldValues[field.name]), "PPP") : (
+                                                                <span className="text-muted-foreground">Select date</span>
+                                                            )}
+                                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                                        </Button>
+                                                    </PopoverTrigger>
+                                                    <PopoverContent className="w-auto p-0" align="start">
+                                                        <Calendar
+                                                            mode="single"
+                                                            selected={customFieldValues[field.name] ? new Date(customFieldValues[field.name]) : undefined}
+                                                            onSelect={(date) => handleCustomFieldChange(field.name, date)}
+                                                            initialFocus
+                                                        />
+                                                    </PopoverContent>
+                                                </Popover>
+                                            )}
+
+                                            {field.type === "MultiSelect" && field.options && (
+                                                <Select
+                                                    value={customFieldValues[field.name] || ""}
+                                                    onValueChange={(val) => handleCustomFieldChange(field.name, val)}
+                                                >
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder={`Select ${field.name.toLowerCase()}`} />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {field.options.map((option) => (
+                                                            <SelectItem key={option} value={option}>
+                                                                {option}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                         <MediaAttachments
                             initialFiles={files}
                             initialAudioRecordings={audioRecordings}
@@ -2558,16 +2682,16 @@ function DraggableLead({
         <Card
             className="mt-3 border hover:border-primary relative hover:shadow-md transition-all duration-200 cursor-pointer"
         >
-             <div
-              className="absolute right-8  items-center flex">
+            <div
+                className="absolute right-8  items-center flex">
 
-            <MoveLeadDialog
-                leadId={lead._id}
-                currentStage={lead.stage || ""}
-                onLeadMoved={() => {
-                    if (onLeadMoved) onLeadMoved();
-                }}
-            />
+                <MoveLeadDialog
+                    leadId={lead._id}
+                    currentStage={lead.stage || ""}
+                    onLeadMoved={() => {
+                        if (onLeadMoved) onLeadMoved();
+                    }}
+                />
             </div>
             <LeadActionMenu
                 leadId={lead._id}

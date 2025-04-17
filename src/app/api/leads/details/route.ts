@@ -19,6 +19,7 @@ export async function GET(req: Request) {
                     select: 'companyName country state city shippingAddress pincode', // Only necessary fields
                 },
             }).populate('source')
+            .populate("pipeline")
             .populate('assignedTo', 'firstName lastName email whatsappNumber')
             .populate('product', 'productName')
             .exec();
@@ -38,10 +39,11 @@ export async function GET(req: Request) {
                 leadId: lead.leadId,
                 title: lead.title,
                 pipeline: {
-                    id: pipeline._id,
-                    name: pipeline.name,
-                    openStages: pipeline.openStages,
-                    closeStages: pipeline.closeStages,
+                    id: lead.pipeline._id,
+                    name: lead.pipeline.name,
+                    openStages: lead.pipeline.openStages.map((s: any) => s.name),
+                    closeStages: lead.pipeline.closeStages.map((s: any) => s.name),
+                    customFields: lead.pipeline.customFields || []
                 },
                 stage: lead.stage,
                 assignedTo: lead.assignedTo
@@ -75,6 +77,7 @@ export async function GET(req: Request) {
                             : null,
                     }
                     : null,
+                customFieldValues: lead.customFieldValues || {},
                 createdAt: lead.createdAt,
                 updatedAt: lead.updatedAt,
                 timeline: lead.timeline.reverse(), // ✅ Latest first

@@ -138,7 +138,7 @@ export default function ContactDetailsPage() {
     // Fetch leads associated with this contact
     async function fetchLeadsForContact() {
         try {
-            // Suppose we pass contactId as a query param 
+            // Suppose we pass contactId as a query param
             // (You can adjust the actual route as needed.)
             const res = await axios.get<ILead[]>(`/api/leads/contacts?contact=${id}`);
             setLeads(res.data);
@@ -266,7 +266,7 @@ export default function ContactDetailsPage() {
                                     <Button
                                         variant="outline"
                                         className="gap-2 opacity-50 cursor-not-allowed"
-                                        
+
                                     >
                                         <Pencil className="h-4 w-4" />
                                         Edit
@@ -382,10 +382,10 @@ export default function ContactDetailsPage() {
                                             <Calendar className="h-4 w-4 text-muted-foreground mt-0.5" />
                                             <div className="text-sm">
                                                 {contact.dateOfBirth && (
-                                                    <p><span className="text-muted-foreground">Birthday:</span> {new Date(contact.dateOfBirth).toLocaleDateString()}</p>
+                                                    <p><span className="text-muted-foreground">Birthday:</span> {new Date(contact.dateOfBirth)?.toLocaleDateString()}</p>
                                                 )}
                                                 {contact.dateOfAnniversary && (
-                                                    <p><span className="text-muted-foreground">Anniversary:</span> {new Date(contact.dateOfAnniversary).toLocaleDateString()}</p>
+                                                    <p><span className="text-muted-foreground">Anniversary:</span> {new Date(contact.dateOfAnniversary)?.toLocaleDateString()}</p>
                                                 )}
                                             </div>
                                         </div>
@@ -549,12 +549,12 @@ export default function ContactDetailsPage() {
                                                         <div>
                                                             <p className="font-medium">{lead.title}</p>
                                                             <p className="text-xs text-muted-foreground">
-                                                                Created: {new Date(lead.createdAt).toLocaleDateString()}
+                                                                Created: {new Date(lead.createdAt)?.toLocaleDateString()}
                                                             </p>
                                                         </div>
                                                     </TableCell>
                                                     <TableCell className="text-right font-medium">
-                                                        ₹{lead.amount.toLocaleString()}
+                                                        ₹{lead.amount?.toLocaleString()}
                                                     </TableCell>
                                                     <TableCell className="text-center">
                                                         <HoverCard>
@@ -575,14 +575,14 @@ export default function ContactDetailsPage() {
                                                                 <div className="space-y-1">
                                                                     <h4 className="text-sm font-semibold">{lead.stage} Stage</h4>
                                                                     <p className="text-sm">
-                                                                        Last updated: {new Date(lead.updatedAt).toLocaleDateString()}
+                                                                        Last updated: {new Date(lead.updatedAt)?.toLocaleDateString()}
                                                                     </p>
                                                                 </div>
                                                             </HoverCardContent>
                                                         </HoverCard>
                                                     </TableCell>
                                                     <TableCell className="text-right">
-                                                        {new Date(lead.closeDate).toLocaleDateString()}
+                                                        {new Date(lead.closeDate)?.toLocaleDateString()}
                                                     </TableCell>
                                                 </TableRow>
                                             ))}

@@ -4,6 +4,7 @@ import Contact from "@/models/contactModel";
 // Import the Company model so Mongoose can populate with it
 import Company from "@/models/companyModel";
 import contactTagModel from "@/models/contactTagModel";
+import contactCustomFieldModel from "@/models/contactCustomFieldModel";
 
 // (Optionally, if you want to populate tags with a ContactTag model, import that too.)
 // import ContactTag from "@/models/contactTagModel";
@@ -22,7 +23,11 @@ export async function GET(req: Request,
             }).populate({
                 path: "tags",
                 model: contactTagModel,
-            })
+            })// Populate custom field definitions
+            .populate({
+                path: "customFieldValues.definition",
+                model: contactCustomFieldModel,
+            });
             ;
 
         if (!contact) {

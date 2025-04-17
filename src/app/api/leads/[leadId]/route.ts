@@ -70,7 +70,7 @@ export async function PUT(req: Request,
             'title', 'description', 'product', 'contact',
             'amount', 'closeDate', 'assignedTo', 'pipeline',
             'stage', 'files', 'audioRecordings', 'links',
-            'source', 'organization'
+            'source', 'organization', 'customFieldValues'
         ];
 
         // Only update allowed fields
