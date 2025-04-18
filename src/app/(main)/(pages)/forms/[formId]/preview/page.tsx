@@ -49,7 +49,7 @@ export default function PreviewFormPageContent() {
   };
 
   const viewLiveForm = () => {
-    window.open(`/forms/${formId}`, '_blank');
+    window.open(`/live-form/${formId}`, '_blank');
   };
 
   if (loading) {
@@ -131,6 +131,7 @@ export default function PreviewFormPageContent() {
             formDescription={form.description || ''}
             settings={form.settings || {}}
             thankYouPage={form.thankYouPage || {}}
+            coverImage={form.coverImage || ''}
             multiPage={form.settings?.multiPage || false}
           />
         </div>

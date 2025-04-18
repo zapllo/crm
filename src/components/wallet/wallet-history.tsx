@@ -192,9 +192,9 @@ export default function WalletHistory() {
               </SelectContent>
             </Select>
 
-            <Button variant="outline" size="icon" onClick={exportTransactions}>
+            {/* <Button variant="outline" size="icon" onClick={exportTransactions}>
               <Download className="h-4 w-4" />
-            </Button>
+            </Button> */}
           </div>
         </div>
       </CardHeader>

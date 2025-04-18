@@ -9,8 +9,6 @@ export async function GET(request: Request,
 ) {
   try {
     const templateId = (await params).templateId
-
-
     await connectDB();
 
     let template;

@@ -1,6 +1,7 @@
 import connectDB from '@/lib/db';
 import { getDataFromToken } from '@/lib/getDataFromToken';
 import Lead from '@/models/leadModel';
+import { User } from '@/models/userModel';
 
 export async function POST(req: Request) {
     try {
@@ -13,7 +14,8 @@ export async function POST(req: Request) {
                 { status: 400 }
             );
         }
-        const createdBy = getDataFromToken(req);
+        const userData = getDataFromToken(req);
+        const createdBy = userData; // userData is already the user ID
         const lead = await Lead.findById(leadId);
         if (!lead) {
             return new Response(JSON.stringify({ error: 'Lead not found' }), { status: 404 });
@@ -27,18 +29,28 @@ export async function POST(req: Request) {
         };
 
         lead.notes.push(newNote);
-        // Add entry to the timeline properly
         lead.timeline.push({
             stage: "Note Added",
             action: "Note added to lead",
             remark: text || "Audio Note Added",
-            movedBy: createdBy,  // Ensure this is the logged-in user ID
+            movedBy: createdBy,
             timestamp: new Date(),
         });
 
         await lead.save();
 
-        return new Response(JSON.stringify({ message: 'Note added successfully', note: newNote }), {
+        // Fetch the user's info to return with the response
+        const user = await User.findById(createdBy).select('firstName lastName profileImage');
+        const enrichedNote = {
+            ...newNote,
+            createdByName: user ? `${user.firstName} ${user.lastName}` : 'Unknown User',
+            profileImage: user?.profileImage || null
+        };
+
+        return new Response(JSON.stringify({
+            message: 'Note added successfully',
+            note: enrichedNote
+        }), {
             status: 201,
         });
     } catch (error) {
@@ -60,7 +72,32 @@ export async function GET(req: Request) {
             return new Response(JSON.stringify({ error: 'Lead not found' }), { status: 404 });
         }
 
-        return new Response(JSON.stringify(lead.notes), { status: 200 });
+        // Get a list of all user IDs from notes
+        const userIds = lead.notes.map((note: any) => note.createdBy).filter((id: any) => id);
+
+        // Fetch user information for all these IDs in one query
+        const users = await User.find({ _id: { $in: userIds } }).select('firstName lastName profileImage');
+
+        // Create a map of user information
+        const userMap = users.reduce<Record<string, { name: string, profileImage: string | null }>>((map, user) => {
+            map[user._id.toString()] = {
+                name: `${user.firstName} ${user.lastName}`,
+                profileImage: user.profileImage || null
+            };
+            return map;
+        }, {});
+
+        // Enrich notes with user information
+        const enrichedNotes = lead.notes.map((note: any) => {
+            const userInfo = userMap[note.createdBy] || { name: 'Unknown User', profileImage: null };
+            return {
+                ...note.toObject(),
+                createdByName: userInfo.name,
+                profileImage: userInfo.profileImage
+            };
+        });
+
+        return new Response(JSON.stringify(enrichedNotes), { status: 200 });
     } catch (error) {
         console.error('Error fetching notes:', error);
         return new Response(JSON.stringify({ error: 'Failed to fetch notes' }), { status: 500 });

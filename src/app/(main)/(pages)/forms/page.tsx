@@ -233,8 +233,8 @@ export default function FormsPage() {
   const filteredForms = forms.filter((form: any) => {
     const matchesSearch = form.name.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesFilter = filter === 'all' ||
-                         (filter === 'published' && form.isPublished) ||
-                         (filter === 'drafts' && !form.isPublished);
+      (filter === 'published' && form.isPublished) ||
+      (filter === 'drafts' && !form.isPublished);
 
     return matchesSearch && matchesFilter;
   });
@@ -372,18 +372,14 @@ export default function FormsPage() {
 
                 {row.original.isPublished && (
                   <DropdownMenuItem
-                    onClick={() => window.open(`/forms/${row.original._id}`, '_blank')}
+                    onClick={() => window.open(`/live-form/${row.original._id}`, '_blank')}
                   >
                     <ExternalLink className="h-4 w-4 mr-2" />
                     <span>Open Live Form</span>
                   </DropdownMenuItem>
                 )}
 
-                <DropdownMenuItem>
-                  <Share2 className="h-4 w-4 mr-2" />
-                  <span>Share Form</span>
-                </DropdownMenuItem>
-
+            
                 <DropdownMenuSeparator />
 
                 <DropdownMenuItem
@@ -445,7 +441,7 @@ export default function FormsPage() {
   }
 
   return (
-    <div className="container  mx-auto max-w-screen w-full px-8 py-10 h-full max-h-screen overflow-y-scroll mt-8">
+    <div className="container mt-12 mx-auto max-w-screen w-full px-8 py-10 h-full max-h-screen overflow-y-scroll ">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Forms</h1>
@@ -453,10 +449,7 @@ export default function FormsPage() {
         </div>
 
         <div className="flex gap-3">
-          <Button onClick={createAIForm} className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-md">
-            <Sparkles className="h-4 w-4 mr-2" />
-            AI Form Builder
-          </Button>
+
           <Button onClick={createNewForm} variant="default">
             <Plus className="h-4 w-4 mr-2" />
             Create Form
@@ -522,10 +515,7 @@ export default function FormsPage() {
             <div className="flex flex-col sm:flex-row gap-3 mt-6 justify-center">
               {!searchQuery && filter === 'all' && (
                 <>
-                  <Button onClick={createAIForm} className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white">
-                    <Sparkles className="h-4 w-4 mr-2" />
-                    AI Form Builder
-                  </Button>
+
                   <Button onClick={createNewForm} variant="default">
                     <Plus className="h-4 w-4 mr-2" />
                     Create Form

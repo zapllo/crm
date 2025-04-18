@@ -72,7 +72,7 @@ const QuotationSidebar: React.FC = () => {
       description: "Manage quotation templates",
       badge: { text: "Pro", variant: "default" }
     },
-   
+
     {
       title: "Settings",
       href: "/quotations/settings",
@@ -181,10 +181,10 @@ const QuotationSidebar: React.FC = () => {
 
           <Separator className="my-6" />
 
-         
+
 
           {/* Help Box */}
-          <div className="px-3 py-4 mt-4">
+          {/* <div className="px-3 py-4 mt-4">
             <div className="rounded-md bg-blue-500/10 p-3 text-xs">
               <p className="font-semibold text-blue-600 dark:text-blue-400">Need help?</p>
               <p className="mt-1 text-muted-foreground">
@@ -198,8 +198,8 @@ const QuotationSidebar: React.FC = () => {
                   Tutorial
                 </Button>
               </div>
-            </div>
-          </div>
+            </div> */}
+          {/* </div> */}
         </div>
       </div>
     </TooltipProvider>

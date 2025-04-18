@@ -15,7 +15,7 @@ interface FormIntegrationPanelProps {
 }
 
 export default function FormIntegrationPanel({ formId }: FormIntegrationPanelProps) {
-  const formUrl = `${window.location.origin}/forms/${formId}`;
+  const formUrl = `${window.location.origin}/live-form/${formId}`;
   const embedCode = `<iframe src="${formUrl}" width="100%" height="600" frameborder="0"></iframe>`;
   const { toast } = useToast();
   const [activeCopyButton, setActiveCopyButton] = useState<string | null>(null);
@@ -42,16 +42,16 @@ export default function FormIntegrationPanel({ formId }: FormIntegrationPanelPro
       </CardHeader>
       <CardContent className="px-0 pt-3">
         <Tabs defaultValue="link" className="w-full">
-          <TabsList className="grid grid-cols-3 mb-6">
-            <TabsTrigger value="link" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+          <TabsList className="grid gap-2 bg-accent grid-cols-3 mb-6">
+            <TabsTrigger value="link" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border-none">
               <Globe className="h-4 w-4 mr-2" />
               Direct Link
             </TabsTrigger>
-            <TabsTrigger value="embed" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <TabsTrigger value="embed" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border-none">
               <Code className="h-4 w-4 mr-2" />
               Embed
             </TabsTrigger>
-            <TabsTrigger value="qr" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <TabsTrigger value="qr" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground border-none">
               <QrCodeIcon className="h-4 w-4 mr-2" />
               QR Code
             </TabsTrigger>
@@ -114,7 +114,7 @@ export default function FormIntegrationPanel({ formId }: FormIntegrationPanelPro
                   className="absolute right-1 top-1"
                   size="sm"
                   onClick={() => copyToClipboard(embedCode, 'embed')}
-                
+
                 >
                   {activeCopyButton === 'embed' ? (
                     <>
@@ -127,7 +127,7 @@ export default function FormIntegrationPanel({ formId }: FormIntegrationPanelPro
               </div>
             </div>
 
-            <div className="bg-muted/40 p-4 rounded-md border">
+            {/* <div className="bg-muted/40 p-4 rounded-md border">
               <h3 className="text-sm font-medium mb-3">Preview</h3>
               <div className="border rounded-md h-40 flex items-center justify-center bg-card">
                 <div className="text-center text-muted-foreground">
@@ -135,7 +135,7 @@ export default function FormIntegrationPanel({ formId }: FormIntegrationPanelPro
                   <p className="text-sm">Form embed preview</p>
                 </div>
               </div>
-            </div>
+            </div> */}
           </TabsContent>
 
           <TabsContent value="qr" className="pt-2">
@@ -143,10 +143,10 @@ export default function FormIntegrationPanel({ formId }: FormIntegrationPanelPro
               <div className="border rounded-md p-6 bg-white w-48 h-48 flex items-center justify-center">
                 <QRCode value={formUrl} size={150} />
               </div>
-              <Button size="sm" className="w-full">
+              {/* <Button size="sm" className="w-full">
                 <Download className="h-4 w-4 mr-2" />
                 Download QR Code
-              </Button>
+              </Button> */}
               <p className="text-xs text-muted-foreground text-center mt-2">
                 Scan this QR code with a mobile device to open the form.
               </p>

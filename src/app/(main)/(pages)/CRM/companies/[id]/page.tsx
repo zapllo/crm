@@ -451,14 +451,14 @@ export default function CompanyDetailsPage() {
                                     <h3 className="text-2xl font-bold mb-1">{contacts.length}</h3>
                                     <p className="text-muted-foreground mb-4">Total Contacts</p>
 
-                                    <Button
+                                    {/* <Button
                                         variant="outline"
                                         size="sm"
                                         onClick={() => setActiveTab("contacts")}
                                         className="w-full"
                                     >
                                         View All Contacts
-                                    </Button>
+                                    </Button> */}
                                 </div>
                             </CardContent>
                         </Card>
@@ -621,7 +621,7 @@ export default function CompanyDetailsPage() {
                                                             </div>
                                                         ) : "—"}
                                                     </TableCell>
-                                                   
+
                                                 </TableRow>
                                             ))}
                                         </TableBody>

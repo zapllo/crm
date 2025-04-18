@@ -5,22 +5,25 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Check, MinusCircle, PlusCircle, Sparkles, ChevronDown, ChevronUp, FileText } from "lucide-react";
+import { Check, MinusCircle, PlusCircle, Sparkles, ChevronDown, ChevronUp, FileText, Wallet, Clock, BrainCircuit } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-// import { useSession } from "next-auth/react";
 import PricingBreakdown from "@/components/billing/PricingBreakdown";
 import FeaturesList from "@/components/billing/FeaturesList";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useUserContext } from "@/contexts/userContext";
 
-// Constants for pricing
+// Constants for pricing - add new product prices
 const CRM_PRICE_PER_USER = 5999; // ₹5,999 per user per year
 const QUOTATION_PRICE_PER_USER = 2999; // ₹2,999 per user per year
+const FORM_BUILDER_PRICE_PER_USER = 3999; // ₹3,999 per user per year
+const TASKS_PRICE_PER_USER = 1999; // ₹1,999 per user per year
+const BUNDLE_PRICE_PER_USER = 2999; // ₹2,999 per user per year - Money Saver Bundle
 const GST_RATE = 0.18; // 18% GST
 
-type ProductType = "crm" | "quotation";
+type ProductType = "crm" | "quotation" | "formbuilder" | "tasks" | "bundle";
+type ProductCategory = "sales" | "teams";
 
 interface Product {
   id: ProductType;
@@ -30,20 +33,27 @@ interface Product {
   icon: React.ReactNode;
   badge?: string;
   features: string[];
+  category: ProductCategory;
 }
 
 export default function BillingPage() {
   const { user } = useUserContext();
   const [selectedProduct, setSelectedProduct] = useState<ProductType>("crm");
+  const [selectedCategory, setSelectedCategory] = useState<ProductCategory>("sales");
+  // Update userCounts to include the new product
   const [userCounts, setUserCounts] = useState({
     crm: 5,
-    quotation: 5
+    quotation: 5,
+    formbuilder: 5,
+    tasks: 5,
+    bundle: 5
   });
+
   const [showDetails, setShowDetails] = useState(false);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
-  //   const { data: session } = useSession();
+
   // Check if organization has subscriptions and update the counts accordingly
   useEffect(() => {
     if (user?.organization) {
@@ -52,7 +62,7 @@ export default function BillingPage() {
 
       // If the organization has a subscribedUserCount, use it for the subscribed modules
       if (org.subscribedUserCount) {
-        // Check active subscriptions
+        // Check active subscriptions for all products
         if (org.activeSubscriptions?.includes('crm')) {
           newUserCounts.crm = org.subscribedUserCount;
         } else {
@@ -64,6 +74,24 @@ export default function BillingPage() {
         } else {
           newUserCounts.quotation = 1; // Default to 1 if not subscribed
         }
+
+        if (org.activeSubscriptions?.includes('formbuilder')) {
+          newUserCounts.formbuilder = org.subscribedUserCount;
+        } else {
+          newUserCounts.formbuilder = 1; // Default to 1 if not subscribed
+        }
+
+        if (org.activeSubscriptions?.includes('tasks')) {
+          newUserCounts.tasks = org.subscribedUserCount;
+        } else {
+          newUserCounts.tasks = 1; // Default to 1 if not subscribed
+        }
+
+        if (org.activeSubscriptions?.includes('bundle')) {
+          newUserCounts.bundle = org.subscribedUserCount;
+        } else {
+          newUserCounts.bundle = 1; // Default to 1 if not subscribed
+        }
       }
 
       setUserCounts(newUserCounts);
@@ -72,13 +100,25 @@ export default function BillingPage() {
       if (org.activeSubscriptions?.length) {
         if (org.activeSubscriptions.includes('crm')) {
           setSelectedProduct('crm');
+          setSelectedCategory('sales');
         } else if (org.activeSubscriptions.includes('quotation')) {
           setSelectedProduct('quotation');
+          setSelectedCategory('sales');
+        } else if (org.activeSubscriptions.includes('formbuilder')) {
+          setSelectedProduct('formbuilder');
+          setSelectedCategory('sales');
+        } else if (org.activeSubscriptions.includes('tasks')) {
+          setSelectedProduct('tasks');
+          setSelectedCategory('teams');
+        } else if (org.activeSubscriptions.includes('bundle')) {
+          setSelectedProduct('bundle');
+          setSelectedCategory('teams');
         }
       }
     }
   }, [user]);
 
+  // Update products array with the new AI Form Builder product
   const products: Product[] = [
     {
       id: "crm",
@@ -87,6 +127,7 @@ export default function BillingPage() {
       pricePerUser: CRM_PRICE_PER_USER,
       icon: <Sparkles className="h-4 w-4 mr-1" />,
       badge: "Most Popular",
+      category: "sales",
       features: [
         "Contact Management",
         "Lead Tracking",
@@ -105,6 +146,7 @@ export default function BillingPage() {
       pricePerUser: QUOTATION_PRICE_PER_USER,
       icon: <FileText className="h-4 w-4 mr-1" />,
       badge: "New",
+      category: "sales",
       features: [
         "Customizable Templates",
         "Product Catalog",
@@ -114,8 +156,79 @@ export default function BillingPage() {
         "Quotation Tracking",
         "Integration with CRM"
       ]
+    },
+    // New AI Form Builder product
+    {
+      id: "formbuilder",
+      name: "AI Form Builder",
+      description: "Create intelligent forms with AI-powered features",
+      pricePerUser: FORM_BUILDER_PRICE_PER_USER,
+      icon: <BrainCircuit className="h-4 w-4 mr-1" />,
+      badge: "New",
+      category: "sales",
+      features: [
+        "AI-powered form generation",
+        "Smart field suggestions",
+        "Conditional logic",
+        "Data validation",
+        "Integration with CRM",
+        "Custom branding",
+        "Form analytics",
+        "Multi-page forms",
+        "File uploads"
+      ]
+    },
+    {
+      id: "tasks",
+      name: "Zapllo Tasks",
+      description: "Manage your tasks like a pro and boost team productivity",
+      pricePerUser: TASKS_PRICE_PER_USER,
+      icon: <Clock className="h-4 w-4 mr-1" />,
+      badge: "New",
+      category: "teams",
+      features: [
+        "Delegate Unlimited Tasks",
+        "Team Performance Report",
+        "Links Management for your Team",
+        "Email Notifications",
+        "WhatsApp Notifications",
+        "Automatic Reminders",
+        "Repeated Tasks",
+        "Zapllo AI Technology",
+        "File Uploads",
+        "Delegate Tasks with Voice Notes",
+        "Daily Task & Team Reports",
+        "Save more than 4 hours per day"
+      ]
+    },
+    {
+      id: "bundle",
+      name: "Money Saver Bundle",
+      description: "10X your team's productivity with our all-in-one solution",
+      pricePerUser: BUNDLE_PRICE_PER_USER,
+      icon: <Wallet className="h-4 w-4 mr-1" />,
+      badge: "Best Value",
+      category: "teams",
+      features: [
+        "All Features from Task Delegation App",
+        "Easy Attendance Marking with Geo Location",
+        "Leave Application Management",
+        "Attendance & Leave Tracking",
+        "Reports & Dashboards",
+        "WhatsApp & Email Notifications",
+        "Multiple Login & Logouts",
+        "Update Salary Details",
+        "Dynamic Payslip Generation",
+        "Custom Letterhead",
+        "Shareable & Downloadable Payslips",
+        "Automated Payslip Delivery"
+      ]
     }
   ];
+
+  // Filter products by category
+  const salesProducts = products.filter(p => p.category === "sales");
+  const teamsProducts = products.filter(p => p.category === "teams");
 
   const currentProduct = products.find(p => p.id === selectedProduct)!;
   // Get the current user count based on selected product
@@ -150,13 +263,7 @@ export default function BillingPage() {
     setLoading(true);
     try {
       // Define the plan name based on the selected product
-      // This ensures the correct plan name is stored in the database
       let planName = currentProduct.name;
-
-      // Special case for combined purchase (if you implement this in the future)
-      // if (selectedProduct === "crm" && includedQuotations) {
-      //   planName = "Zapllo CRM & Quotations";
-      // }
 
       // Create order
       const orderResponse = await fetch('/api/create-order', {
@@ -189,7 +296,6 @@ export default function BillingPage() {
         name: 'Zapllo',
         description: `${planName} Subscription - ${userCount} Users`, // Use planName here too
         order_id: orderData.orderId,
-        // prefill information as needed...
         handler: function (response: any) {
           handlePaymentSuccess(response, orderData.orderId, planName); // Pass
         },
@@ -216,20 +322,18 @@ export default function BillingPage() {
     }
   };
 
-  // Update the payment success handler to pass the plan name
+  // Payment success handler
   const handlePaymentSuccess = async (response: any, orderId: string, planName: string) => {
     try {
       const paymentData = {
         razorpay_payment_id: response.razorpay_payment_id,
         razorpay_order_id: response.razorpay_order_id,
         razorpay_signature: response.razorpay_signature,
-        // userId: session?.user.id,
         amount: finalPrice,
-        planName: planName, // Use the passed planName
+        planName: planName,
         subscribedUserCount: userCount,
         deduction: discountAmount,
       };
-
 
       const result = await fetch('/api/payment-success', {
         method: 'POST',
@@ -252,7 +356,7 @@ export default function BillingPage() {
     }
   };
 
-  // You may want to add information about current subscription
+  // Information about current subscription
   const renderCurrentSubscription = () => {
     if (!user?.organization) return null;
 
@@ -294,7 +398,10 @@ export default function BillingPage() {
               <div className="flex gap-2">
                 {org.activeSubscriptions?.map(sub => (
                   <Badge key={sub} variant="secondary">
-                    {sub === 'crm' ? 'CRM' : 'Quotation'}
+                    {sub === 'crm' ? 'CRM' :
+                     sub === 'quotation' ? 'Quotation' :
+                     sub === 'formbuilder' ? 'Form Builder' :
+                     sub === 'tasks' ? 'Tasks' : 'Bundle'}
                   </Badge>
                 ))}
               </div>
@@ -319,16 +426,71 @@ export default function BillingPage() {
       {/* Display current subscription information */}
       {renderCurrentSubscription()}
 
+      {/* Category tabs */}
       <Tabs
-        defaultValue="crm"
-        value={selectedProduct}
-        onValueChange={(value) => setSelectedProduct(value as ProductType)}
-        className="mx-auto max-w-4xl mb-8"
+        defaultValue="sales"
+        value={selectedCategory}
+        onValueChange={(value) => {
+          setSelectedCategory(value as ProductCategory);
+          // Set default product in the category
+          if (value === 'sales') {
+            setSelectedProduct('crm');
+          } else {
+            setSelectedProduct('tasks');
+          }
+        }}
+        className="mx-auto max-w-4xl mb-6"
       >
-        <TabsList className="grid grid-cols-2 h-10 gap-2 bg-accent w-full">
-          <TabsTrigger value="crm" className="text-base border-none ">Zapllo CRM</TabsTrigger>
-          <TabsTrigger value="quotation" className="text-base border-none">Zapllo Quotations</TabsTrigger>
+        <TabsList className="grid grid-cols-2 h-12 gap-2 bg-accent w-full">
+          <TabsTrigger value="sales" className="text-base border-none">
+            <Sparkles className="h-4 w-4 mr-2" /> Zapllo Sales
+          </TabsTrigger>
+          <TabsTrigger value="teams" className="text-base border-none">
+            <Clock className="h-4 w-4 mr-2" /> Zapllo Teams
+          </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="sales" className="mt-6">
+          <Tabs
+            defaultValue="crm"
+            value={selectedProduct}
+            onValueChange={(value) => setSelectedProduct(value as ProductType)}
+            className="mx-auto max-w-4xl"
+          >
+            <TabsList className="grid grid-cols-3 h-10 gap-2 bg-accent w-full">
+              {salesProducts.map(product => (
+                <TabsTrigger
+                  key={product.id}
+                  value={product.id}
+                  className="text-base border-none"
+                >
+                  {product.name}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+        </TabsContent>
+
+        <TabsContent value="teams" className="mt-6">
+          <Tabs
+            defaultValue="tasks"
+            value={selectedProduct}
+            onValueChange={(value) => setSelectedProduct(value as ProductType)}
+            className="mx-auto max-w-4xl"
+          >
+            <TabsList className="grid grid-cols-2 h-10 gap-2 bg-accent w-full">
+              {teamsProducts.map(product => (
+                <TabsTrigger
+                  key={product.id}
+                  value={product.id}
+                  className="text-base border-none"
+                >
+                  {product.name}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+        </TabsContent>
       </Tabs>
 
       <div className="grid md:grid-cols-2 gap-8 mx-auto">
@@ -457,8 +619,6 @@ export default function BillingPage() {
                   <Check className="h-5 w-5 text-green-500 mr-2" />
                   <span>10% discount on 10+ users</span>
                 </li>
-
-
               </ul>
             </CardContent>
           </Card>

@@ -101,6 +101,8 @@ export default function FormBuilder({ initialForm, isTemplate = false, onSave }:
   const [previewMode, setPreviewMode] = useState(false);
   const [coverImage, setCoverImage] = useState(initialForm?.coverImage || null);
 
+  const [over, setOver] = useState<any>(null);
+
   // States for collapsible panels
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
   const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
@@ -233,7 +235,8 @@ export default function FormBuilder({ initialForm, isTemplate = false, onSave }:
     }
   }, [fields, selectedFieldId]);
 
-  // Update the handleDragEnd function to properly handle drag and drop
+  // Now update the handleDragEnd function to work with these drop indicators:
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     setDraggedField(null);
@@ -241,35 +244,53 @@ export default function FormBuilder({ initialForm, isTemplate = false, onSave }:
     if (!over) return;
 
     // Check if we're dragging an existing field
-    if (typeof active.id === 'string' && typeof over.id === 'string') {
+    if (typeof active.id === 'string' && over) {
       const activeField = fields.find(f => f.id === active.id);
-      const overField = fields.find(f => f.id === over.id);
+      if (!activeField) return;
 
-      if (!activeField || !overField || activeField.id === overField.id) return;
+      // Create a new array with the fields in the current order
+      const reorderedFields = [...fields].sort((a, b) => a.order - b.order);
+      const activeIndex = reorderedFields.findIndex(f => f.id === activeField.id);
 
-      // Reorder the fields
-      const activeIndex = fields.findIndex(f => f.id === activeField.id);
-      const overIndex = fields.findIndex(f => f.id === overField.id);
-
-      const reorderedFields = [...fields];
+      // Remove the dragged field from the array
       reorderedFields.splice(activeIndex, 1);
-      reorderedFields.splice(overIndex, 0, activeField);
 
-      // Update order property
+      let dropIndex = 0;
+
+      // Drop at the start of the list
+      if (over.id === 'drop-start') {
+        dropIndex = 0;
+      }
+      // Drop after a specific field
+      else if (typeof over.id === 'string' && over.id.startsWith('drop-')) {
+        const targetFieldId = over.id.replace('drop-', '');
+        if (targetFieldId === 'start') {
+          dropIndex = 0;
+        } else {
+          const targetIndex = reorderedFields.findIndex(f => f.id === targetFieldId);
+          dropIndex = targetIndex + 1;
+        }
+      }
+
+      // Insert the field at the new position
+      reorderedFields.splice(dropIndex, 0, activeField);
+
+      // Update the order property of each field
       const updatedFields = reorderedFields.map((field, index) => ({
         ...field,
         order: index
       }));
 
       setFields(updatedFields);
-      // Show a subtle toast notification for feedback
+
       toast({
-        title: "Field moved",
-        description: "Field order has been updated",
+        title: "Field reordered",
+        description: `${activeField.label} has been moved`,
         variant: "default"
       });
     }
   };
+
   const toggleFieldGroup = (groupId: string) => {
     setFieldGroupsCollapsed({
       ...fieldGroupsCollapsed,
@@ -351,8 +372,8 @@ export default function FormBuilder({ initialForm, isTemplate = false, onSave }:
 
   if (previewMode) {
     return (
-      <div className="w-full h-full flex flex-col bg-background">
-        <div className="flex justify-between items-center p-4 border-b bg-card/50">
+      <div className="w-full h-full max-h-screen overflow-y-scroll  mb-20 flex flex-col bg-background">
+        <div className="flex justify-between items-center p-4 mb-12  border-b bg-card/50">
           <h2 className="text-xl font-medium flex items-center">
             <Eye className="h-4 w-4 mr-2 text-muted-foreground" />
             Preview: {formTitle}
@@ -361,8 +382,8 @@ export default function FormBuilder({ initialForm, isTemplate = false, onSave }:
             Exit Preview
           </Button>
         </div>
-        <div className="flex-grow overflow-auto p-4">
-          <div className="max-w-3xl mx-auto">
+        <div className="flex-grow  overflow-auto p-4">
+          <div className="max-w-3xl mb-36 mx-auto">
             <FormPreview
               fields={fields}
               theme={theme}
@@ -380,7 +401,7 @@ export default function FormBuilder({ initialForm, isTemplate = false, onSave }:
   }
 
   return (
-    <div className="flex flex-col h-full w-full overflow-hidden bg-background/95 rounded-md shadow-sm border">
+    <div className="flex flex-col mb-12 h-full w-full overflow-hidden bg-background/95 rounded-md shadow-sm border">
       {/* Header with actions - simplified and modernized */}
       <div className="flex justify-between items-center p-4 border-b bg-card/50">
         <div className="flex-1">
@@ -450,7 +471,11 @@ export default function FormBuilder({ initialForm, isTemplate = false, onSave }:
       </div>
 
       {/* Main content with collapsible panels */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1  h-full overflow-y-auto scrollbar-hide md:px-6 lg:px-8"
+        style={{
+          maxHeight: 'calc(100vh - 16px)', // Adjust based on your layout
+          scrollBehavior: 'auto' // Prevent smooth scrolling which can interfere
+        }}>
         {/* Left sidebar with field types - collapsible */}
         <div
           className={cn(
@@ -471,16 +496,16 @@ export default function FormBuilder({ initialForm, isTemplate = false, onSave }:
           </Button>
 
           {leftPanelCollapsed ? (
-            <div className="h-full flex flex-col items-center py-12 space-y-6">
+            <div className="scrollbar-hide sticky flex h-fit max-h-screen overflow-y-scroll flex-col items-center py-12 space-y-6">
               {fieldGroups.map((group) => (
                 <TooltipProvider key={group.id}>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <div className="space-y-2">
                         <div className="text-xs text-center text-muted-foreground">
-                          {group.name.split(' ')[0]}
+                          {/* {group.name.split(' ')[0]} */}
                         </div>
-                        <div className="space-y-1">
+                        <div className="space-y-1 ">
                           {group.types.slice(0, 3).map((type) => {
                             const fieldType = fieldTypes.find(f => f.type === type);
                             if (!fieldType) return null;
@@ -534,7 +559,7 @@ export default function FormBuilder({ initialForm, isTemplate = false, onSave }:
               ))}
             </div>
           ) : (
-            <ScrollArea className="h-full">
+            <div className="mb-24">
               <div className="p-4 space-y-6">
                 <h3 className="text-sm font-medium px-2">Add Fields</h3>
 
@@ -577,18 +602,19 @@ export default function FormBuilder({ initialForm, isTemplate = false, onSave }:
                   </div>
                 ))}
               </div>
-            </ScrollArea>
+            </div>
           )}
         </div>
 
         {/* Center area with form canvas */}
-        <div className="flex-1 flex flex-col overflow-hidden bg-accent/20">
+        <div className="flex-1 mb-12   flex flex-col overflow- bg-accent/20">
           <DndContext
             sensors={sensors}
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
+            onDragOver={({ over }) => setOver(over)}
           >
-            <ScrollArea className="flex-1">
+            <ScrollArea className="flex-1 mb -">
               <div className="max-w-3xl mx-auto p-6 space-y-4">
                 {/* Add cover image component at the top */}
                 <FormCoverImage
@@ -597,24 +623,38 @@ export default function FormBuilder({ initialForm, isTemplate = false, onSave }:
                 />
 
                 {fields.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-20 text-center text-muted-foreground bg-card/40 rounded-lg border border-dashed">
+                  <div className="flex flex-col items-center  justify-center py-20 text-center text-muted-foreground bg-card/40 rounded-lg border border-dashed">
                     <Plus className="h-12 w-12 mb-4 text-muted-foreground/50" />
                     <h3 className="text-lg font-medium">Your form is empty</h3>
                     <p className="max-w-xs mt-2">Add form elements from the left panel to get started</p>
                   </div>
                 ) : (
-                  fields
-                    .sort((a, b) => a.order - b.order)
-                    .map((field) => (
-                      <DraggableField
-                        key={field.id}
-                        field={field}
-                        onRemove={removeField}
-                        onDuplicate={duplicateField}
-                        isSelected={selectedFieldId === field.id}
-                        onSelect={() => setSelectedFieldId(field.id)}
-                      />
-                    ))
+                  <>
+                    {/* Drop area at the top of the list */}
+                    <DropIndicator
+                      id="drop-start"
+                      isHovering={draggedField !== null && over?.id === "drop-start"}
+                    />
+
+                    {fields
+                      .sort((a, b) => a.order - b.order)
+                      .map((field, index) => (
+                        <React.Fragment key={field.id}>
+                          <DraggableField
+                            field={field}
+                            onRemove={removeField}
+                            onDuplicate={duplicateField}
+                            isSelected={selectedFieldId === field.id}
+                            onSelect={() => setSelectedFieldId(field.id)}
+                          />
+                          {/* Add a drop indicator after each field */}
+                          <DropIndicator
+                            id={`drop-${field.id}`}
+                            isHovering={draggedField !== null && over?.id === `drop-${field.id}`}
+                          />
+                        </React.Fragment>
+                      ))}
+                  </>
                 )}
               </div>
             </ScrollArea>
@@ -638,7 +678,7 @@ export default function FormBuilder({ initialForm, isTemplate = false, onSave }:
         {/* Right sidebar with settings - collapsible */}
         <div
           className={cn(
-            "border-l bg-card/30 transition-all duration-300 ease-in-out relative",
+            "border-l bg-card/30 sticky  transition-all duration-300 ease-in-out ",
             rightPanelCollapsed ? "w-14" : "w-80"
           )}
         >
@@ -743,7 +783,7 @@ export default function FormBuilder({ initialForm, isTemplate = false, onSave }:
                 </TabsList>
 
                 <div className="flex-1 overflow-hidden">
-                  <ScrollArea className="h-full">
+                  <div className="h-full">
                     <div className="p-4">
                       <TabsContent value="fields" className="mt-0 border-none p-0">
                         {selectedFieldId ? (
@@ -777,7 +817,7 @@ export default function FormBuilder({ initialForm, isTemplate = false, onSave }:
                         />
                       </TabsContent>
                     </div>
-                  </ScrollArea>
+                  </div>
                 </div>
               </Tabs>
             </div>
@@ -867,7 +907,7 @@ function DraggableField({
     <div
       ref={setNodeRef}
       className={cn(
-        "group border rounded-md bg-card transition-all duration-200",
+        "group border rounded-md  bg-card transition-all duration-200",
         isSelected ? "ring-2 ring-primary shadow-sm" : "",
         isDragging ? "opacity-50" : "",
         "hover:shadow-md"
@@ -930,7 +970,7 @@ function DraggableField({
 
 
       {/* Basic field preview */}
-      <div className="text-sm text-muted-foreground">
+      <div className="text-sm px-4 py-2 text-muted-foreground">
         {field.type === 'text' && (
           <input
             type="text"
@@ -1068,5 +1108,28 @@ function Star(props: React.SVGProps<SVGSVGElement>) {
     >
       <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
     </svg>
+  );
+}
+
+
+// First, add this interface for our drop indicator
+interface DropIndicatorProps {
+  id: string;
+  isHovering: boolean;
+}
+
+// Add this component for the drop indicators between fields
+function DropIndicator({ id, isHovering }: DropIndicatorProps) {
+  const { setNodeRef } = useDroppable({
+    id
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`h-[0.2px] w-full rounded-md transition-all duration-200 ${isHovering ? 'bg-primary h-[0.1px]' : 'bg-transparent'
+        }`}
+      data-drop-indicator
+    />
   );
 }

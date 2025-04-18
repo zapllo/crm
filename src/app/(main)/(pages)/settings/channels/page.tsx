@@ -493,7 +493,7 @@ export default function ChannelsPage() {
 
       {/* C) DIALOG FOR CREATE/EDIT TEMPLATE */}
       <Dialog open={openDialog} onOpenChange={setOpenDialog}>
-        <DialogContent className="max-w-3xl h-screen overflow-y-scroll scrollbar-hide z-[100]">
+        <DialogContent className="max-w-3xl h-fit max-h-screen overflow-y-scroll scrollbar-hide z-[100]">
           <DialogHeader>
             <DialogTitle className="text-xl flex items-center gap-2">
               <LayoutTemplate className="h-5 w-5 text-blue-500" />
@@ -666,7 +666,7 @@ export default function ChannelsPage() {
       <Dialog open={showPreview} onOpenChange={setShowPreview}>
         <DialogContent className="max-w-3xl z-[100] max-h-[90vh] overflow-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center justify-between">
+            <DialogTitle className="flex items-center gap-2">
               <span className="flex items-center gap-2">
                 <Eye className="h-5 w-5 text-blue-500" />
                 Email Template Preview

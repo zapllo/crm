@@ -13,7 +13,7 @@ interface ITimeline {
 interface INote {
     text: string;
     audioLink?: string; // Optional audio recording link
-    createdBy: string; // User who added the note
+    createdBy: Types.ObjectId;
     timestamp: Date;
 }
 
@@ -54,7 +54,7 @@ const timelineSchema = new Schema<ITimeline>({
 const noteSchema = new Schema<INote>({
     text: { type: String },
     audioLink: { type: String },
-    createdBy: { type: String, required: true },
+    createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true }, //
     timestamp: { type: Date, default: Date.now },
 });
 

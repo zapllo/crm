@@ -185,7 +185,7 @@ export default function FormPreview({
   return (
     <Card
       className={cn(
-        "w-full max-w-xl mx-auto overflow-hidden shadow-lg transition-all duration-300",
+        "w-full max-w-xl mx-auto  shadow-lg transition-all duration-300",
         coverImage ? "shadow-xl" : "shadow-md"
       )}
       style={{

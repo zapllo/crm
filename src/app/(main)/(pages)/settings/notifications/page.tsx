@@ -26,19 +26,19 @@ export default function NotificationsPage() {
     newLeadWhatsapp: false,
     dailyReportTime: '09:00'
   });
-  
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const { toast } = useToast();
-  
+
   useEffect(() => {
     // Fetch notification settings
     const fetchSettings = async () => {
       try {
         const res = await fetch('/api/notifications');
         if (!res.ok) throw new Error('Failed to fetch settings');
-        
+
         const data = await res.json();
         if (data.notifications) {
           setSettings({
@@ -58,10 +58,10 @@ export default function NotificationsPage() {
         setLoading(false);
       }
     };
-    
+
     fetchSettings();
   }, [toast]);
-  
+
   const handleSave = async () => {
     setSaving(true);
     setSaveSuccess(false);
@@ -73,12 +73,12 @@ export default function NotificationsPage() {
         },
         body: JSON.stringify(settings),
       });
-      
+
       if (!res.ok) throw new Error('Failed to save settings');
-      
+
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
-      
+
       toast({
         title: "Settings saved",
         description: "Your notification preferences have been updated.",
@@ -95,7 +95,7 @@ export default function NotificationsPage() {
       setSaving(false);
     }
   };
-  
+
   // Convert 24 hour time to 12 hour time with AM/PM for display
   const formatTimeForDisplay = (time24: string) => {
     const [hours, minutes] = time24.split(':').map(Number);
@@ -103,7 +103,7 @@ export default function NotificationsPage() {
     const hours12 = hours % 12 || 12;
     return `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`;
   };
-  
+
   // Time options for select dropdown
   const timeOptions = Array.from({ length: 24 }, (_, hour) => {
     return [`${hour.toString().padStart(2, '0')}:00`, `${hour.toString().padStart(2, '0')}:30`];
@@ -120,7 +120,7 @@ export default function NotificationsPage() {
       </div>
     );
   }
-  
+
   return (
     <div className=" mx-auto py-10 px-4 md:px-6">
       <div className="flex items-center justify-between mb-8">
@@ -133,7 +133,7 @@ export default function NotificationsPage() {
           Preferences
         </Badge>
       </div>
-      
+
       <Tabs defaultValue="channels" className="mb-8">
         <TabsList className="grid w-full bg-accent grid-cols-2 mb-8">
           <TabsTrigger value="channels" className="text-sm border-none">
@@ -145,7 +145,7 @@ export default function NotificationsPage() {
             Reporting Schedule
           </TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="channels" className="space-y-4">
           <Card className="overflow-hidden border-none shadow-md">
             <CardHeader className="bg-gradient-to-r from-primary/10 to-primary/5 pb-4">
@@ -158,7 +158,7 @@ export default function NotificationsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-6">
-              <motion.div 
+              <motion.div
                 className="space-y-6"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -176,7 +176,7 @@ export default function NotificationsPage() {
                         id="email-notifications"
                         checked={settings.newLeadEmail}
                         onCheckedChange={(checked) => setSettings({ ...settings, newLeadEmail: checked })}
-                        className="data-[state=checked]:bg-primary"
+                        className=""
                       />
                     </div>
                     <p className="text-sm text-muted-foreground">
@@ -184,9 +184,9 @@ export default function NotificationsPage() {
                     </p>
                   </div>
                 </div>
-                
+
                 <Separator />
-                
+
                 {/* WhatsApp Notification */}
                 <div className="flex items-start space-x-4 p-4 rounded-lg transition-colors hover:bg-accent/50">
                   <div className="mt-0.5 bg-green-500/10 p-2 rounded-full">
@@ -199,7 +199,7 @@ export default function NotificationsPage() {
                         id="whatsapp-notifications"
                         checked={settings.newLeadWhatsapp}
                         onCheckedChange={(checked) => setSettings({ ...settings, newLeadWhatsapp: checked })}
-                        className="data-[state=checked]:bg-green-500"
+                        className=""
                       />
                     </div>
                     <p className="text-sm text-muted-foreground">
@@ -211,7 +211,7 @@ export default function NotificationsPage() {
             </CardContent>
           </Card>
         </TabsContent>
-        
+
         <TabsContent value="schedule" className="space-y-4">
           <Card className="overflow-hidden border-none shadow-md">
             <CardHeader className="bg-gradient-to-r from-blue-500/10 to-blue-500/5 pb-4">
@@ -224,7 +224,7 @@ export default function NotificationsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-6">
-              <motion.div 
+              <motion.div
                 className="space-y-6"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -238,7 +238,7 @@ export default function NotificationsPage() {
                         {formatTimeForDisplay(settings.dailyReportTime)}
                       </Badge>
                     </div>
-                    
+
                     <Select
                       value={settings.dailyReportTime}
                       onValueChange={(value) => setSettings({ ...settings, dailyReportTime: value })}
@@ -254,13 +254,13 @@ export default function NotificationsPage() {
                         ))}
                       </SelectContent>
                     </Select>
-                    
+
                     <p className="text-sm text-muted-foreground">
                       A comprehensive summary of all activities and new leads will be sent at this time every day
                     </p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center space-x-2 text-sm text-amber-600 bg-amber-50 dark:bg-amber-950/30 p-3 rounded-md">
                   <AlertCircle className="h-4 w-4" />
                   <p>Make sure your email address is correct in your profile settings to receive reports.</p>
@@ -270,10 +270,10 @@ export default function NotificationsPage() {
           </Card>
         </TabsContent>
       </Tabs>
-      
+
       <div className="flex justify-end">
-        <Button 
-          onClick={handleSave} 
+        <Button
+          onClick={handleSave}
           disabled={saving}
           className={cn(
             "px-8 py-6 relative overflow-hidden transition-all",
@@ -293,7 +293,7 @@ export default function NotificationsPage() {
           ) : (
             "Save Preferences"
           )}
-          
+
           {saving && (
             <span className="absolute inset-0 flex items-center justify-center">
               <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

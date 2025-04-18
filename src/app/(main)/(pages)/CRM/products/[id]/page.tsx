@@ -456,7 +456,7 @@ const printBarcode = () => {
 
                                         <div className="space-y-2">
                                             <div className="text-sm text-muted-foreground">Price</div>
-                                            <div className="font-medium text-lg">₹{product.rate.toLocaleString()}</div>
+                                            <div className="font-medium text-lg">₹{product?.rate?.toLocaleString()}</div>
                                         </div>
 
                                         {/* Add barcode display */}
@@ -563,7 +563,7 @@ const printBarcode = () => {
 
                                         <div className="bg-muted/50 p-4 rounded-lg text-center">
                                             <div className="text-3xl font-bold">
-                                                ₹{leads.reduce((sum, lead) => sum + lead.amount, 0).toLocaleString()}
+                                                ₹{leads?.reduce((sum, lead) => sum + lead.amount, 0)?.toLocaleString()}
                                             </div>
                                             <div className="text-sm text-muted-foreground">Total Amount</div>
                                         </div>
@@ -571,7 +571,7 @@ const printBarcode = () => {
                                         <div className="bg-muted/50 p-4 rounded-lg text-center">
                                             <div className="text-3xl font-bold">
                                                 {leads.length > 0 ?
-                                                    new Date(Math.max(...leads.map(l => new Date(l.updatedAt).getTime()))).toLocaleDateString() :
+                                                    new Date(Math.max(...leads.map(l => new Date(l.updatedAt).getTime())))?.toLocaleDateString() :
                                                     'N/A'}
                                             </div>
                                             <div className="text-sm text-muted-foreground">Last Updated</div>
@@ -703,7 +703,7 @@ const printBarcode = () => {
                                                         </Badge>
                                                     </TableCell>
                                                     <TableCell className="text-right font-medium">
-                                                        ₹{lead.amount.toLocaleString()}
+                                                        ₹{lead?.amount?.toLocaleString()}
                                                     </TableCell>
                                                     <TableCell>
                                                         <div className="flex flex-col gap-1 text-xs">

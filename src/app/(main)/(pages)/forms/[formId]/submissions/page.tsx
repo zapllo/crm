@@ -205,7 +205,7 @@ export default function SubmissionsPageContent() {
 
   if (loading && !form) {
     return (
-      <div className="flex items-center justify-center h-full">
+      <div className="flex items-center  mt-20 justify-center h-full">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
           <p>Loading submissions...</p>
@@ -215,7 +215,7 @@ export default function SubmissionsPageContent() {
   }
 
   return (
-    <div className="container py-8 max-w-screen-xl">
+    <div className="container py-8 mt-12 max-w-screen-xl">
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center">
           <Button
@@ -267,12 +267,12 @@ export default function SubmissionsPageContent() {
             </div>
             <div className="flex items-center space-x-4">
               <Tabs value={filter} onValueChange={setFilter}>
-                <TabsList>
-                  <TabsTrigger value="all">All</TabsTrigger>
-                  <TabsTrigger value="new">New</TabsTrigger>
-                  <TabsTrigger value="viewed">Viewed</TabsTrigger>
-                  <TabsTrigger value="contacted">Contacted</TabsTrigger>
-                  <TabsTrigger value="converted">Converted</TabsTrigger>
+                <TabsList className='bg-accent gap-2'>
+                  <TabsTrigger  className='border-none'  value="all">All</TabsTrigger>
+                  <TabsTrigger   className='border-none' value="new">New</TabsTrigger>
+                  <TabsTrigger   className='border-none' value="viewed">Viewed</TabsTrigger>
+                  <TabsTrigger   className='border-none' value="contacted">Contacted</TabsTrigger>
+                  <TabsTrigger   className='border-none' value="converted">Converted</TabsTrigger>
                 </TabsList>
               </Tabs>
               <Button variant="outline" size="icon">

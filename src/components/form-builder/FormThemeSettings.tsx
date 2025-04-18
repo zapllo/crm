@@ -47,19 +47,19 @@ export default function FormThemeSettings({ theme, onChange }: FormThemeSettings
   return (
     <div className="space-y-6">
     <Tabs defaultValue="colors" className="w-full">
-      <TabsList className="w-full mb-4">
-        <TabsTrigger value="colors" className="flex-1">
+      <TabsList className="w-full mb-4 gap-4   bg-accent">
+        <TabsTrigger  value="colors" className="flex-1 border-none">
           <Palette className="h-4 w-4 mr-2" />
           Colors
         </TabsTrigger>
-        <TabsTrigger value="fonts" className="flex-1">
+        <TabsTrigger  value="fonts" className="flex-1 border-none">
           <Text className="h-4 w-4 mr-2" />
           Typography
         </TabsTrigger>
-        <TabsTrigger value="advanced" className="flex-1">
+        {/* <TabsTrigger  value="advanced" className="flex-1 border-none">
           <Code2 className="h-4 w-4 mr-2" />
           Advanced
-        </TabsTrigger>
+        </TabsTrigger> */}
       </TabsList>
 
       <TabsContent value="colors" className="space-y-4">
@@ -270,7 +270,7 @@ export default function FormThemeSettings({ theme, onChange }: FormThemeSettings
         </TabsContent>
       </Tabs>
 
-      <div className="p-4 border rounded-md bg-muted/30">
+      {/* <div className="p-4 border rounded-md bg-muted/30">
         <h3 className="text-sm font-medium mb-2">Theme Preview</h3>
         <div
           className="p-4 rounded-md border"
@@ -344,7 +344,7 @@ export default function FormThemeSettings({ theme, onChange }: FormThemeSettings
             </button>
           </div>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 }

@@ -148,7 +148,7 @@ export default function EditFormPageContent() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full">
+      <div className="flex mt-20 items-center justify-center h-full">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
           <p>Loading form...</p>
@@ -158,7 +158,7 @@ export default function EditFormPageContent() {
   }
 
   return (
-    <div className="container mt-24 h-full max-h-screen sc overflow-y-scroll flex flex-col py-4 max-w-full px-0 md:px-4">
+    <div className="container mt-12 h-full max-h-screen sc overflow-y-scroll flex flex-col py-4 max-w-full px-0 md:px-4">
       <div className="flex justify-between items-center py-2 px-4 border-b">
         <div className="flex items-center">
           <Button

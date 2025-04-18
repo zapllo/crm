@@ -314,8 +314,8 @@ export default function InfoBar() {
                   )}
                 </Button>
               </SheetTrigger>
-              <SheetContent className="w-full sm:max-w-sm">
-                <SheetHeader className="border-b pb-4">
+              <SheetContent className="w-full m sm:max-w-sm">
+                <SheetHeader className="border-b mt-4 pb-4">
                   <SheetTitle className="flex items-center justify-between">
                     <div>Notifications</div>
                     <Badge variant="outline" className="font-normal">

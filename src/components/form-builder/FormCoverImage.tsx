@@ -1,8 +1,19 @@
 "use client";
 
-import React, { useState } from 'react';
-import { Upload, X, Image as ImageIcon } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Upload, X, Image as ImageIcon, Search } from 'lucide-react';
 import { Button } from '../ui/button';
+import { Input } from '../ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+import axios from 'axios';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
+
+interface UnsplashImage {
+  id: string;
+  urls: { regular: string; small: string; thumb: string };
+  user: { name: string };
+  alt_description: string;
+}
 
 interface FormCoverImageProps {
   coverImage: string | null;
@@ -11,16 +22,45 @@ interface FormCoverImageProps {
 
 export default function FormCoverImage({ coverImage, onImageChange }: FormCoverImageProps) {
   const [dragging, setDragging] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('upload');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [unsplashImages, setUnsplashImages] = useState<UnsplashImage[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        onImageChange(event.target?.result as string);
-      };
-      reader.readAsDataURL(file);
+      if (file.size > 10 * 1024 * 1024) { // 10MB limit
+        alert("File is too large. Please select an image under 10MB.");
+        return;
+      }
+
+      try {
+        const formData = new FormData();
+        formData.append('files', file);
+
+        const response = await axios.post('/api/upload', formData);
+        if (response.data.fileUrls && response.data.fileUrls.length > 0) {
+          onImageChange(response.data.fileUrls[0]);
+        } else {
+          handleFileAsDataURL(file);
+        }
+      } catch (error) {
+        console.error('Error uploading to server:', error);
+        // Fallback to client-side handling
+        handleFileAsDataURL(file);
+      }
     }
+  };
+
+  const handleFileAsDataURL = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      onImageChange(event.target?.result as string);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -39,17 +79,54 @@ export default function FormCoverImage({ coverImage, onImageChange }: FormCoverI
 
     const file = e.dataTransfer.files?.[0];
     if (file && file.type.startsWith('image/')) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        onImageChange(event.target?.result as string);
-      };
-      reader.readAsDataURL(file);
+      if (file.size > 10 * 1024 * 1024) { // 10MB limit
+        alert("File is too large. Please select an image under 10MB.");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('files', file);
+
+      axios.post('/api/upload', formData)
+        .then(response => {
+          if (response.data.fileUrls && response.data.fileUrls.length > 0) {
+            onImageChange(response.data.fileUrls[0]);
+          } else {
+            handleFileAsDataURL(file);
+          }
+        })
+        .catch(error => {
+          console.error('Error uploading to server:', error);
+          handleFileAsDataURL(file);
+        });
     }
   };
 
   const removeImage = () => {
     onImageChange(null);
   };
+
+  const searchUnsplash = async () => {
+    if (!searchQuery.trim()) return;
+
+    setIsSearching(true);
+    try {
+      // Using your own API endpoint that will handle the Unsplash API key securely
+      const response = await axios.get(`/api/unsplash/search?query=${encodeURIComponent(searchQuery)}`);
+      setUnsplashImages(response.data.results);
+    } catch (error) {
+      console.error('Error searching Unsplash:', error);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const selectUnsplashImage = (imageUrl: string) => {
+    onImageChange(imageUrl);
+    setIsDialogOpen(false);
+  };
+
+  console.log(coverImage, 'coverImage');
 
   return (
     <div className="w-full mb-4">
@@ -61,33 +138,41 @@ export default function FormCoverImage({ coverImage, onImageChange }: FormCoverI
             className="w-full object-cover"
             style={{ maxHeight: '240px' }}
           />
-          <Button
-            variant="destructive"
-            size="icon"
-            className="absolute top-2 right-2 rounded-full bg-background/80 hover:bg-background"
-            onClick={removeImage}
-          >
-            <X className="h-4 w-4" />
-          </Button>
+          <div className="absolute top-2 right-2 flex gap-2">
+            <Button
+              variant="secondary"
+              size="icon"
+              className="rounded-full bg-background/80 hover:bg-background"
+              onClick={() => setIsDialogOpen(true)}
+            >
+              <ImageIcon className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="destructive"
+              size="icon"
+              className="rounded-full bg-background/80 hover:bg-background"
+              onClick={removeImage}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       ) : (
         <div
-          className={`border-2 border-dashed rounded-lg p-8 text-center ${dragging ? 'border-primary bg-primary/5' : 'border-muted-foreground/20'}`}
+          className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer ${dragging ? 'border-primary bg-primary/5' : 'border-muted-foreground/20'}`}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
+          onClick={() => setIsDialogOpen(true)}
         >
           <div className="flex flex-col items-center">
             <ImageIcon className="h-12 w-12 text-muted-foreground mb-4" />
             <h3 className="text-lg font-medium mb-2">Add Cover Image</h3>
             <p className="text-sm text-muted-foreground mb-4">
-              Drag and drop an image, or click to browse
+              Click to add an image from your device or Unsplash
             </p>
-            <Button variant="outline" onClick={() => document.getElementById('cover-image-upload')?.click()}>
-              <Upload className="h-4 w-4 mr-2" />
-              Upload Image
-            </Button>
             <input
+              ref={fileInputRef}
               id="cover-image-upload"
               type="file"
               accept="image/*"
@@ -97,6 +182,90 @@ export default function FormCoverImage({ coverImage, onImageChange }: FormCoverI
           </div>
         </div>
       )}
+
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="sm:max-w-[600px] z-[100]">
+          <DialogHeader>
+            <DialogTitle>Choose Cover Image</DialogTitle>
+          </DialogHeader>
+
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid bg-accent  w-full grid-cols-2">
+              <TabsTrigger className='border-none' value="upload">Upload</TabsTrigger>
+              <TabsTrigger className='border-none' value="unsplash">Unsplash</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="upload" className="py-4">
+              <div
+                className={`border-2 border-dashed rounded-lg p-8 text-center ${dragging ? 'border-primary bg-primary/5' : 'border-muted-foreground/20'}`}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+              >
+                <div className="flex flex-col items-center">
+                  <Upload className="h-10 w-10 text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium mb-2">Drag & Drop</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Drop an image here, or click to browse
+                  </p>
+                  <Button
+                    variant="outline"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    Select from device
+                  </Button>
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="unsplash" className="py-4">
+              <div className="flex mb-4 gap-4">
+                <Input
+                  placeholder="Search for images..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && searchUnsplash()}
+                  className="flex-grow mr-2"
+                />
+                <Button onClick={searchUnsplash} disabled={isSearching}>
+                  {isSearching ? 'Searching...' : 'Search'}
+                </Button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 mt-4 max-h-[400px] overflow-y-auto">
+                {unsplashImages.map((image) => (
+                  <div
+                    key={image.id}
+                    className="relative cursor-pointer rounded-md overflow-hidden hover:opacity-90 transition-opacity"
+                    onClick={() => selectUnsplashImage(image.urls.regular)}
+                  >
+                    <img
+                      src={image.urls.small}
+                      alt={image.alt_description || 'Unsplash image'}
+                      className="w-full h-32 object-cover"
+                    />
+                    <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs p-1 truncate">
+                      {image.user.name}
+                    </div>
+                  </div>
+                ))}
+
+                {unsplashImages.length === 0 && !isSearching && (
+                  <div className="col-span-2 text-center py-8 text-muted-foreground">
+                    Search for images on Unsplash
+                  </div>
+                )}
+
+                {isSearching && (
+                  <div className="col-span-2 text-center py-8 text-muted-foreground">
+                    Searching...
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+          </Tabs>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

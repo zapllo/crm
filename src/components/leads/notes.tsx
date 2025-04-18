@@ -6,28 +6,28 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { format, formatDistanceToNow } from 'date-fns';
 
 // Icons
-import { 
-  Loader2, 
-  StickyNote, 
-  Send, 
-  ChevronDown, 
-  MessageSquare, 
-  PlayCircle, 
-  MoreHorizontal, 
-  Plus, 
-  Music, 
-  User,
-  Mic,
-  Square,
-  Play,
-  Pause,
-  Trash2
+import {
+    Loader2,
+    StickyNote,
+    Send,
+    ChevronDown,
+    MessageSquare,
+    PlayCircle,
+    MoreHorizontal,
+    Plus,
+    Music,
+    User,
+    Mic,
+    Square,
+    Play,
+    Pause,
+    Trash2
 } from 'lucide-react';
 
 // UI Components
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -43,6 +43,8 @@ interface Note {
     text?: string;
     audioLink?: string;
     createdBy: string;
+    createdByName?: string;
+    profileImage?: string;
     timestamp: string;
 }
 
@@ -54,7 +56,7 @@ export default function NotesSection({ leadId }: { leadId: string }) {
     const [isSaving, setIsSaving] = useState(false);
     const [showAudioInput, setShowAudioInput] = useState(false);
     const [showRecorder, setShowRecorder] = useState(false);
-    
+
     // Audio recording states
     const [isRecording, setIsRecording] = useState(false);
     const [audioURL, setAudioURL] = useState<string | null>(null);
@@ -62,7 +64,7 @@ export default function NotesSection({ leadId }: { leadId: string }) {
     const [recordingTime, setRecordingTime] = useState(0);
     const [waveformData, setWaveformData] = useState<number[]>([]);
     const [isUploading, setIsUploading] = useState(false);
-    
+
     // Refs for audio recording
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const audioChunksRef = useRef<Blob[]>([]);
@@ -73,13 +75,13 @@ export default function NotesSection({ leadId }: { leadId: string }) {
 
     useEffect(() => {
         fetchNotes();
-        
+
         // Initialize the audio element
         audioRef.current = new Audio();
         audioRef.current.addEventListener('ended', () => {
             setIsPlaying(false);
         });
-        
+
         return () => {
             if (audioRef.current) {
                 audioRef.current.removeEventListener('ended', () => {
@@ -113,11 +115,11 @@ export default function NotesSection({ leadId }: { leadId: string }) {
         if (analyserRef.current) {
             const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
             analyserRef.current.getByteFrequencyData(dataArray);
-            
+
             // Reduce the data to a manageable size for display
             const reducedData: number[] = [];
             const bucketSize = Math.floor(dataArray.length / 30);
-            
+
             for (let i = 0; i < 30; i++) {
                 let sum = 0;
                 for (let j = 0; j < bucketSize; j++) {
@@ -125,61 +127,61 @@ export default function NotesSection({ leadId }: { leadId: string }) {
                 }
                 reducedData.push(sum / bucketSize);
             }
-            
+
             setWaveformData(reducedData);
             animationRef.current = requestAnimationFrame(updateWaveform);
         }
     };
-    
+
     const startRecording = async () => {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             streamRef.current = stream;
-            
+
             const audioContext = new AudioContext();
             const mediaStreamSource = audioContext.createMediaStreamSource(stream);
             const analyser = audioContext.createAnalyser();
             analyser.fftSize = 2048;
             mediaStreamSource.connect(analyser);
             analyserRef.current = analyser;
-            
+
             const mediaRecorder = new MediaRecorder(stream);
             mediaRecorderRef.current = mediaRecorder;
-            
+
             audioChunksRef.current = [];
             mediaRecorder.addEventListener('dataavailable', (event) => {
                 audioChunksRef.current.push(event.data);
             });
-            
+
             mediaRecorder.addEventListener('stop', () => {
                 const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
                 const audioUrl = URL.createObjectURL(audioBlob);
                 setAudioURL(audioUrl);
-                
+
                 if (audioRef.current) {
                     audioRef.current.src = audioUrl;
                 }
-                
+
                 // Stop all tracks
                 stream.getTracks().forEach(track => track.stop());
-                
+
                 // Upload the audio recording
                 uploadAudioRecording(audioBlob);
             });
-            
+
             mediaRecorder.start();
             setIsRecording(true);
             setRecordingTime(0);
-            
+
             // Start visualizing the waveform
             animationRef.current = requestAnimationFrame(updateWaveform);
-            
+
             // Start a timer to track recording duration
             const startTime = Date.now();
             const timerInterval = setInterval(() => {
                 setRecordingTime(Math.floor((Date.now() - startTime) / 1000));
             }, 1000);
-            
+
             // Store the interval ID to clear it later
             mediaRecorder.addEventListener('stop', () => {
                 clearInterval(timerInterval);
@@ -188,19 +190,19 @@ export default function NotesSection({ leadId }: { leadId: string }) {
                     animationRef.current = null;
                 }
             });
-            
+
         } catch (error) {
             console.error('Error starting recording:', error);
         }
     };
-    
+
     const stopRecording = () => {
         if (mediaRecorderRef.current && isRecording) {
             mediaRecorderRef.current.stop();
             setIsRecording(false);
         }
     };
-    
+
     const togglePlayback = () => {
         if (audioRef.current) {
             if (isPlaying) {
@@ -211,7 +213,7 @@ export default function NotesSection({ leadId }: { leadId: string }) {
             setIsPlaying(!isPlaying);
         }
     };
-    
+
     const discardRecording = () => {
         if (audioRef.current) {
             audioRef.current.pause();
@@ -221,36 +223,36 @@ export default function NotesSection({ leadId }: { leadId: string }) {
         setIsPlaying(false);
         setWaveformData([]);
     };
-    
+
     const uploadAudioRecording = async (audioBlob: Blob) => {
         try {
             setIsUploading(true);
-            
+
             const formData = new FormData();
             formData.append('audio', audioBlob, `recording-${Date.now()}.wav`);
-            
+
             const response = await fetch('/api/upload', {
                 method: 'POST',
                 body: formData,
             });
-            
+
             if (!response.ok) {
                 throw new Error('Failed to upload audio recording');
             }
-            
+
             const data = await response.json();
-            
+
             if (data.audioUrl) {
                 setAudioLink(data.audioUrl);
             }
-            
+
         } catch (error) {
             console.error('Error uploading audio:', error);
         } finally {
             setIsUploading(false);
         }
     };
-    
+
     const formatTime = (seconds: number) => {
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;
@@ -262,22 +264,22 @@ export default function NotesSection({ leadId }: { leadId: string }) {
 
         try {
             setIsSaving(true);
-            
+
             const response = await axios.post('/api/leads/notes', {
                 leadId,
                 text: newNote.trim(),
                 audioLink: audioLink.trim(),
             });
-            
+
             // Also add a timeline entry
             await axios.post("/api/leads/update-stage", {
                 leadId,
                 newStage: "Note Added",
-                remark: newNote.trim() 
+                remark: newNote.trim()
                     ? `A new note was added: "${newNote.trim().substring(0, 50)}${newNote.trim().length > 50 ? '...' : ''}"`
                     : "An audio note was added",
             });
-            
+
             setNotes((prev) => [response.data.note, ...prev]);
             setNewNote('');
             setAudioLink('');
@@ -285,7 +287,7 @@ export default function NotesSection({ leadId }: { leadId: string }) {
             setShowRecorder(false);
             setAudioURL(null);
             setWaveformData([]);
-            
+
         } catch (error) {
             console.error('Error adding note:', error);
         } finally {
@@ -307,7 +309,7 @@ export default function NotesSection({ leadId }: { leadId: string }) {
                         </Badge>
                     </div>
                 </CardHeader>
-                
+
                 <CardContent className="p-6">
                     {/* Add Note Section */}
                     <div className="mb-6 space-y-4">
@@ -324,7 +326,7 @@ export default function NotesSection({ leadId }: { leadId: string }) {
                                     placeholder="Add a note about this lead..."
                                     className="min-h-24 resize-none border-gray-200 dark:border-gray-800 focus-visible:ring-blue-500"
                                 />
-                                
+
                                 <AnimatePresence>
                                     {showAudioInput && (
                                         <motion.div
@@ -346,7 +348,7 @@ export default function NotesSection({ leadId }: { leadId: string }) {
                                         </motion.div>
                                     )}
                                 </AnimatePresence>
-                                
+
                                 {/* Audio Recorder */}
                                 <AnimatePresence>
                                     {showRecorder && (
@@ -381,13 +383,13 @@ export default function NotesSection({ leadId }: { leadId: string }) {
                                                                         style={{ height: `${Math.max(5, value * 100)}%` }}
                                                                     />
                                                                 ))}
-                                                           {!isRecording && !waveformData.length && audioURL && (
+                                                                {!isRecording && !waveformData.length && audioURL && (
                                                                     <Progress value={undefined} className="w-full" />
                                                                 )}
                                                             </div>
                                                         </div>
                                                     )}
-                                                    
+
                                                     {/* Recording controls */}
                                                     <div className="flex justify-center space-x-3 mt-3">
                                                         {!audioURL ? (
@@ -412,7 +414,7 @@ export default function NotesSection({ leadId }: { leadId: string }) {
                                                         ) : (
                                                             <>
                                                                 <Button
-                                                                    variant="outline" 
+                                                                    variant="outline"
                                                                     size="sm"
                                                                     onClick={togglePlayback}
                                                                 >
@@ -420,7 +422,7 @@ export default function NotesSection({ leadId }: { leadId: string }) {
                                                                     {isPlaying ? " Pause" : " Play"}
                                                                 </Button>
                                                                 <Button
-                                                                    variant="outline" 
+                                                                    variant="outline"
                                                                     size="sm"
                                                                     onClick={discardRecording}
                                                                     className="text-destructive"
@@ -431,14 +433,14 @@ export default function NotesSection({ leadId }: { leadId: string }) {
                                                             </>
                                                         )}
                                                     </div>
-                                                    
+
                                                     {isUploading && (
                                                         <div className="mt-2 text-sm text-center flex items-center justify-center gap-2">
                                                             <Loader2 className="h-3 w-3 animate-spin" />
                                                             Uploading recording...
                                                         </div>
                                                     )}
-                                                    
+
                                                     {audioLink && !isUploading && (
                                                         <div className="mt-3 text-sm text-center text-green-600">
                                                             Recording uploaded successfully!
@@ -449,22 +451,22 @@ export default function NotesSection({ leadId }: { leadId: string }) {
                                         </motion.div>
                                     )}
                                 </AnimatePresence>
-                                
+
                                 <div className="flex justify-between items-center">
                                     <div className="flex gap-2">
                                         <TooltipProvider>
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
-                                                    <Button 
-                                                        type="button" 
-                                                        variant="outline" 
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
                                                         size="sm"
                                                         onClick={() => {
                                                             setShowAudioInput(!showAudioInput);
                                                             if (showRecorder) setShowRecorder(false);
                                                         }}
                                                         className={cn(
-                                                            "h-8 gap-1", 
+                                                            "h-8 gap-1",
                                                             showAudioInput && "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/20 dark:text-purple-400 dark:border-purple-800"
                                                         )}
                                                     >
@@ -477,20 +479,20 @@ export default function NotesSection({ leadId }: { leadId: string }) {
                                                 </TooltipContent>
                                             </Tooltip>
                                         </TooltipProvider>
-                                        
+
                                         <TooltipProvider>
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
-                                                    <Button 
-                                                        type="button" 
-                                                        variant="outline" 
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
                                                         size="sm"
                                                         onClick={() => {
                                                             setShowRecorder(!showRecorder);
                                                             if (showAudioInput) setShowAudioInput(false);
                                                         }}
                                                         className={cn(
-                                                            "h-8 gap-1", 
+                                                            "h-8 gap-1",
                                                             showRecorder && "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800"
                                                         )}
                                                     >
@@ -504,9 +506,9 @@ export default function NotesSection({ leadId }: { leadId: string }) {
                                             </Tooltip>
                                         </TooltipProvider>
                                     </div>
-                                    
-                                    <Button 
-                                        onClick={handleAddNote} 
+
+                                    <Button
+                                        onClick={handleAddNote}
                                         disabled={isSaving || (!newNote.trim() && !audioLink.trim()) || isRecording}
                                         className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white gap-1.5"
                                         size="sm"
@@ -527,9 +529,9 @@ export default function NotesSection({ leadId }: { leadId: string }) {
                             </div>
                         </div>
                     </div>
-                    
+
                     {/* Notes List */}
-                    <ScrollArea className="h-[calc(100vh-400px)] pr-4">
+                    <ScrollArea className=" pr-4">
                         {isLoading ? (
                             <div className="space-y-4">
                                 {[1, 2, 3].map((i) => (
@@ -576,15 +578,19 @@ export default function NotesSection({ leadId }: { leadId: string }) {
                                                 <CardContent className="p-4 pb-3">
                                                     <div className="flex items-start gap-3">
                                                         <Avatar className="h-8 w-8 mt-1">
-                                                            <AvatarFallback className="bg-gradient-to-br from-amber-400 to-orange-500 text-white">
-                                                                {note.createdBy ? note.createdBy.charAt(0) : 'U'}
-                                                            </AvatarFallback>
+                                                            {note.profileImage ? (
+                                                                <AvatarImage src={note.profileImage} alt={note.createdByName || 'User'} />
+                                                            ) : (
+                                                                <AvatarFallback className="bg-gradient-to-br from-amber-400 to-orange-500 text-white">
+                                                                    {note.createdByName ? note.createdByName.charAt(0) : 'U'}
+                                                                </AvatarFallback>
+                                                            )}
                                                         </Avatar>
-                                                        
+
                                                         <div className="flex-1">
                                                             <div className="flex justify-between items-center mb-1">
                                                                 <h4 className="font-medium text-sm">
-                                                                    {note.createdBy || 'User'}
+                                                                    {note.createdByName || 'Unknown User'}
                                                                 </h4>
                                                                 <div className="flex items-center gap-2">
                                                                     <span className="text-xs text-muted-foreground">
@@ -603,11 +609,11 @@ export default function NotesSection({ leadId }: { leadId: string }) {
                                                                     </DropdownMenu>
                                                                 </div>
                                                             </div>
-                                                            
+
                                                             {note.text && (
                                                                 <p className="text-sm whitespace-pre-wrap">{note.text}</p>
                                                             )}
-                                                            
+
                                                             {note.audioLink && (
                                                                 <div className="mt-3 bg-muted/30 rounded-md p-3">
                                                                     <div className="flex items-center gap-2 mb-2">

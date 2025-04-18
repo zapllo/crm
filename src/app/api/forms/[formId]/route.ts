@@ -109,14 +109,32 @@ export async function PUT(request: Request,
 
     const body = await request.json();
 
-    // Update form fields
-    // Type-safe update approach
-    if (body.title) form.set('title', body.title);
-    if (body.description) form.set('description', body.description);
-    if (body.fields) form.set('fields', body.fields);
-    if (body.settings) form.set('settings', body.settings);
-    if (body.isPublished !== undefined) form.set('isPublished', body.isPublished);
-    if (body.stats) form.set('stats', body.stats);
+    const updateFields = [
+      'name', 'description', 'coverImage', 'fields', 'theme', 'settings',
+      'integrations', 'notifications', 'thankYouPage', 'isPublished', 'isTemplate'
+    ];
+
+    // Update all provided fields
+    updateFields.forEach(field => {
+      if (body[field] !== undefined) {
+        form.set(field, body[field]);
+      }
+    });
+
+    // For specific theme properties
+    if (body.theme) {
+      const themeFields = [
+        'primaryColor', 'backgroundColor', 'textColor', 'accentColor',
+        'fontFamily', 'borderRadius', 'buttonStyle', 'logoPosition', 'customCSS'
+      ];
+
+      themeFields.forEach(themeField => {
+        if (body.theme[themeField] !== undefined) {
+          (form.theme as any)[themeField] = body.theme[themeField];
+        }
+      });
+    }
+
 
     await form.save();
 

@@ -402,7 +402,7 @@ export default function NewFormPage() {
         {filtered.map(template => (
           <Card
             key={template._id}
-            className={`cursor-pointer transition-all duration-200 hover:shadow-md overflow-hidden group ${selectedTemplate === template._id ? 'ring-2 ring-primary' : 'hover:border-primary/50'
+            className={`cursor-pointer transition-all duration-200 hover:shadow-md overflow-hidden group ${selectedTemplate === template._id ? 'ring-1 ring-primary' : 'hover:border-primary/50'
               }`}
             onClick={() => setSelectedTemplate(template._id)}
           >
@@ -454,10 +454,10 @@ export default function NewFormPage() {
             </CardContent>
 
             <CardFooter className="px-4 py-3 bg-muted/10 flex justify-between items-center border-t text-xs text-muted-foreground">
-              <div className="flex items-center">
+              {/* <div className="flex items-center">
                 <LayoutTemplate className="h-3 w-3 mr-1" />
                 {template.fields?.length || 0} fields
-              </div>
+              </div> */}
               <div className="flex items-center">
                 <Clock className="h-3 w-3 mr-1" />
                 Updated {new Date(template.updatedAt || Date.now()).toLocaleDateString()}
@@ -470,7 +470,7 @@ export default function NewFormPage() {
   };
 
   return (
-    <div className="container py-8 max-w-screen-xl">
+    <div className="container max-h-screen h-fit scrollbar-hide overflow-y-scroll py-8 max-w-screen">
       <div className="flex justify-between items-center mb-8">
         <Button
           variant="ghost"
@@ -686,22 +686,12 @@ export default function NewFormPage() {
                     </Select>
                   </div>
 
-                  <ScrollArea className="max-h-[600px] pr-4 pb-4">
-                    <div className="space-y-8">
-                      <div>
-                        <h2 className="text-lg font-semibold mb-4">Organization Templates</h2>
-                        <div className="mb-6">
-                          {renderTemplateCards(templates.organization)}
-                        </div>
-                      </div>
-
-                      <Separator />
+                  <ScrollArea className=" pr-4 pb-4">
 
                       <div>
                         <h2 className="text-lg font-semibold mb-4">Public Templates</h2>
                         {renderTemplateCards(templates.public)}
                       </div>
-                    </div>
                   </ScrollArea>
                 </CardContent>
               </Card>

@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 const themeColorMap: Record<string, { bg: string, text: string, accent: string }> = {
   // Default mapping for unknown themes
   default: { bg: 'bg-gray-100 dark:bg-gray-800', text: 'text-gray-800 dark:text-gray-200', accent: 'bg-gray-300 dark:bg-gray-700' },
-  
+
   // Template-specific mappings
   "Modern Blue": { bg: 'bg-blue-50 dark:bg-blue-950', text: 'text-blue-800 dark:text-blue-200', accent: 'bg-blue-200 dark:bg-blue-800' },
   "Executive Gray": { bg: 'bg-gray-100 dark:bg-gray-900', text: 'text-gray-800 dark:text-gray-200', accent: 'bg-gray-300 dark:bg-gray-700' },
@@ -58,10 +58,10 @@ const TemplateCard: React.FC<TemplateCardProps> = ({
   const themeColors = themeColorMap[name] || themeColorMap.default;
 
   return (
-    <Card 
+    <Card
       className={cn(
-        "overflow-hidden transition-all rounded duration-200 hover:shadow-md border-2", 
-        isSelected ? "ring-2 ring-primary border-primary" : "border-transparent",
+        "overflow-hidden transition-all rounded duration-200 hover:shadow-md border",
+        isSelected ? "border-2 ring-primary border-primary" : "border-transparent",
         themeColors.bg
       )}
     >
@@ -72,14 +72,14 @@ const TemplateCard: React.FC<TemplateCardProps> = ({
             {name.split(' ')[0]}
           </div>
         </div>
-        
+
         {/* Default Badge */}
         {isDefault && (
           <Badge className="absolute top-2 left-2 bg-primary">
             Default
           </Badge>
         )}
-        
+
         {/* Selected Check */}
         {isSelected && (
           <div className="absolute top-2 right-2">
@@ -89,17 +89,17 @@ const TemplateCard: React.FC<TemplateCardProps> = ({
           </div>
         )}
       </div>
-      
+
       <CardContent className={cn("p-4 mt-2", themeColors.text)}>
         <h3 className="font-medium text-lg">{name}</h3>
         <p className="text-muted-foreground text-sm mt-1 line-clamp-2">{description}</p>
       </CardContent>
-      
+
       <CardFooter className="p-4 pt-0 gap-2 flex">
         {!isDefault && (
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             className="flex-1"
             onClick={() => onSetDefault?.(id)}
           >
