@@ -4,6 +4,7 @@ import FormModel from '@/models/formBuilderModel';
 import FormSubmission from '@/models/formSubmissionModel';
 import { getDataFromToken } from '@/lib/getDataFromToken';
 import { User } from '@/models/userModel';
+import Organization from '@/models/organizationModel';
 
 export async function GET(request: Request,
   { params }: { params: Promise<{ formId: string }> }
@@ -90,7 +91,7 @@ export async function POST(request: Request,
   { params }: { params: Promise<{ formId: string }> }
 ) {
   try {
-    const formId = (await params).formId
+    const formId = (await params).formId;
     await connectDB();
 
     // Find the form
@@ -101,6 +102,48 @@ export async function POST(request: Request,
         { error: 'Form not found' },
         { status: 404 }
       );
+    }
+
+    const organization = await Organization.findById(form.organization);
+    if (!organization) {
+      return NextResponse.json({ success: false, message: "Organization not found" }, { status: 404 });
+    }
+
+    // Get submission count data with proper defaults
+    const submissionsCount = organization.formBuilder?.submissionsCount || {
+      currentMonth: 0,
+      lastResetDate: new Date()
+    };
+
+    // Ensure we have valid values (handle potential null/undefined)
+    const currentMonth = submissionsCount.currentMonth || 0;
+    const lastResetDate = submissionsCount.lastResetDate || new Date();
+
+    // Check if we need to reset the counter (more than 30 days passed)
+    const shouldResetCounter = new Date().getTime() - new Date(lastResetDate).getTime() > 30 * 24 * 60 * 60 * 1000;
+
+    // Calculate new submission count
+    const updatedCount = shouldResetCounter ? 1 : (currentMonth + 1);
+
+    // Get max submissions limit
+    const maxSubmissions = organization.formBuilder?.maxSubmissionsPerMonth || 0;
+
+    console.log('Form submission debug:', {
+      orgId: organization._id.toString(),
+      currentMonth,
+      updatedCount,
+      shouldResetCounter,
+      lastResetDate: lastResetDate.toISOString(),
+      maxSubmissions
+    });
+
+    // Only check limit if maxSubmissions is greater than 0
+    if (maxSubmissions > 0 && !shouldResetCounter && currentMonth >= maxSubmissions) {
+      return NextResponse.json({
+        success: false,
+        message: "Monthly submission limit reached. Please upgrade your plan for more submissions.",
+        limitReached: true
+      }, { status: 403 });
     }
 
     // Check if form is published
@@ -135,7 +178,6 @@ export async function POST(request: Request,
       );
     }
 
-    // Get user ID if available (for logged-in submissions)
     // Get user ID if available (for logged-in submissions)
     let userId = null;
     let user = null;
@@ -262,12 +304,31 @@ export async function POST(request: Request,
 
     await form.save();
 
-    // Process form integrations (in a real implementation, this would be a separate process)
-    // Here you'd handle:
-    // 1. Email notifications
-    // 2. WhatsApp notifications
-    // 3. CRM lead creation
-    // 4. Webhook calls
+    // Update organization's submission count using $set to ensure proper updating of nested fields
+    const updateResult = await Organization.findOneAndUpdate(
+      { _id: form.organization },
+      {
+        $set: {
+          'formBuilder.submissionsCount.currentMonth': updatedCount,
+          'formBuilder.submissionsCount.lastResetDate': shouldResetCounter ? new Date() : lastResetDate
+        }
+      },
+      { new: true }
+    );
+
+    if (!updateResult) {
+      console.error('Failed to update organization submission count');
+    } else {
+      console.log('Successfully updated submission count to:', updatedCount);
+      console.log('Organization updated:', {
+        id: updateResult._id?.toString(),
+        submissionCount: updateResult.formBuilder?.submissionsCount?.currentMonth
+      });
+    }
+    console.log('Updated organization submission count:',
+      updateResult?.formBuilder?.submissionsCount || 'Update failed');
+
+    // Process form integrations
     try {
       await processFormIntegrations(form, submission);
     } catch (error) {

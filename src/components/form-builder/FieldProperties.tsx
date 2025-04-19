@@ -949,16 +949,16 @@ export default function FieldProperties({ field, onUpdate }: FieldPropertiesProp
 
   return (
     <div className="space-y-6 pb-4">
-    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-      <TabsList className="w-full grid grid-cols-3 mb-4">
-        <TabsTrigger value="basic">Basic</TabsTrigger>
+    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-fit">
+      <TabsList className="w-fit grid grid-cols-3 bg-accent gap-4 mb-4">
+        <TabsTrigger className='border-none' value="basic">Basic</TabsTrigger>
         {(['select', 'checkbox', 'radio', 'multiSelect'].includes(localField.type)) && (
           <TabsTrigger value="options">Options</TabsTrigger>
         )}
-        <TabsTrigger value="advanced">Advanced</TabsTrigger>
-        {!['heading', 'paragraph', 'divider'].includes(localField.type) && (
-          <TabsTrigger value="conditional">Logic</TabsTrigger>
-        )}
+        <TabsTrigger className='border-none' value="advanced">Advanced</TabsTrigger>
+        {/* {!['heading', 'paragraph', 'divider'].includes(localField.type) && (
+          <TabsTrigger className='border-none' value="conditional">Logic</TabsTrigger>
+        )} */}
       </TabsList>
 
       <TabsContent value="basic" className="space-y-4">

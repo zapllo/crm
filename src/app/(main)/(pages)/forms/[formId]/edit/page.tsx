@@ -221,7 +221,7 @@ export default function EditFormPageContent() {
               </Button>
             </div>
             <div className="p-4">
-              <FormIntegrationPanel formId={formId} />
+              <FormIntegrationPanel  formName={form?.name || "Form"} formId={formId} />
             </div>
           </div>
         </div>

@@ -25,6 +25,28 @@ const GST_RATE = 0.18; // 18% GST
 type ProductType = "crm" | "quotation" | "formbuilder" | "tasks" | "bundle";
 type ProductCategory = "sales" | "teams";
 
+// Modify the constants for form builder pricing
+const FORM_BUILDER_STARTER_PRICE = 2499; // ₹2,499 per year
+const FORM_BUILDER_GROWTH_PRICE = 4999; // ₹4,999 per year
+const FORM_BUILDER_PRO_PRICE = 9999; // ₹9,999 per year
+const FORM_BUILDER_ENTERPRISE_PRICE = 19999; // Custom price, but setting a base for calculations
+
+// Add a new FormBuilderPlan type
+type FormBuilderPlanType = "starter" | "growth" | "pro" | "enterprise";
+
+// Add form builder plan interface
+interface FormBuilderPlan {
+  id: FormBuilderPlanType;
+  name: string;
+  description: string;
+  price: number;
+  maxForms: number;
+  maxSubmissions: number;
+  features: string[];
+  popular: boolean;
+}
+
+
 interface Product {
   id: ProductType;
   name: string;
@@ -53,6 +75,28 @@ export default function BillingPage() {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
+  const [selectedFormBuilderPlan, setSelectedFormBuilderPlan] = useState<FormBuilderPlanType>("starter");
+  const [isFormBuilderSelected, setIsFormBuilderSelected] = useState(false);
+  // Get URL parameters to pre-select product
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const product = urlParams.get('product');
+    const plan = urlParams.get('plan');
+
+    if (product === 'formBuilder') {
+      setIsFormBuilderSelected(true);
+      if (plan && ['starter', 'growth', 'pro', 'enterprise'].includes(plan)) {
+        setSelectedFormBuilderPlan(plan as FormBuilderPlanType);
+      }
+    } else if (product) {
+      setIsFormBuilderSelected(false);
+      if (['crm', 'quotation', 'tasks', 'bundle'].includes(product)) {
+        setSelectedProduct(product as ProductType);
+        setSelectedCategory(product === 'tasks' || product === 'bundle' ? 'teams' : 'sales');
+      }
+    }
+  }, []);
+
 
   // Check if organization has subscriptions and update the counts accordingly
   useEffect(() => {
@@ -158,26 +202,7 @@ export default function BillingPage() {
       ]
     },
     // New AI Form Builder product
-    {
-      id: "formbuilder",
-      name: "AI Form Builder",
-      description: "Create intelligent forms with AI-powered features",
-      pricePerUser: FORM_BUILDER_PRICE_PER_USER,
-      icon: <BrainCircuit className="h-4 w-4 mr-1" />,
-      badge: "New",
-      category: "sales",
-      features: [
-        "AI-powered form generation",
-        "Smart field suggestions",
-        "Conditional logic",
-        "Data validation",
-        "Integration with CRM",
-        "Custom branding",
-        "Form analytics",
-        "Multi-page forms",
-        "File uploads"
-      ]
-    },
+
     {
       id: "tasks",
       name: "Zapllo Tasks",
@@ -225,7 +250,85 @@ export default function BillingPage() {
       ]
     }
   ];
-
+  // Create the form builder plans array
+  const formBuilderPlans: FormBuilderPlan[] = [
+    {
+      id: "starter",
+      name: "Starter",
+      description: "Basic form building capabilities for small businesses",
+      price: FORM_BUILDER_STARTER_PRICE,
+      maxForms: 10,
+      maxSubmissions: 1000,
+      popular: false,
+      features: [
+        "10 live forms",
+        "1,000 submissions per month",
+        "File uploads",
+        "Email notifications",
+        "Form analytics",
+        "Export responses to CSV",
+        "Custom thank you pages",
+        "Basic form customization"
+      ]
+    },
+    {
+      id: "growth",
+      name: "Growth",
+      description: "Advanced form building for growing businesses",
+      price: FORM_BUILDER_GROWTH_PRICE,
+      maxForms: 25,
+      maxSubmissions: 10000,
+      popular: true,
+      features: [
+        "25 live forms",
+        "10,000 submissions per month",
+        "Advanced form logic",
+        "Conditional fields",
+        "Custom branding",
+        "Multi-page forms",
+        "Webhooks integration",
+        "Lead generation tools"
+      ]
+    },
+    {
+      id: "pro",
+      name: "Pro",
+      description: "Complete form building toolkit for professionals",
+      price: FORM_BUILDER_PRO_PRICE,
+      maxForms: 0, // Unlimited
+      maxSubmissions: 50000,
+      popular: false,
+      features: [
+        "Unlimited forms",
+        "50,000 submissions per month",
+        "Advanced analytics",
+        "Priority support",
+        "E-signature collection",
+        "Custom workflows",
+        "API access",
+        "Custom form templates"
+      ]
+    },
+    {
+      id: "enterprise",
+      name: "Enterprise",
+      description: "Tailored solutions for large organizations",
+      price: FORM_BUILDER_ENTERPRISE_PRICE,
+      maxForms: 0, // Unlimited
+      maxSubmissions: 0, // Custom limit
+      popular: false,
+      features: [
+        "Unlimited forms & submissions",
+        "Custom integrations",
+        "Dedicated account manager",
+        "SLA guarantees",
+        "Custom security requirements",
+        "Bulk operations",
+        "User management & roles",
+        "On-premise deployment options"
+      ]
+    }
+  ];
   // Filter products by category
   const salesProducts = products.filter(p => p.category === "sales");
   const teamsProducts = products.filter(p => p.category === "teams");
@@ -399,9 +502,9 @@ export default function BillingPage() {
                 {org.activeSubscriptions?.map(sub => (
                   <Badge key={sub} variant="secondary">
                     {sub === 'crm' ? 'CRM' :
-                     sub === 'quotation' ? 'Quotation' :
-                     sub === 'formbuilder' ? 'Form Builder' :
-                     sub === 'tasks' ? 'Tasks' : 'Bundle'}
+                      sub === 'quotation' ? 'Quotation' :
+                        sub === 'formbuilder' ? 'Form Builder' :
+                          sub === 'tasks' ? 'Tasks' : 'Bundle'}
                   </Badge>
                 ))}
               </div>
@@ -411,6 +514,206 @@ export default function BillingPage() {
       </Card>
     );
   };
+
+
+  // Get current form builder plan
+  const currentFormBuilderPlan = formBuilderPlans.find(p => p.id === selectedFormBuilderPlan)!;
+
+  // Calculate form builder pricing
+  const formBuilderBasePrice = currentFormBuilderPlan.price;
+  const formBuilderGstAmount = formBuilderBasePrice * GST_RATE;
+  const formBuilderTotalPrice = formBuilderBasePrice + formBuilderGstAmount;
+
+  // Handle form builder checkout
+  const handleFormBuilderCheckout = async () => {
+    setLoading(true);
+    try {
+      // Create order for form builder plan
+      const orderResponse = await fetch('/api/create-order', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          amount: Math.round(formBuilderTotalPrice * 100), // Razorpay expects amount in paise
+          currency: 'INR',
+          receipt: `receipt_${Date.now()}`,
+          notes: {
+            plan: `Form Builder ${currentFormBuilderPlan.name}`,
+            formBuilderPlan: currentFormBuilderPlan.id,
+            maxForms: currentFormBuilderPlan.maxForms,
+            maxSubmissions: currentFormBuilderPlan.maxSubmissions
+          },
+        }),
+      });
+
+      const orderData = await orderResponse.json();
+
+      if (!orderData.orderId) {
+        throw new Error('Failed to create order');
+      }
+
+      // Initialize Razorpay
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        amount: Math.round(formBuilderTotalPrice * 100),
+        currency: 'INR',
+        name: 'Zapllo',
+        description: `Form Builder ${currentFormBuilderPlan.name} Plan`,
+        order_id: orderData.orderId,
+        handler: function (response: any) {
+          handleFormBuilderPaymentSuccess(response, orderData.orderId);
+        },
+        modal: {
+          ondismiss: function () {
+            setLoading(false);
+          }
+        },
+        theme: {
+          color: '#7451F8',
+        }
+      };
+
+      const razorpay = new (window as any).Razorpay(options);
+      razorpay.open();
+    } catch (error) {
+      console.error('Checkout error:', error);
+      toast({
+        title: "Checkout Failed",
+        description: "There was an error processing your request. Please try again.",
+        variant: "destructive",
+      });
+      setLoading(false);
+    }
+  };
+
+  // Form builder payment success handler
+  const handleFormBuilderPaymentSuccess = async (response: any, orderId: string) => {
+    try {
+      const paymentData = {
+        razorpay_payment_id: response.razorpay_payment_id,
+        razorpay_order_id: response.razorpay_order_id,
+        razorpay_signature: response.razorpay_signature,
+        amount: formBuilderTotalPrice,
+        planName: `Form Builder ${currentFormBuilderPlan.name}`,
+        formBuilderPlan: {
+          plan: currentFormBuilderPlan.id,
+          maxForms: currentFormBuilderPlan.maxForms,
+          maxSubmissions: currentFormBuilderPlan.maxSubmissions
+        }
+      };
+
+      const result = await fetch('/api/payment-success-form-builder', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(paymentData),
+      });
+
+      if (result.ok) {
+        router.push(`/payment-success?plan=${currentFormBuilderPlan.id}&amount=${formBuilderTotalPrice}&product=formBuilder`);
+      } else {
+        router.push('/payment-failure');
+      }
+    } catch (error) {
+      console.error('Payment verification error:', error);
+      router.push('/payment-failure');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Add toggle for switching between per-user products and form builder plans
+  const toggleFormBuilderSelection = (value: boolean) => {
+    setIsFormBuilderSelected(value);
+  };
+
+
+    // Render form builder plans
+    const renderFormBuilderPlans = () => {
+      return (
+        <div className="grid md:grid-cols-3 lg:grid-cols-2 gap-6 mt-8">
+          {formBuilderPlans.map((plan) => (
+            <Card
+              key={plan.id}
+              className={`border-2 ${
+                selectedFormBuilderPlan === plan.id
+                  ? 'border-primary bg-primary/5'
+                  : 'border-border'
+              } hover:border-primary/50 transition-all cursor-pointer`}
+              onClick={() => setSelectedFormBuilderPlan(plan.id)}
+            >
+              <CardHeader className={plan.popular ? 'bg-primary/10' : ''}>
+                <div className="flex justify-between items-center">
+                  <CardTitle className="text-xl">{plan.name}</CardTitle>
+                  {plan.popular && (
+                    <Badge className="bg-primary">
+                      Popular
+                    </Badge>
+                  )}
+                </div>
+                <div className="mt-2">
+                  <span className="text-2xl font-bold">₹{plan.price.toLocaleString('en-IN')}</span>
+                  <span className="text-muted-foreground ml-1 text-sm">/year</span>
+                </div>
+                <CardDescription className="mt-2">
+                  {plan.description}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="pt-4">
+                <div className="space-y-4">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Live Forms</span>
+                    <span className="font-medium">
+                      {plan.maxForms === 0 ? "Unlimited" : plan.maxForms}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Monthly Submissions</span>
+                    <span className="font-medium">
+                      {plan.maxSubmissions === 0
+                        ? "Custom"
+                        : `${plan.maxSubmissions.toLocaleString('en-IN')}`}
+                    </span>
+                  </div>
+                  <Separator />
+                  <p className="text-xs font-medium">Key Features:</p>
+                  <ul className="space-y-2">
+                    {plan.features.slice(0, 5).map((feature, index) => (
+                      <li key={index} className="flex items-start text-sm">
+                        <Check className="h-4 w-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </CardContent>
+              <CardFooter>
+                {plan.id === 'enterprise' ? (
+                  <Button
+                    className="w-full"
+                    variant="outline"
+                    onClick={() => router.push('/contact-sales')}
+                  >
+                    Contact Sales
+                  </Button>
+                ) : (
+                  <Button
+                    className={`w-full ${selectedFormBuilderPlan === plan.id ? 'bg-primary' : ''}`}
+                    variant={selectedFormBuilderPlan === plan.id ? 'default' : 'outline'}
+                    onClick={() => setSelectedFormBuilderPlan(plan.id)}
+                  >
+                    {selectedFormBuilderPlan === plan.id ? 'Selected' : 'Select Plan'}
+                  </Button>
+                )}
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
+      );
+    };
+
 
   return (
     <div className="container mx-auto py-8 px-4">
@@ -425,27 +728,90 @@ export default function BillingPage() {
 
       {/* Display current subscription information */}
       {renderCurrentSubscription()}
+ {/* Product type toggle */}
+ <div className="flex justify-center mb-8">
+        <Tabs
+          value={isFormBuilderSelected ? "formBuilder" : "perUser"}
+          onValueChange={(value) => toggleFormBuilderSelection(value === "formBuilder")}
+          className="w-full max-w-md"
+        >
+          <TabsList className="grid grid-cols-2 bg-accent w-full">
+            <TabsTrigger className='border-none'  value="perUser">Per-User Products</TabsTrigger>
+            <TabsTrigger  className='border-none' value="formBuilder">Form Builder Plans</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
 
-      {/* Category tabs */}
-      <Tabs
-        defaultValue="sales"
-        value={selectedCategory}
-        onValueChange={(value) => {
-          setSelectedCategory(value as ProductCategory);
-          // Set default product in the category
-          if (value === 'sales') {
-            setSelectedProduct('crm');
-          } else {
-            setSelectedProduct('tasks');
-          }
-        }}
-        className="mx-auto max-w-4xl mb-6"
-      >
-        <TabsList className="grid grid-cols-2 h-12 gap-2 bg-accent w-full">
+      {isFormBuilderSelected ? (
+        <div>
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-bold">Form Builder Plans</h2>
+            <p className="text-muted-foreground">
+              Create beautiful forms and collect submissions based on your needs
+            </p>
+          </div>
+
+          {renderFormBuilderPlans()}
+
+          {selectedFormBuilderPlan !== 'enterprise' && (
+            <div className="mt-10 max-w-md mx-auto">
+              <Card className="border-2 border-primary/20">
+                <CardHeader>
+                  <CardTitle>Order Summary</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex justify-between">
+                      <span>Base Price</span>
+                      <span>₹{formBuilderBasePrice.toLocaleString('en-IN')}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>GST (18%)</span>
+                      <span>₹{formBuilderGstAmount.toLocaleString('en-IN')}</span>
+                    </div>
+                    <Separator />
+                    <div className="flex justify-between font-bold">
+                      <span>Total</span>
+                      <span>₹{formBuilderTotalPrice.toLocaleString('en-IN')}</span>
+                    </div>
+                  </div>
+                </CardContent>
+                <CardFooter>
+                  <Button
+                    className="w-full bg-gradient-to-r from-purple-600 to-orange-500 hover:from-purple-700 hover:to-orange-600"
+                    onClick={handleFormBuilderCheckout}
+                    disabled={loading}
+                  >
+                    {loading ? "Processing..." : "Subscribe Now"}
+                  </Button>
+                </CardFooter>
+              </Card>
+            </div>
+          )}
+        </div>
+      ) : (
+        <>
+          {/* Category tabs for per-user products */}
+          <Tabs
+            defaultValue="sales"
+            value={selectedCategory}
+            onValueChange={(value) => {
+              setSelectedCategory(value as ProductCategory);
+              // Set default product in the category
+              if (value === 'sales') {
+                setSelectedProduct('crm');
+              } else {
+                setSelectedProduct('tasks');
+              }
+            }}
+            className="mx-auto max-w-4xl mb-6"
+          >
+                    <TabsList className="grid grid-cols-2 h-12 gap-2 bg-accent w-full">
           <TabsTrigger value="sales" className="text-base border-none">
             <Sparkles className="h-4 w-4 mr-2" /> Zapllo Sales
           </TabsTrigger>
-          <TabsTrigger value="teams" className="text-base border-none">
+          <TabsTrigger value="teams" className="text-base
+          border-none">
             <Clock className="h-4 w-4 mr-2" /> Zapllo Teams
           </TabsTrigger>
         </TabsList>
@@ -455,9 +821,9 @@ export default function BillingPage() {
             defaultValue="crm"
             value={selectedProduct}
             onValueChange={(value) => setSelectedProduct(value as ProductType)}
-            className="mx-auto max-w-4xl"
+            className="mx-auto w-full max-w-xl"
           >
-            <TabsList className="grid grid-cols-3 h-10 gap-2 bg-accent w-full">
+            <TabsList className="grid grid-cols-2 h-10 gap-2 bg-accent w-full">
               {salesProducts.map(product => (
                 <TabsTrigger
                   key={product.id}
@@ -476,7 +842,7 @@ export default function BillingPage() {
             defaultValue="tasks"
             value={selectedProduct}
             onValueChange={(value) => setSelectedProduct(value as ProductType)}
-            className="mx-auto max-w-4xl"
+            className="mx-auto max-w-xl"
           >
             <TabsList className="grid grid-cols-2 h-10 gap-2 bg-accent w-full">
               {teamsProducts.map(product => (
@@ -624,6 +990,8 @@ export default function BillingPage() {
           </Card>
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 }

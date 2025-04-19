@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import {
+  type OnChangeFn,
   flexRender,
   getCoreRowModel,
   getPaginationRowModel,
   getSortedRowModel,
   SortingState,
   useReactTable,
+  PaginationState,
 } from "@tanstack/react-table";
 import {
   Table,
@@ -34,6 +36,15 @@ export function DataTable<TData, TValue>({
   pageSize = 10,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
+  const [{ pageIndex, pageSize: currentPageSize }, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: pageSize,
+  });
+
+  // Update pagination state when changing pages
+  const onPaginationChange = (updater: PaginationState | ((old: PaginationState) => PaginationState)) => {
+    setPagination(typeof updater === 'function' ? updater : () => updater);
+  };
 
   const table = useReactTable({
     data,
@@ -42,9 +53,14 @@ export function DataTable<TData, TValue>({
     getPaginationRowModel: getPaginationRowModel(),
     onSortingChange: setSorting,
     getSortedRowModel: getSortedRowModel(),
+    onPaginationChange,
+    manualPagination: false,
     state: {
       sorting,
-      pagination: { pageIndex: 0, pageSize }
+      pagination: {
+        pageIndex,
+        pageSize: currentPageSize,
+      },
     },
   });
 
@@ -60,9 +76,9 @@ export function DataTable<TData, TValue>({
                     {header.isPlaceholder
                       ? null
                       : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
                   </TableHead>
                 );
               })}

@@ -87,7 +87,7 @@ const OverviewPage = () => {
             path: "/CRM/dashboard",
             color: "bg-sky-500",
             count: null,
-            badge: "Real-time",
+            aiPowered: false,
             badgeColor: "text-sky-700 bg-sky-100 dark:text-sky-300 dark:bg-sky-900/30",
         },
         {
@@ -98,7 +98,8 @@ const OverviewPage = () => {
             path: "/CRM/leads",
             color: "bg-blue-500",
             count: 42,
-            badge: "Active",
+
+            aiPowered: true,
             badgeColor: "text-blue-700 bg-blue-100 dark:text-blue-300 dark:bg-blue-900/30",
         },
         {
@@ -109,7 +110,8 @@ const OverviewPage = () => {
             path: "/CRM/follow-up",
             color: "bg-purple-500",
             count: 16,
-            badge: "Pending",
+
+            aiPowered: true,
             badgeColor: "text-purple-700 bg-purple-100 dark:text-purple-300 dark:bg-purple-900/30",
         },
         {
@@ -120,7 +122,7 @@ const OverviewPage = () => {
             path: "/CRM/contacts",
             color: "bg-red-500",
             count: 8,
-            badge: "Today",
+
             badgeColor: "text-red-700 bg-red-100 dark:text-red-300 dark:bg-red-900/30",
         },
         {
@@ -131,7 +133,7 @@ const OverviewPage = () => {
             path: "/CRM/companies",
             color: "bg-orange-500",
             count: 68,
-            badge: "Active",
+
             badgeColor: "text-orange-700 bg-orange-100 dark:text-orange-300 dark:bg-orange-900/30",
         },
         {
@@ -142,7 +144,7 @@ const OverviewPage = () => {
             path: "/CRM/products",
             color: "bg-emerald-500",
             count: 118,
-            badge: "Active",
+
             badgeColor: "text-emerald-700 bg-emerald-100 dark:text-emerald-300 dark:bg-emerald-900/30",
         },
         {
@@ -158,13 +160,14 @@ const OverviewPage = () => {
         },
         {
             id: "form",
-            title: "Form Builder",
+            title: "AI Form Builder",
             description: "Create custom forms for lead generation, surveys, feedback and more.",
             icon: <FormIcon className="h-6 w-6" />,
             path: "/forms",
             color: "bg-green-900",
             count: 24,
             badge: "New",
+            aiPowered: true,
             badgeColor: "text-indigo-700 bg-indigo-100 dark:text-indigo-300 dark:bg-indigo-900/30",
         },
     ];
@@ -229,17 +232,19 @@ const OverviewPage = () => {
         hover: { scale: 1.2, rotate: 5, transition: { type: "spring", stiffness: 400, damping: 10 } },
     };
 
+
+
     return (
         <div className="w-full pt-8 pb-16 px-4 mt-8 h-full overflow-y-auto scrollbar-hide md:px-6 lg:px-8"
-        style={{
-            maxHeight: 'calc(100vh - 16px)', // Adjust based on your layout
-            scrollBehavior: 'auto' // Prevent smooth scrolling which can interfere
-        }} ref={ref}>
+            style={{
+                maxHeight: 'calc(100vh - 16px)', // Adjust based on your layout
+                scrollBehavior: 'auto' // Prevent smooth scrolling which can interfere
+            }} ref={ref}>
             <div className=" w- mt-8 space-y-6">
 
                 <div className="grid grid-cols-1 gap-6">
-                   {/* Replace Quick access section with Onboarding card but only if not completed */}
-                   {!onboardingCompleted && (
+                    {/* Replace Quick access section with Onboarding card but only if not completed */}
+                    {!onboardingCompleted && (
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
@@ -310,6 +315,7 @@ const OverviewPage = () => {
                                         onMouseLeave={() => setHoveredCard(null)}
                                         className="cursor-pointer"
                                     >
+
                                         <Card className="h-full border overflow-hidden transition-all duration-300 hover:shadow-md hover:border-primary/50">
                                             <CardHeader className="pb-2">
                                                 <div className="flex justify-between items-start">
@@ -320,6 +326,14 @@ const OverviewPage = () => {
                                                     >
                                                         {module.icon}
                                                     </motion.div>
+                                                    {module.aiPowered && (
+                                                        <div className="flex items-center gap-1 py-0.5 px-2 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-md shadow-lg border border-white/20 dark:border-black/20 overflow-hidden relative">
+                                                            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-purple-400/20 via-transparent to-transparent"></div>
+                                                            <Sparkles className="h-3 w-3 animate-pulse text-amber-300" />
+                                                            <span className="text-xs font-medium tracking-wide">Zapllo AI</span>
+                                                            <div className="absolute top-0 -inset-full h-full w-1/2 z-5 block transform -skew-x-12 bg-gradient-to-r from-transparent to-white/30 dark:to-white/10 opacity-40 animate-shine"></div>
+                                                        </div>
+                                                    )}
 
                                                 </div>
                                             </CardHeader>
@@ -388,25 +402,25 @@ export default OverviewPage;
 
 // Add this helper component
 function FormIcon(props: any) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <rect width="18" height="18" x="3" y="3" rx="2" />
-      <path d="M7 7h10" />
-      <path d="M7 12h10" />
-      <path d="M7 17h5" />
-    </svg>
-  );
+    return (
+        <svg
+            {...props}
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        >
+            <rect width="18" height="18" x="3" y="3" rx="2" />
+            <path d="M7 7h10" />
+            <path d="M7 12h10" />
+            <path d="M7 17h5" />
+        </svg>
+    );
 }
 
 // Helper components

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Upload, X, Image as ImageIcon, Search } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -27,7 +27,32 @@ export default function FormCoverImage({ coverImage, onImageChange }: FormCoverI
   const [searchQuery, setSearchQuery] = useState('');
   const [unsplashImages, setUnsplashImages] = useState<UnsplashImage[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [loadingFeatured, setLoadingFeatured] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isDialogOpen && activeTab === 'unsplash' && unsplashImages.length === 0 && !loadingFeatured) {
+      fetchFeaturedImages();
+    }
+  }, [isDialogOpen, activeTab]);
+
+  const fetchFeaturedImages = async () => {
+    try {
+      setLoadingFeatured(true);
+      // Using default search terms that would return professional images good for form covers
+      const response = await axios.get('/api/unsplash/search?query=minimal+background');
+
+      if (response.data && response.data.results) {
+        setUnsplashImages(response.data.results);
+      } else {
+        console.error('Unexpected response format:', response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching featured Unsplash images:', error);
+    } finally {
+      setLoadingFeatured(false);
+    }
+  };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -106,16 +131,31 @@ export default function FormCoverImage({ coverImage, onImageChange }: FormCoverI
     onImageChange(null);
   };
 
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    if (value === 'unsplash' && unsplashImages.length === 0 && !loadingFeatured) {
+      fetchFeaturedImages();
+    }
+  };
+
   const searchUnsplash = async () => {
-    if (!searchQuery.trim()) return;
+    if (!searchQuery.trim()) {
+      fetchFeaturedImages();
+      return;
+    }
 
     setIsSearching(true);
     try {
-      // Using your own API endpoint that will handle the Unsplash API key securely
       const response = await axios.get(`/api/unsplash/search?query=${encodeURIComponent(searchQuery)}`);
-      setUnsplashImages(response.data.results);
+      if (response.data && response.data.results) {
+        setUnsplashImages(response.data.results);
+      } else {
+        console.error('Unexpected response format:', response.data);
+        setUnsplashImages([]);
+      }
     } catch (error) {
       console.error('Error searching Unsplash:', error);
+      setUnsplashImages([]);
     } finally {
       setIsSearching(false);
     }
@@ -125,8 +165,6 @@ export default function FormCoverImage({ coverImage, onImageChange }: FormCoverI
     onImageChange(imageUrl);
     setIsDialogOpen(false);
   };
-
-  console.log(coverImage, 'coverImage');
 
   return (
     <div className="w-full mb-4">
@@ -153,7 +191,7 @@ export default function FormCoverImage({ coverImage, onImageChange }: FormCoverI
               className="rounded-full bg-background/80 hover:bg-background"
               onClick={removeImage}
             >
-              <X className="h-4 w-4" />
+              <X className="h-4 w-4 text-black dark:text-white" />
             </Button>
           </div>
         </div>
@@ -189,7 +227,7 @@ export default function FormCoverImage({ coverImage, onImageChange }: FormCoverI
             <DialogTitle>Choose Cover Image</DialogTitle>
           </DialogHeader>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
             <TabsList className="grid bg-accent  w-full grid-cols-2">
               <TabsTrigger className='border-none' value="upload">Upload</TabsTrigger>
               <TabsTrigger className='border-none' value="unsplash">Unsplash</TabsTrigger>
@@ -227,38 +265,43 @@ export default function FormCoverImage({ coverImage, onImageChange }: FormCoverI
                   onKeyDown={(e) => e.key === 'Enter' && searchUnsplash()}
                   className="flex-grow mr-2"
                 />
-                <Button onClick={searchUnsplash} disabled={isSearching}>
+                <Button onClick={searchUnsplash} disabled={isSearching || loadingFeatured}>
                   {isSearching ? 'Searching...' : 'Search'}
                 </Button>
               </div>
 
               <div className="grid grid-cols-2 gap-2 mt-4 max-h-[400px] overflow-y-auto">
-                {unsplashImages.map((image) => (
-                  <div
-                    key={image.id}
-                    className="relative cursor-pointer rounded-md overflow-hidden hover:opacity-90 transition-opacity"
-                    onClick={() => selectUnsplashImage(image.urls.regular)}
-                  >
-                    <img
-                      src={image.urls.small}
-                      alt={image.alt_description || 'Unsplash image'}
-                      className="w-full h-32 object-cover"
-                    />
-                    <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs p-1 truncate">
-                      {image.user.name}
+                {unsplashImages.length > 0 &&
+                  unsplashImages.map((image) => (
+                    <div
+                      key={image.id}
+                      className="relative cursor-pointer rounded-md overflow-hidden hover:opacity-90 transition-opacity"
+                      onClick={() => selectUnsplashImage(image.urls.regular)}
+                    >
+                      <img
+                        src={image.urls.small}
+                        alt={image.alt_description || 'Unsplash image'}
+                        className="w-full h-32 object-cover"
+                      />
+                      <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs p-1 truncate">
+                        {image.user.name}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                }
 
-                {unsplashImages.length === 0 && !isSearching && (
+                {unsplashImages.length === 0 && (loadingFeatured || isSearching) && (
                   <div className="col-span-2 text-center py-8 text-muted-foreground">
-                    Search for images on Unsplash
+                    <div className="flex flex-col items-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-3"></div>
+                      Loading images...
+                    </div>
                   </div>
                 )}
 
-                {isSearching && (
+                {unsplashImages.length === 0 && !loadingFeatured && !isSearching && (
                   <div className="col-span-2 text-center py-8 text-muted-foreground">
-                    Searching...
+                    No images found. Try another search term.
                   </div>
                 )}
               </div>

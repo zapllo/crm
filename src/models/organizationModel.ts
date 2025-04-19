@@ -50,6 +50,17 @@ export interface IOrganization extends Document {
     webhookFailure?: boolean; // Notify on webhook failures
     dailyReportTime?: string; // Store time in 24-hour format (HH:MM)
   };
+
+  formBuilder?: {
+    enabled: boolean;
+    plan: 'starter' | 'growth' | 'pro' | 'enterprise' | null;
+    maxForms: number;
+    maxSubmissionsPerMonth: number;
+    submissionsCount: {
+      currentMonth: number;
+      lastResetDate: Date;
+    };
+  };
 }
 
 const organizationSchema = new Schema<IOrganization>(
@@ -212,12 +223,42 @@ const organizationSchema = new Schema<IOrganization>(
         default: "09:00" // Default to 9:00 AM
       }
     },
+    // Add to the schema
+    formBuilder: {
+      enabled: {
+        type: Boolean,
+        default: false
+      },
+      plan: {
+        type: String,
+        enum: ['starter', 'growth', 'pro', 'enterprise', null],
+        default: null
+      },
+      maxForms: {
+        type: Number,
+        default: 0
+      },
+      maxSubmissionsPerMonth: {
+        type: Number,
+        default: 0
+      },
+      submissionsCount: {
+        currentMonth: {
+          type: Number,
+          default: 0
+        },
+        lastResetDate: {
+          type: Date,
+          default: Date.now
+        }
+      }
+    },
   },
-{ timestamps: true }
+  { timestamps: true }
 );
 
 // Pre-save hook to ensure webhook secret exists
-organizationSchema.pre('save', function(next) {
+organizationSchema.pre('save', function (next) {
   // If webhook secret doesn't exist, generate one
   if (!this.webhookSecret) {
     this.webhookSecret = require('crypto').randomBytes(32).toString('hex');

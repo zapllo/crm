@@ -17,7 +17,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuSeparator, DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -38,6 +38,77 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
+import FormBuilderPricingPage from '@/components/billing/FormBuilderPricingPage';
+import { useUserContext } from '@/contexts/userContext';
+import FormBuilderUsageStats from '@/components/form-builder/FormBuilderUsageStats';
+
+
+function FormLimitsWarning({ limits }: { limits: { maxForms: number, currentForms: number, maxSubmissionsPerMonth: number, currentMonthSubmissions: number, plan: string | null } | null }) {
+  if (!limits) return null;
+
+  const { maxForms, currentForms, maxSubmissionsPerMonth, currentMonthSubmissions, plan } = limits;
+
+  const formUsagePercent = maxForms > 0 ? (currentForms / maxForms) * 100 : 0;
+  const submissionUsagePercent = maxSubmissionsPerMonth > 0
+    ? (currentMonthSubmissions / maxSubmissionsPerMonth) * 100
+    : 0;
+
+  if (formUsagePercent < 80 && submissionUsagePercent < 80) return null;
+  const router = useRouter();
+  return (
+    <Card className="mb-6 border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800/30">
+      <CardContent className="p-4">
+        <div className="flex flex-col md:flex-row gap-6">
+          {formUsagePercent >= 80 && (
+            <div className="flex-1">
+              <div className="flex justify-between mb-2">
+                <span className="font-medium">Published Forms</span>
+                <span className={formUsagePercent >= 90 ? "text-red-600" : "text-amber-600"}>
+                  {currentForms} / {maxForms}
+                </span>
+              </div>
+              <Progress value={formUsagePercent}
+                className={`h-2 ${formUsagePercent >= 90 ? "bg-red-200" : "bg-amber-200"}`}
+
+              />
+              {formUsagePercent >= 90 && (
+                <p className="text-sm mt-1 text-red-600">
+                  You've almost reached your form limit!
+                </p>
+              )}
+            </div>
+          )}
+
+          {submissionUsagePercent >= 80 && (
+            <div className="flex-1">
+              <div className="flex justify-between mb-2">
+                <span className="font-medium">Monthly Submissions</span>
+                <span className={submissionUsagePercent >= 90 ? "text-red-600" : "text-amber-600"}>
+                  {currentMonthSubmissions} / {maxSubmissionsPerMonth}
+                </span>
+              </div>
+              <Progress value={submissionUsagePercent}
+                className={`h-2 ${submissionUsagePercent >= 90 ? "bg-red-200" : "bg-amber-200"}`}
+
+              />
+              {submissionUsagePercent >= 90 && (
+                <p className="text-sm mt-1 text-red-600">
+                  You're close to your monthly submission limit!
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="flex justify-end mt-4">
+          <Button variant="outline" size="sm" onClick={() => router.push('/settings/billing')}>
+            Upgrade Plan
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function FormsPage() {
   const router = useRouter();
@@ -52,10 +123,107 @@ export default function FormsPage() {
   const [aiProcessing, setAiProcessing] = useState(false);
   const [aiProgress, setAiProgress] = useState(0);
   const [selectedFormId, setSelectedFormId] = useState<string | null>(null);
+  // Add at the beginning of the component
+  const [accessStatus, setAccessStatus] = useState({
+    hasAccess: false,
+    needsPurchase: false,
+    limits: null,
+    loading: true
+  });
+
+  // Add useEffect to check access
+  useEffect(() => {
+    const checkAccess = async () => {
+      try {
+        const response = await axios.get('/api/check-form-builder-access');
+        setAccessStatus({
+          hasAccess: response.data.hasAccess,
+          needsPurchase: response.data.needsPurchase || false,
+          limits: response.data.limits || null,
+          loading: false
+        });
+      } catch (error) {
+        console.error('Error checking form builder access:', error);
+        setAccessStatus(prev => ({
+          ...prev,
+          hasAccess: false,
+          loading: false
+        }));
+      }
+    };
+
+    checkAccess();
+  }, []);
 
   useEffect(() => {
     fetchForms();
   }, []);
+
+  // Inside the component, add state to track usage stats
+  const [usageStats, setUsageStats] = useState({
+    totalForms: 0,
+    publishedForms: 0,
+    draftForms: 0,
+    maxForms: 0,
+    currentMonthSubmissions: 0,
+    maxSubmissionsPerMonth: 0,
+    submissionsResetDate: new Date(),
+    planName: ''
+  });
+
+  const { user } = useUserContext();
+
+  // Add this effect to get form and submission counts
+  useEffect(() => {
+    const fetchUsageStats = async () => {
+      if (!accessStatus.hasAccess) return;
+
+      try {
+        // Get the form counts
+        const totalForms = forms.length;
+        const publishedForms = forms.filter((form: any) => form.isPublished).length;
+        const draftForms = totalForms - publishedForms;
+
+        // Get submission count from API
+        const submissionsResponse = await axios.get('/api/forms/submission-stats');
+        const submissionStats = submissionsResponse.data;
+
+        // Get limits from user context
+        const maxForms = user?.organization?.formBuilder?.maxForms || 0;
+        const maxSubmissionsPerMonth = user?.organization?.formBuilder?.maxSubmissionsPerMonth || 0;
+        const currentMonthSubmissions = user?.organization?.formBuilder?.submissionsCount?.currentMonth || 0;
+        let resetDate = new Date();
+
+        if (user?.organization?.formBuilder?.submissionsCount?.lastResetDate) {
+          resetDate = new Date(user.organization.formBuilder.submissionsCount.lastResetDate);
+        }
+
+        // Get plan name
+        let planName = 'Starter';
+        if (user?.organization?.formBuilder?.plan) {
+          planName = user.organization.formBuilder.plan.charAt(0).toUpperCase() +
+            user.organization.formBuilder.plan.slice(1);
+        }
+
+        setUsageStats({
+          totalForms,
+          publishedForms,
+          draftForms,
+          maxForms,
+          currentMonthSubmissions,
+          maxSubmissionsPerMonth,
+          submissionsResetDate: resetDate,
+          planName
+        });
+      } catch (error) {
+        console.error('Error fetching usage stats:', error);
+      }
+    };
+
+    if (forms.length > 0 && user?.organization) {
+      fetchUsageStats();
+    }
+  }, [forms, user, accessStatus.hasAccess]);
 
   // Simulate AI progress bar
   useEffect(() => {
@@ -379,7 +547,7 @@ export default function FormsPage() {
                   </DropdownMenuItem>
                 )}
 
-            
+
                 <DropdownMenuSeparator />
 
                 <DropdownMenuItem
@@ -398,7 +566,7 @@ export default function FormsPage() {
   ];
 
   // Loading skeleton
-  if (loading) {
+  if (accessStatus.loading) {
     return (
       <div className="container mx-auto max-w-screen-xl px-4 py-8 mt-8">
         <div className="flex justify-between items-center mb-8">
@@ -440,8 +608,20 @@ export default function FormsPage() {
     );
   }
 
+  if (!accessStatus.hasAccess) {
+    return (
+      <div className="container mt-12 mx-auto max-w-screen-xl px-8 py-10 h-full">
+        <FormBuilderPricingPage />
+      </div>
+    );
+  }
   return (
-    <div className="container mt-12 mx-auto max-w-screen w-full px-8 py-10 h-full max-h-screen overflow-y-scroll ">
+    <div
+    style={{
+      maxHeight: 'calc(100vh - 16px)', // Adjust based on your layout
+      scrollBehavior: 'auto' // Prevent smooth scrolling which can interfere
+  }}
+     className="container mt-12  mx-auto max-w-screen w-full px-8 py-10 h-full max-h-screen overflow-y-scroll ">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Forms</h1>
@@ -457,6 +637,53 @@ export default function FormsPage() {
         </div>
       </div>
 
+
+
+      {/* Add this below the title section */}
+      {accessStatus.hasAccess && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <FormBuilderUsageStats stats={usageStats} />
+
+          <Card className="md:col-span-2 border shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg font-semibold">Recent Activity</CardTitle>
+              <CardDescription>A summary of your recent form activity</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {/* You could add recent submission stats/charts here */}
+              <div className="space-y-4">
+                {forms.slice(0, 3).map((form: any) => (
+                  <div key={form._id} className="flex items-center justify-between p-2 border-b last:border-0">
+                    <div className="flex items-center gap-3">
+                      <div className={`p-2 rounded-md ${form.isPublished ? 'bg-emerald-50' : 'bg-amber-50'}`}>
+                        <FileText className={`h-4 w-4 ${form.isPublished ? 'text-emerald-600' : 'text-amber-600'}`} />
+                      </div>
+                      <div>
+                        <span className="font-medium text-sm">{form.name}</span>
+                        <p className="text-xs text-muted-foreground">
+                          {form.stats?.submissions || 0} submissions
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => viewSubmissions(form._id)}
+                    >
+                      View
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+
+      {accessStatus.hasAccess && accessStatus.limits && (
+        <FormLimitsWarning limits={accessStatus.limits} />
+      )}
       <Card className="mb-8 border shadow-sm">
         <CardContent className="p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row justify-between gap-4">
@@ -534,8 +761,8 @@ export default function FormsPage() {
           </div>
         </Card>
       ) : (
-        <Card className="border shadow-sm overflow-hidden">
-          <ScrollArea className="max-h-[calc(100vh-280px)]">
+        <Card className="border shadow-sm mb-24 overflow-hidden">
+          <ScrollArea className="">
             <DataTable
               columns={columns}
               data={sortedForms}
@@ -546,7 +773,7 @@ export default function FormsPage() {
       )}
 
       {/* Recent activity card */}
-      {sortedForms.length > 0 && (
+      {/* {sortedForms.length > 0 && (
         <Card className="mt-8 border shadow-sm">
           <CardHeader>
             <h3 className="text-lg font-semibold">Recent Form Activity</h3>
@@ -575,7 +802,7 @@ export default function FormsPage() {
             </div>
           </CardContent>
         </Card>
-      )}
+      )} */}
 
       {/* AI Form Creation Dialog */}
       <Dialog open={showAIDialog} onOpenChange={setShowAIDialog}>

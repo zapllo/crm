@@ -81,20 +81,20 @@ interface DailyReportEmailProps {
     to: string;
     firstName: string;
     reportData: {
-      totalLeads: number;
-      openLeads: number;
-      wonLeads: number;
-      lostLeads: number;
-      pendingFollowups: {
-        description: string;
-        type: string;
-        followupDate: Date;
-        leadTitle: string;
-      }[];
+        totalLeads: number;
+        openLeads: number;
+        wonLeads: number;
+        lostLeads: number;
+        pendingFollowups: {
+            description: string;
+            type: string;
+            followupDate: Date;
+            leadTitle: string;
+        }[];
     };
-  }
+}
 
-  export async function sendDailyReportEmail({
+export async function sendDailyReportEmail({
     to,
     firstName,
     reportData
@@ -104,10 +104,10 @@ interface DailyReportEmailProps {
     // Format the date for the report
     const today = new Date();
     const formattedDate = today.toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
     });
 
     // Generate table rows for followups
@@ -168,14 +168,14 @@ interface DailyReportEmailProps {
     `;
 
     await sendEmail({
-      to,
-      text: `Zapllo CRM Daily Report for ${formattedDate}`,
-      subject: `CRM Daily Report - ${formattedDate}`,
-      html: html,
+        to,
+        text: `Zapllo CRM Daily Report for ${formattedDate}`,
+        subject: `CRM Daily Report - ${formattedDate}`,
+        html: html,
     });
-  }
+}
 
-  // Add this to your existing emailTemplates.ts file
+// Add this to your existing emailTemplates.ts file
 
 interface QuotationEmailProps {
     to: string;
@@ -183,39 +183,39 @@ interface QuotationEmailProps {
     message: string;
     firstName: string;
     quotationDetails: {
-      quotationNumber: string;
-      title: string;
-      total: number;
-      currency: string;
-      validUntil: string;
-      senderName: string;
-      publicAccessToken: string;
+        quotationNumber: string;
+        title: string;
+        total: number;
+        currency: string;
+        validUntil: string;
+        senderName: string;
+        publicAccessToken: string;
     };
     userId?: string;
-  }
+}
 
-  export async function sendQuotationEmail({
+export async function sendQuotationEmail({
     to,
     subject,
     message,
     firstName,
     quotationDetails,
     userId
-  }: QuotationEmailProps): Promise<void> {
+}: QuotationEmailProps): Promise<void> {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://crm.zapllo.com';
     const quotationUrl = `${appUrl}/share/quotation/${quotationDetails.publicAccessToken}`;
 
     // Format currency
     const formattedTotal = new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: quotationDetails.currency || 'USD',
+        style: 'currency',
+        currency: quotationDetails.currency || 'USD',
     }).format(quotationDetails.total);
 
     // Format valid until date
     const validUntil = new Date(quotationDetails.validUntil).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
     });
 
     const html = `
@@ -282,44 +282,44 @@ interface QuotationEmailProps {
     `;
 
     await sendEmail({
-      to,
-      subject,
-      text,
-      html,
-      userId
+        to,
+        subject,
+        text,
+        html,
+        userId
     });
-  }
+}
 
-  // ... existing code ...
+// ... existing code ...
 
 interface FollowupReminderEmailProps {
     to: string;
     firstName: string;
     followupDetails: {
-      description: string;
-      type: string;
-      followupDate: Date;
-      leadTitle: string;
-      contactName: string;
-      leadId: string;
+        description: string;
+        type: string;
+        followupDate: Date;
+        leadTitle: string;
+        contactName: string;
+        leadId: string;
     };
-  }
+}
 
-  export async function sendFollowupReminderEmail({
+export async function sendFollowupReminderEmail({
     to,
     firstName,
     followupDetails
-  }: FollowupReminderEmailProps): Promise<void> {
+}: FollowupReminderEmailProps): Promise<void> {
     const subject = `⏰ Follow-up Reminder: ${followupDetails.leadTitle}`;
 
     // Format the date for display
     const formattedDate = new Date(followupDetails.followupDate).toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
     });
 
     const html = `
@@ -371,38 +371,38 @@ interface FollowupReminderEmailProps {
     `;
 
     await sendEmail({
-      to,
-      subject,
-      text,
-      html
+        to,
+        subject,
+        text,
+        html
     });
-  }
+}
 
 
-  // Add this new interface and function for support ticket emails
+// Add this new interface and function for support ticket emails
 interface TicketCreationEmailProps {
     to: string;
     firstName: string;
     ticketDetails: {
-      ticketId: string;
-      subject: string;
-      category: string;
-      priority: string;
-      message: string;
+        ticketId: string;
+        subject: string;
+        category: string;
+        priority: string;
+        message: string;
     };
-  }
+}
 
-  export async function sendTicketCreationEmail({
+export async function sendTicketCreationEmail({
     to,
     firstName,
     ticketDetails
-  }: TicketCreationEmailProps): Promise<void> {
+}: TicketCreationEmailProps): Promise<void> {
     const subject = `🎫 Support Ticket Created: ${ticketDetails.subject}`;
 
     const priorityColor = {
-      high: '#EA5455',
-      medium: '#FFB547',
-      low: '#28C76F'
+        high: '#EA5455',
+        medium: '#FFB547',
+        low: '#28C76F'
     }[ticketDetails.priority.toLowerCase()] || '#7451F8';
 
     const html = `
@@ -468,9 +468,95 @@ interface TicketCreationEmailProps {
     `;
 
     await sendEmail({
-      to,
-      subject,
-      text,
-      html
+        to,
+        subject,
+        text,
+        html
     });
-  }
+}
+
+
+// ... existing code ...
+
+interface FormShareEmailProps {
+    to: string;
+    subject: string;
+    firstName: string;
+    formDetails: {
+        formName: string;
+        message?: string;
+        senderName: string;
+        formUrl: string;
+    };
+}
+
+export async function sendFormShareEmail({
+    to,
+    subject,
+    firstName,
+    formDetails
+}: FormShareEmailProps): Promise<void> {
+    const html = `
+    <body style="margin: 0; padding: 0; font-family: Arial, sans-serif;">
+        <div style="background-color: #f0f4f8; padding: 20px;">
+            <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">
+                <div style="padding: 20px; text-align: center;">
+                    <img src="https://res.cloudinary.com/dndzbt8al/image/upload/v1724000375/orjojzjia7vfiycfzfly.png" alt="Zapllo Logo" style="max-width: 150px; height: auto;">
+                </div>
+                <div style="background: linear-gradient(90deg, #7451F8, #F57E57); color: #ffffff; padding: 20px 40px; font-size: 16px; font-weight: bold; text-align: center; border-radius: 12px; margin: 20px auto; max-width: 80%;">
+                    <h1 style="margin: 0; font-size: 20px;">Form Shared With You</h1>
+                </div>
+                <div style="padding: 20px;">
+                    <p><strong>Dear ${firstName},</strong></p>
+
+                    ${formDetails.message ? `<p>${formDetails.message.replace(/\n/g, '<br>')}</p>` : `
+                    <p>A form has been shared with you. Please click the button below to access the form.</p>
+                    `}
+
+                    <div style="border-radius:8px; margin-top:16px; color:#000000; padding:16px; background-color:#ECF1F6">
+                        <p><strong>Form:</strong> ${formDetails.formName}</p>
+                    </div>
+
+                    <div style="text-align: center; margin-top: 24px;">
+                        <a href="${formDetails.formUrl}" style="background-color: #0C874B; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Access Form</a>
+                    </div>
+
+                    <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e6e8eb;">
+                        <p>If you have any questions, please don't hesitate to contact us.</p>
+                        <p>Best regards,<br>${formDetails.senderName}</p>
+                    </div>
+
+                    <p style="margin-top: 24px; text-align: center; font-size: 12px; color: #888888;">This is an automated notification. Please do not reply.</p>
+                </div>
+            </div>
+        </div>
+    </body>
+    `;
+
+    const text = `
+    Dear ${firstName},
+
+    ${formDetails.message || "A form has been shared with you. Please access the form using the link below."}
+
+    FORM DETAILS:
+    Form Name: ${formDetails.formName}
+
+    To access the form, please visit:
+    ${formDetails.formUrl}
+
+    If you have any questions, please don't hesitate to contact us.
+
+    Best regards,
+    ${formDetails.senderName}
+
+    ---
+    This is an automated notification. Please do not reply.
+    `;
+
+    await sendEmail({
+        to,
+        subject,
+        text,
+        html
+    });
+}

@@ -559,8 +559,12 @@ export default function FormBuilder({ initialForm, isTemplate = false, onSave }:
               ))}
             </div>
           ) : (
-            <div className="mb-24">
-              <div className="p-4 space-y-6">
+            <div style={{
+              maxHeight: 'calc(100vh - 16px)', // Adjust based on your layout
+              scrollBehavior: 'auto' // Prevent smooth scrolling which can interfere
+            }}
+             className="mb-24 ">
+              <div className="py-4 space-y-6">
                 <h3 className="text-sm font-medium px-2">Add Fields</h3>
 
                 {fieldGroups.map((group) => (
@@ -756,26 +760,26 @@ export default function FormBuilder({ initialForm, isTemplate = false, onSave }:
               </TooltipProvider>
             </div>
           ) : (
-            <div className="h-full flex flex-col">
+            <div className="h-full  flex flex-col">
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full h-full">
-                <TabsList className="w-full rounded-none border-b bg-transparent">
+                <TabsList className="w-full rounded bg-accent">
                   <TabsTrigger
                     value="fields"
-                    className="flex-1 data-[state=active]:bg-background rounded-none border-b-2 border-transparent data-[state=active]:border-primary"
+                    className="flex-1 border-none data-[state=active]:border-primary"
                   >
                     <Layers className="h-4 w-4 mr-2" />
                     Field
                   </TabsTrigger>
                   <TabsTrigger
                     value="theme"
-                    className="flex-1 data-[state=active]:bg-background rounded-none border-b-2 border-transparent data-[state=active]:border-primary"
+                    className="flex-1 border-none data-[state=active]:border-primary"
                   >
                     <Palette className="h-4 w-4 mr-2" />
                     Theme
                   </TabsTrigger>
                   <TabsTrigger
                     value="settings"
-                    className="flex-1 data-[state=active]:bg-background rounded-none border-b-2 border-transparent data-[state=active]:border-primary"
+                    className="flex-1 border-none data-[state=active]:border-primary"
                   >
                     <Cog className="h-4 w-4 mr-2" />
                     Settings

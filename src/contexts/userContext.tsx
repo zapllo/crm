@@ -13,6 +13,17 @@ interface Organization {
   activeSubscriptions?: string[]; // Added this field
   credits: number; // Make sure this field is included
   subscriptionDetails?: any; // Optional additional subscription details
+  // Add form builder information
+  formBuilder?: {
+    enabled: boolean;
+    plan: 'starter' | 'growth' | 'pro' | 'enterprise' | null;
+    maxForms: number;
+    maxSubmissionsPerMonth: number;
+    submissionsCount: {
+      currentMonth: number;
+      lastResetDate: string;
+    };
+  };
 }
 
 interface IUser {

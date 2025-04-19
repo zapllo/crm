@@ -378,20 +378,29 @@ export default function PublicFormPageContent() {
           </Button>
         </div>
 
-        {form.settings?.captcha && (
-          <div className="px-6 pb-6 flex justify-end">
-            <div className="bg-muted p-3 rounded text-xs text-center text-muted-foreground">
-              Protected by reCAPTCHA
-            </div>
-          </div>
-        )}
-
-        <div className="border-t px-6 py-4 text-center text-xs text-muted-foreground"
+      
+        <div className="border-t px-6 py-4 flex items-center justify-center space-x-2 text-xs text-muted-foreground"
           style={{
-            borderColor: `${form.theme?.primaryColor || '#3B82F6'}20`
+            borderColor: `${form.theme?.primaryColor || '#3B82F6'}20`,
+            background: `linear-gradient(to right, ${form.theme?.backgroundColor || '#ffffff'}, ${form.theme?.primaryColor || '#3B82F6'}05, ${form.theme?.backgroundColor || '#ffffff'})`,
           }}
         >
-          Powered by Zapllo Form Builder
+          <span className='text-muted-foreground font-bold tracking-'>Powered by</span>
+          <a
+            href="https://zapllo.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center hover:opacity-80 transition-opacity"
+          >
+            <img
+              src="https://res.cloudinary.com/dndzbt8al/image/upload/v1743846882/logo-01_1_a2qvzt.png"
+              alt="Zapllo"
+              className="h-4 mr-1"
+            />
+            <span className="font-semibold" style={{ color: form.theme?.primaryColor || '#3B82F6' }}>
+
+            </span>
+          </a>
         </div>
       </div>
     </div>

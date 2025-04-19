@@ -27,7 +27,7 @@ export async function GET(request: Request) {
     let organizationData = null;
     if (user.organization) {
       organizationData = await Organization.findById(user.organization)
-        .select('companyName trialExpires isPro subscribedPlan subscriptionExpires activeSubscriptions credits subscribedUserCount');
+        .select('companyName trialExpires isPro subscribedPlan subscriptionExpires activeSubscriptions credits subscribedUserCount formBuilder');
     }
 
     // Return user info with the organization data

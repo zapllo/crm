@@ -68,7 +68,7 @@ export default function FormThemeSettings({ theme, onChange }: FormThemeSettings
             <Label htmlFor="primary-color">Primary Color</Label>
             <div className="flex mt-1">
               <div
-                className="w-10 h-10 rounded-l-md flex items-center justify-center border border-r-0"
+                className="w-10 h-9 rounded-l-md flex items-center justify-center border border-r-0"
                 style={{ backgroundColor: theme.primaryColor }}
               >
                 <Paintbrush className="h-4 w-4 text-white drop-shadow-sm" />
@@ -87,7 +87,7 @@ export default function FormThemeSettings({ theme, onChange }: FormThemeSettings
             <Label htmlFor="accent-color">Accent Color</Label>
             <div className="flex mt-1">
               <div
-                className="w-10 h-10 rounded-l-md flex items-center justify-center border border-r-0"
+                className="w-10 h-9 rounded-l-md flex items-center justify-center border border-r-0"
                 style={{ backgroundColor: theme.accentColor }}
               >
                 <Paintbrush className="h-4 w-4 text-black/70 drop-shadow-sm" />
@@ -108,7 +108,7 @@ export default function FormThemeSettings({ theme, onChange }: FormThemeSettings
             <Label htmlFor="background-color">Background Color</Label>
             <div className="flex mt-1">
               <div
-                className="w-10 h-10 rounded-l-md flex items-center justify-center border border-r-0"
+                className="w-10 h-9 rounded-l-md flex items-center justify-center border border-r-0"
                 style={{ backgroundColor: theme.backgroundColor }}
               >
                 <Component className="h-4 w-4 text-black/70" />
@@ -127,7 +127,7 @@ export default function FormThemeSettings({ theme, onChange }: FormThemeSettings
             <Label htmlFor="text-color">Text Color</Label>
             <div className="flex mt-1">
               <div
-                className="w-10 h-10 rounded-l-md flex items-center justify-center border border-r-0"
+                className="w-10 h-9 rounded-l-md flex items-center justify-center border border-r-0"
                 style={{ backgroundColor: theme.textColor }}
               >
                 <Type className="h-4 w-4 text-white drop-shadow-sm" />
