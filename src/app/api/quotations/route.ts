@@ -7,7 +7,7 @@ import { getDataFromToken } from "@/lib/getDataFromToken";
 export async function POST(req: NextRequest) {
   try {
     await connectDB();
-    
+
     // 1. Get userId from token
     const userId = getDataFromToken(req);
     if (!userId) {
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
 
     // Parse request body
     const data = await req.json();
-    
+
     // Create new quotation object
     const quotation = new QuotationModel({
       quotationNumber: data.quotationNumber, // Use the provided quotation number
@@ -94,7 +94,7 @@ export async function POST(req: NextRequest) {
 export async function GET(req: NextRequest) {
   try {
     await connectDB();
-    
+
     // 1. Get userId from token
     const userId = getDataFromToken(req);
     if (!userId) {
@@ -116,17 +116,17 @@ export async function GET(req: NextRequest) {
     const status = searchParams.get("status");
     const limit = parseInt(searchParams.get("limit") || "50");
     const page = parseInt(searchParams.get("page") || "0");
-    
+
     // Build query
     const query: any = {
       organization: user.organization
     };
-    
+
     // Add status filter if provided
     if (status) {
       query.status = status;
     }
-    
+
     // Execute query with pagination
     const totalQuotations = await QuotationModel.countDocuments(query);
     const quotations = await QuotationModel.find(query)
@@ -136,7 +136,7 @@ export async function GET(req: NextRequest) {
       .populate("lead", "title leadId")
       .populate("contact", "firstName lastName email whatsappNumber")
       .populate("creator", "firstName lastName");
-    
+
     return NextResponse.json({
       quotations,
       pagination: {

@@ -9,6 +9,7 @@ import { NextResponse } from 'next/server';
 import mongoose from 'mongoose';
 import { Organization } from '@/models/organizationModel';
 import { sendLeadAssignmentEmail } from '@/lib/emailTemplates';
+import { createNotification } from '@/lib/notificationService';
 
 
 const sendWebhookNotification = async (
@@ -236,6 +237,34 @@ export async function POST(request: Request) {
         });
 
         const savedLead = await newLead.save();
+
+        await createNotification({
+            orgId: user.organization,
+            recipientId: assignedTo || userId, // Send to assignee or creator
+            actorId: new mongoose.Types.ObjectId(userId),
+            action: "create",
+            entityType: "lead",
+            entityId: savedLead._id,
+            entityName: title,
+            message: `New lead created: ${title}`,
+            url: `/CRM/leads/${savedLead._id}`,
+        });
+
+        // If the lead is assigned to someone other than the creator, add another notification
+        if (assignedTo && assignedTo.toString() !== userId.toString()) {
+            await createNotification({
+                orgId: user.organization,
+                recipientId: new mongoose.Types.ObjectId(assignedTo),
+                actorId: new mongoose.Types.ObjectId(userId),
+                action: "assign",
+                entityType: "lead",
+                entityId: savedLead._id,
+                entityName: title,
+                message: `A lead has been assigned to you: ${title}`,
+                important: true,
+                url: `/CRM/leads/${savedLead._id}`,
+            });
+        }
         // Send email notification if there's an assignedTo user
         if (assignedTo) {
             // Get the assigned user's email

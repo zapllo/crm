@@ -5,6 +5,8 @@ import connectDB from "@/lib/db";
 import Category from "@/models/categoryModel";
 import { getDataFromToken } from "@/lib/getDataFromToken";
 import { User } from "@/models/userModel";
+import { createNotification } from "@/lib/notificationService";
+import mongoose from "mongoose";
 // import { getUserOrganization } from "@/lib/auth"; // or however you get the org from the user
 
 export async function GET(request: NextRequest) {
@@ -62,6 +64,18 @@ export async function POST(request: NextRequest) {
             name,
             organization: user.organization,
         });
+
+        await createNotification({
+            orgId: user.organization,
+            recipientId: new mongoose.Types.ObjectId(userId), // Notify creator
+            actorId: new mongoose.Types.ObjectId(userId),
+            action: "create",
+            entityType: "category",
+            entityId: newCategory._id,
+            entityName: name,
+            message: `New category created: ${name}`,
+            url: `/CRM/categories`,
+          });
 
         return NextResponse.json(newCategory, { status: 201 });
     } catch (error) {

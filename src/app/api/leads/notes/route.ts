@@ -1,7 +1,9 @@
 import connectDB from '@/lib/db';
 import { getDataFromToken } from '@/lib/getDataFromToken';
+import { createNotification } from '@/lib/notificationService';
 import Lead from '@/models/leadModel';
 import { User } from '@/models/userModel';
+import mongoose from 'mongoose';
 
 export async function POST(req: Request) {
     try {
@@ -39,6 +41,17 @@ export async function POST(req: Request) {
 
         await lead.save();
 
+        await createNotification({
+          orgId: lead.organization,
+          recipientId: lead.assignedTo || createdBy,
+          actorId:  lead.assignedTo ,
+          action: "note",
+          entityType: "lead",
+          entityId: lead._id,
+          entityName: lead.title,
+          message: `Note added: ${text?.substring(0, 50)}${text?.length > 50 ? '...' : ''}`,
+          url: `/CRM/leads/${leadId}?tab=notes`,
+        });
         // Fetch the user's info to return with the response
         const user = await User.findById(createdBy).select('firstName lastName profileImage');
         const enrichedNote = {

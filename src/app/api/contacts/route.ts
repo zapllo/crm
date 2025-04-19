@@ -2,10 +2,11 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/db";
 import Contact from "@/models/contactModel";
-import { Types } from "mongoose";
+import mongoose, { Types } from "mongoose";
 import { getDataFromToken } from "@/lib/getDataFromToken";
 import { User } from "@/models/userModel";
 import companyModel from "@/models/companyModel";
+import { createNotification } from "@/lib/notificationService";
 
 /**
  * GET  /api/contacts => fetch all contacts (populating company) for the user's organization
@@ -34,10 +35,10 @@ export async function GET(request: Request) {
         }
 
         // 3. Get all companies for this organization
-        const orgCompanies = await companyModel.find({ 
-            organization: user.organization 
+        const orgCompanies = await companyModel.find({
+            organization: user.organization
         });
-        
+
         const companyIds = orgCompanies.map(company => company._id);
 
         // 4. Find contacts that belong to the organization's companies
@@ -55,7 +56,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
     try {
         await connectDB();
-        
+
         // 1. Get userId from token
         const userId = getDataFromToken(request);
         if (!userId) {
@@ -106,7 +107,7 @@ export async function POST(request: Request) {
         if (!company) {
             return NextResponse.json({ error: "Company not found" }, { status: 404 });
         }
-        
+
         if (company.organization.toString() !== user.organization.toString()) {
             return NextResponse.json({ error: "Company does not belong to your organization" }, { status: 403 });
         }
@@ -128,6 +129,19 @@ export async function POST(request: Request) {
         });
 
         await newContact.save();
+
+        // Add notification for contact creation
+        await createNotification({
+            orgId: user.organization,
+            recipientId: new mongoose.Types.ObjectId(userId), // Notify creator
+            actorId: new mongoose.Types.ObjectId(userId),
+            action: "create",
+            entityType: "contact",
+            entityId: newContact._id,
+            entityName: `${firstName} ${lastName}`,
+            message: `New contact created: ${firstName} ${lastName} at ${company?.companyName || 'Unknown Company'}`,
+            url: `/CRM/contacts`,
+        });
         return NextResponse.json(newContact, { status: 201 });
     } catch (error: any) {
         console.error("Error creating contact:", error);

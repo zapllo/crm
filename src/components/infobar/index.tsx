@@ -21,6 +21,14 @@ import {
   ExternalLink,
   Globe,
   Wallet,
+  Users,
+  Building2,
+  GitBranch,
+  Package,
+  FileText,
+  FormInput,
+  Tag,
+  UserCog,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
@@ -87,6 +95,8 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Skeleton } from "../ui/skeleton";
 
 export default function InfoBar() {
   const router = useRouter();
@@ -98,6 +108,13 @@ export default function InfoBar() {
 
   // Add wallet balance state
   const [walletBalance, setWalletBalance] = useState(0);
+  // Add state for logout dialog
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
+
 
   // Fetch wallet balance
   useEffect(() => {
@@ -165,58 +182,56 @@ export default function InfoBar() {
       console.error("Logout error:", error.message);
     }
   };
-  // Mock notifications for demo
-  const notifications = [
-    {
-      id: 1,
-      title: "New lead assigned",
-      description: "Jane Cooper has been assigned to you",
-      time: "10 minutes ago",
-      read: false,
-      type: "lead"
-    },
-    {
-      id: 2,
-      title: "Meeting reminder",
-      description: "Call with Alex Morgan in 30 minutes",
-      time: "30 minutes ago",
-      read: false,
-      type: "meeting"
-    },
-    {
-      id: 3,
-      title: "Task completed",
-      description: "Product demo presentation has been completed",
-      time: "2 hours ago",
-      read: true,
-      type: "task"
-    },
-    {
-      id: 4,
-      title: "Follow-up needed",
-      description: "Deal with Acme Inc. requires follow-up",
-      time: "1 day ago",
-      read: true,
-      type: "followup"
-    },
-  ];
 
-  const getNotificationIcon = (type: string) => {
-    switch (type) {
-      case "lead":
-        return <User2 className="h-4 w-4 text-blue-500" />;
-      case "meeting":
-        return <Calendar className="h-4 w-4 text-purple-500" />;
-      case "task":
-        return <CheckCircle2 className="h-4 w-4 text-green-500" />;
-      case "followup":
-        return <MessageSquare className="h-4 w-4 text-amber-500" />;
-      default:
-        return <Bell className="h-4 w-4" />;
+
+  // Add a function to fetch notifications
+  const fetchNotifications = async () => {
+    try {
+      setNotificationsLoading(true);
+      const response = await axios.get("/api/crmnotifications", {
+        params: { limit: 5, unread: false }
+      });
+      setNotifications(response.data.notifications);
+
+      // Get unread count
+      const unreadResponse = await axios.get("/api/crmnotifications", {
+        params: { limit: 0, unread: true }
+      });
+      setUnreadCount(unreadResponse.data.pagination.total);
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+    } finally {
+      setNotificationsLoading(false);
     }
   };
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  // Fetch notifications on component mount
+  useEffect(() => {
+    fetchNotifications();
+
+    // Set up polling every 30 seconds
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Mark a notification as read
+  const markAsRead = async (notificationId: string) => {
+    try {
+      await axios.post("/api/crmnotifications", {
+        notificationIds: [notificationId]
+      });
+
+      // Update local state
+      setNotifications(notifications.map(notification =>
+        notification._id === notificationId
+          ? { ...notification, read: true }
+          : notification
+      ));
+      setUnreadCount(Math.max(0, unreadCount - 1));
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+    }
+  };
 
   // Quick actions for command menu
   const quickActions = [
@@ -231,6 +246,95 @@ export default function InfoBar() {
     if (!user) return "ZP";
     return `${user.firstName?.charAt(0) || ""}${user.lastName?.charAt(0) || ""}`;
   };
+
+
+  // Update the logout function to handle the confirmation flow
+  const handleLogoutClick = () => {
+    setShowLogoutDialog(true);
+  };
+
+  const confirmLogout = async () => {
+    try {
+      setIsLoggingOut(true);
+      const response = await axios.get("/api/auth/logout");
+      if (response.data.success) {
+        // Force a hard refresh to the login page
+        window.location.href = '/login';
+      }
+    } catch (error: any) {
+      console.error("Logout error:", error.message);
+      setIsLoggingOut(false);
+      setShowLogoutDialog(false);
+    }
+  };
+
+  const cancelLogout = () => {
+    setShowLogoutDialog(false);
+  };
+
+  // Add these utility functions inside the InfoBar component
+
+// Get icon for notification type
+const getNotificationIcon = (entityType: string) => {
+  switch (entityType) {
+    case "lead":
+      return <User2 className="h-4 w-4 text-blue-500" />;
+    case "contact":
+      return <Users className="h-4 w-4 text-green-500" />;
+    case "company":
+      return <Building2 className="h-4 w-4 text-purple-500" />;
+    case "pipeline":
+      return <GitBranch className="h-4 w-4 text-orange-500" />;
+    case "followup":
+      return <Calendar className="h-4 w-4 text-amber-500" />;
+    case "product":
+      return <Package className="h-4 w-4 text-emerald-500" />;
+    case "quotation":
+      return <FileText className="h-4 w-4 text-rose-500" />;
+    case "form":
+      return <FormInput className="h-4 w-4 text-indigo-500" />;
+    case "category":
+      return <Tag className="h-4 w-4 text-teal-500" />;
+    case "user":
+      return <UserCog className="h-4 w-4 text-cyan-500" />;
+    default:
+      return <Bell className="h-4 w-4" />;
+  }
+};
+
+// Get action verb for notification
+const getActionVerb = (action: string) => {
+  switch (action) {
+    case "create":
+      return "created";
+    case "update":
+      return "updated";
+    case "delete":
+      return "deleted";
+    case "assign":
+      return "assigned";
+    case "stage_change":
+      return "changed stage of";
+    case "comment":
+      return "commented on";
+    case "note":
+      return "added a note to";
+    case "followup":
+      return "scheduled a follow-up for";
+    case "approve":
+      return "approved";
+    case "reject":
+      return "rejected";
+    case "remind":
+      return "set a reminder for";
+    case "view":
+      return "viewed";
+    case "publish":
+      return "published";
+    default:
+      return action;
+  }
+};
 
   return (
     <motion.div
@@ -300,6 +404,54 @@ export default function InfoBar() {
               </Tooltip>
             </TooltipProvider>
 
+            {/* Logout Confirmation Dialog */}
+            <Dialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+              <DialogContent className="sm:max-w-md z-[100]  ">
+                <DialogHeader>
+                  <DialogTitle className="text-xl flex items-center gap-2">
+                    <LogOut className="h-5 w-5 text-red-400" />
+                    Confirm Logout
+                  </DialogTitle>
+                  <DialogDescription className="">
+                    Are you sure you want to log out of your account?
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div className="py-4">
+                  <p className="text-sm ">
+                    You will need to log in again to access your dashboard and data.
+                  </p>
+                </div>
+
+                <DialogFooter className="flex sm:justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={cancelLogout}
+                    className=" "
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={confirmLogout}
+                    className="bg-red-500/80 hover:bg-red-600 text-white"
+                    disabled={isLoggingOut}
+                  >
+                    {isLoggingOut ? (
+                      <span className="flex items-center gap-2">
+                        <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Logging out...
+                      </span>
+                    ) : (
+                      "Yes, log me out"
+                    )}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
             {/* Notifications button */}
             <Sheet open={notificationsOpen} onOpenChange={setNotificationsOpen}>
               <SheetTrigger asChild>
@@ -314,7 +466,8 @@ export default function InfoBar() {
                   )}
                 </Button>
               </SheetTrigger>
-              <SheetContent className="w-full m sm:max-w-sm">
+
+              <SheetContent className="w-full sm:max-w-sm">
                 <SheetHeader className="border-b mt-4 pb-4">
                   <SheetTitle className="flex items-center justify-between">
                     <div>Notifications</div>
@@ -331,10 +484,85 @@ export default function InfoBar() {
                     <TabsTrigger className='border-none' value="mentions">Mentions</TabsTrigger>
                   </TabsList>
 
+                  <TabsContent value="all">
+                    {notificationsLoading ? (
+                      // Show loading skeletons
+                      Array.from({ length: 3 }).map((_, i) => (
+                        <div key={i} className="flex items-start gap-3 py-3 border-b">
+                          <Skeleton className="h-9 w-9 rounded-full" />
+                          <div className="space-y-1 flex-1">
+                            <Skeleton className="h-4 w-full" />
+                            <Skeleton className="h-3 w-2/3" />
+                          </div>
+                        </div>
+                      ))
+                    ) : notifications.length === 0 ? (
+                      <div className="text-center py-10">
+                        <Bell className="h-8 w-8 mx-auto text-muted-foreground mb-3" />
+                        <p className="text-muted-foreground">No notifications yet</p>
+                      </div>
+                    ) : (
+                      notifications.map((notification) => (
+                        <div
+                          key={notification._id}
+                          className={`flex items-start gap-3 py-3 border-b hover:bg-muted/50 transition-colors cursor-pointer ${!notification.read ? "bg-primary/5" : ""
+                            }`}
+                          onClick={() => {
+                            if (!notification.read) {
+                              markAsRead(notification._id);
+                            }
+                            if (notification.url) {
+                              router.push(notification.url);
+                              setNotificationsOpen(false);
+                            }
+                          }}
+                        >
+                          {notification.actorImage ? (
+                            <Avatar className="h-9 w-9">
+                              <AvatarImage src={notification.actorImage} />
+                              <AvatarFallback>
+                                {notification.actorName?.split(" ").map((n: string) => n[0]).join("") || "U"}
+                              </AvatarFallback>
+                            </Avatar>
+                          ) : (
+                            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10">
+                              {getNotificationIcon(notification.entityType)}
+                            </div>
+                          )}
 
+                          <div>
+                            <p className="text-sm">
+                              <span className="font-medium">{notification.actorName || "System"}</span>{" "}
+                              {getActionVerb(notification.action)} a{" "}
+                              <span className="font-medium">{notification.entityType}</span>
+                              {notification.entityName && ` "${notification.entityName}"`}
+                            </p>
+                            <span className="text-xs text-muted-foreground">
+                              {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
+                            </span>
+                          </div>
+
+                          {!notification.read && (
+                            <div className="ml-auto">
+                              <div className="h-2 w-2 rounded-full bg-primary" />
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </TabsContent>
+
+                  {/* Other tabs can be implemented similarly */}
                 </Tabs>
-                <h1 className="flex justify-center text-xl mt-32">Coming Soon</h1>
-                <Button variant="ghost" className="w-full mt-4">
+
+                <Button
+                  variant="ghost"
+                  className="w-full mt-4"
+                  onClick={() => {
+                    router.push('/notifications');
+                    setNotificationsOpen(false);
+                  }}
+                >
                   View all notifications
                 </Button>
               </SheetContent>
@@ -413,7 +641,7 @@ export default function InfoBar() {
                   <ModeToggle2 />
                 </div>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={logout} className="text-red-500  hover:text-white">
+                <DropdownMenuItem onClick={handleLogoutClick} className="text-red-500  hover:text-white">
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Log out</span>
                 </DropdownMenuItem>

@@ -2,6 +2,8 @@ import Lead from "@/models/leadModel";
 import connectDB from "@/lib/db";
 import { getDataFromToken } from "@/lib/getDataFromToken";
 import Pipeline from "@/models/pipelineModel";
+import { createNotification } from "@/lib/notificationService";
+import mongoose from "mongoose";
 
 
 export async function POST(req: Request) {
@@ -53,6 +55,19 @@ export async function POST(req: Request) {
 
         // Save the updated lead
         await lead.save();
+
+        // Add notification
+        await createNotification({
+            orgId: lead.organization,
+            recipientId: lead.assignedTo || userId,
+            actorId: new mongoose.Types.ObjectId(userId),
+            action: "stage_change",
+            entityType: "lead",
+            entityId: lead._id,
+            entityName: lead.title,
+            message: actionMessage,
+            url: `/CRM/leads/${lead._id}`,
+        });
 
         return new Response(
             JSON.stringify({ message: "Lead updated successfully", timeline: lead.timeline }),

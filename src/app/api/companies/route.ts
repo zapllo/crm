@@ -4,6 +4,8 @@ import { getDataFromToken } from "@/lib/getDataFromToken";
 
 import { User } from "@/models/userModel";
 import companyModel from "@/models/companyModel";
+import { createNotification } from "@/lib/notificationService";
+import mongoose from "mongoose";
 
 /**
  * GET  /api/companies  => Fetch all companies for the logged-in user's organization
@@ -88,6 +90,18 @@ export async function POST(request: Request) {
         });
 
         await newCompany.save();
+
+        await createNotification({
+            orgId: user.organization,
+            recipientId: new mongoose.Types.ObjectId(userData), // Notify creator
+            actorId: new mongoose.Types.ObjectId(userData),
+            action: "create",
+            entityType: "company",
+            entityId: newCompany._id,
+            entityName: companyName,
+            message: `New company created: ${companyName}`,
+            url: `/CRM/companies`,
+          });
 
         return NextResponse.json(newCompany, { status: 201 });
     } catch (error: any) {

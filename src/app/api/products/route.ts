@@ -3,6 +3,8 @@ import connectDB from '@/lib/db';
 import Product from '@/models/productModel';
 import { getDataFromToken } from '@/lib/getDataFromToken';
 import { User } from '@/models/userModel';
+import { createNotification } from '@/lib/notificationService';
+import mongoose from 'mongoose';
 
 // POST: Create Product
 
@@ -39,6 +41,39 @@ export async function POST(request: Request) {
 
         const newProduct = new Product(newProductData);
         const savedProduct = await newProduct.save();
+
+        await createNotification({
+            orgId: user.organization,
+            recipientId: new mongoose.Types.ObjectId(userData), // Notify creator
+            actorId: new mongoose.Types.ObjectId(userData),
+            action: "create",
+            entityType: "product",
+            entityId: savedProduct._id,
+            entityName: savedProduct.name,
+            message: `New product created: ${savedProduct.name}`,
+            url: `/CRM/products`,
+          });
+
+          // Notify admin users about new product
+          const adminUsers = await User.find({
+            organization: user.organization,
+            isOrgAdmin: true,
+            _id: { $ne: userData } // Exclude the creator
+          }).select('_id');
+
+          if (adminUsers.length > 0) {
+            await createNotification({
+              orgId: user.organization,
+              recipientId: adminUsers.map(admin => new mongoose.Types.ObjectId(admin._id)), // Notify all admins
+              actorId: new mongoose.Types.ObjectId(userData),
+              action: "create",
+              entityType: "product",
+              entityId: savedProduct._id,
+              entityName: savedProduct.name,
+              message: `${user.firstName} ${user.lastName} created a new product: ${savedProduct.name}`,
+              url: `/CRM/products`,
+            });
+          }
 
         return NextResponse.json(savedProduct, { status: 201 });
     } catch (error: any) {

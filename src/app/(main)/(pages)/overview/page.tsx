@@ -41,6 +41,7 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { FaWhatsapp } from "react-icons/fa";
 
 const OverviewPage = () => {
     const router = useRouter();
@@ -169,6 +170,17 @@ const OverviewPage = () => {
             badge: "New",
             aiPowered: true,
             badgeColor: "text-indigo-700 bg-indigo-100 dark:text-indigo-300 dark:bg-indigo-900/30",
+        },
+        {
+            id: "whatsAppAPI",
+            title: "Whatsapp API",
+            description: "Integrate with our Official WhatsApp API for seamless communication",
+            icon: <FaWhatsapp className="h-6 w-6 text-white -500" />,
+            path: "https://app.zapllo.com/signup",
+            color: "bg-green-500",
+            badge: "New",
+            aiPowered: true,
+            badgeColor: "text-green-700 bg-green-100 dark:text-green-300 dark:bg-green-900/30",
         },
     ];
 
@@ -349,7 +361,7 @@ const OverviewPage = () => {
                                                 <p className="text-sm text-muted-foreground">{module.description}</p>
                                             </CardContent>
                                             <CardFooter className="pt-0">
-                                                <Button variant="ghost" size="sm" className="p-0 h-auto text-primary w-full justify-between">
+                                                <Button variant="ghost" size="sm" className="p-0 hover:bg-transparent h-auto text-primary w-full justify-between">
                                                     <span className="flex items-center gap-1">
                                                         <span>Open Module</span>
                                                         <ArrowUpRight className="h-3.5 w-3.5" />
