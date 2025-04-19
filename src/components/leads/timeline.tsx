@@ -58,7 +58,6 @@ export default function LeadTimeline({ leadId, onlyStages = false }: { leadId: s
         onlyStages ? "stage" : "all"
     );
     const [isRefreshing, setIsRefreshing] = useState(false);
-
     useEffect(() => {
         fetchTimeline();
     }, [leadId, onlyStages]);
@@ -83,7 +82,6 @@ export default function LeadTimeline({ leadId, onlyStages = false }: { leadId: s
             setIsLoading(false);
         }
     };
-
     // Function to refresh timeline data
     const handleRefresh = async () => {
         try {
@@ -95,17 +93,12 @@ export default function LeadTimeline({ leadId, onlyStages = false }: { leadId: s
             }, 600); // Slight delay to show the refresh animation
         }
     };
-
     // Filter timeline entries based on selected filter
     const filteredTimeline = timeline.filter(entry => {
         if (timelineFilter === "all") return true;
         return entry.type === timelineFilter;
     });
 
-    // Map event type to icons and colors
-    // ... existing code ...
-
-    // Map event type to icons and colors
     // Map event type to icons and colors
     // Map event type to icons and colors
     const getTimelineItemProps = (type: string, followupType?: string, entry?: any) => {
@@ -211,7 +204,6 @@ export default function LeadTimeline({ leadId, onlyStages = false }: { leadId: s
                             </SelectContent>
                         </Select>
                     )}
-
                     <TooltipProvider>
                         <Tooltip>
                             <TooltipTrigger asChild>
@@ -302,7 +294,7 @@ export default function LeadTimeline({ leadId, onlyStages = false }: { leadId: s
                                             className="relative"
                                         >
                                             {/* Timeline node - larger, more prominent */}
-                                            <div className={`absolute -left-[20px] top-0 w-[40px] h-[40px] rounded-full flex items-center justify-center -ml-5 ${bgColor} ${borderColor} border-2 shadow-md z-10 transition-all duration-200 hover:scale-110`}>
+                                            <div className={`absolute -left-[20px] z-[10] top-0 w-[40px] h-[40px] rounded-full flex items-center justify-center -ml-5 ${bgColor} ${borderColor} border-2 shadow-md z-10 transition-all duration-200 hover:scale-110`}>
                                                 <span className={`${color} transition-transform`}>
                                                     {icon}
                                                 </span>

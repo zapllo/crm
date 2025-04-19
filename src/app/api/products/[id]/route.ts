@@ -8,20 +8,40 @@ export async function GET(req: Request,
     try {
         const id = (await params).id
 
-        // const { id } = params;
-        // console.log(id, 'checkkkk')
         if (!id) {
             return NextResponse.json({ error: "Product ID is required" }, { status: 400 });
         }
 
         const product = await Product.findById(id).populate({
             path: "category",   // Corrected from "Category"
-            model: "Category",  // Model name should be a string
+            model: "Category",
         })
             .populate({
                 path: "unit",       // Populate the unit as well
                 model: "Unit",
             });
+        if (!product) {
+            return NextResponse.json({ error: "Product not found" }, { status: 404 });
+        }
+
+        return NextResponse.json(product, { status: 200 });
+    } catch (error) {
+        console.error("Error fetching product:", error);
+        return NextResponse.json({ error: "Failed to fetch product" }, { status: 500 });
+    }
+}
+
+export async function DELETE(req: Request,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    try {
+        const id = (await params).id
+
+        if (!id) {
+            return NextResponse.json({ error: "Product ID is required" }, { status: 400 });
+        }
+
+        const product = await Product.findByIdAndDelete(id)
         if (!product) {
             return NextResponse.json({ error: "Product not found" }, { status: 404 });
         }
