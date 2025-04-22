@@ -100,39 +100,39 @@ export function renderQuotationHTML(quotation: any, template: any, organization?
       margin: 0;
       padding: 0;
     }
-    
+
     .quotation-container {
       padding: 20px;
     }
-    
+
     .company-logo {
       max-width: 180px;
       max-height: 70px;
       object-fit: contain;
     }
-    
+
     .placeholder-logo {
       border: 1px dashed #ccc;
       border-radius: 4px;
       padding: 4px;
     }
-    
+
     .quotation-section {
       margin-bottom: 25px;
     }
-    
+
     .quotation-section-title {
       color: ${styles.primaryColor};
       font-weight: 800;
       margin-bottom: 14px;
       font-size: 18px;
     }
-    
+
     /* Client info specific styles */
     .client-info-row {
       margin-bottom: 10px;
     }
-    
+
     .info-label {
       font-weight: 800 !important;
       color: var(--primary-color, ${styles.primaryColor});
@@ -140,7 +140,7 @@ export function renderQuotationHTML(quotation: any, template: any, organization?
       margin-bottom: 4px;
       font-size: 14px;
     }
-    
+
     .info-value {
       display: block;
       color: #333;
@@ -148,38 +148,38 @@ export function renderQuotationHTML(quotation: any, template: any, organization?
       font-weight: 500;
       margin-bottom: 12px;
     }
-    
+
     .quotation-table {
       width: 100%;
       border-collapse: ${styles.tableBorders ? 'collapse' : 'separate'};
       margin-bottom: 15px;
     }
-    
+
     .quotation-table th,
     .quotation-table td {
       padding: 10px;
       text-align: left;
       ${styles.tableBorders ? `border: 1px solid #ddd;` : ''}
     }
-    
+
     .quotation-total {
       font-weight: 800;
     }
-    
+
     /* Summary section styling */
     .summary-row-label {
       font-weight: 700;
       color: ${styles.primaryColor};
     }
-    
+
     .quotation-total-row {
       font-weight: 800;
     }
-    
+
     .quotation-total-row td {
       padding-top: 12px;
     }
-    
+
     /* Terms section styling */
     .terms-heading {
       font-weight: 700;
@@ -187,7 +187,7 @@ export function renderQuotationHTML(quotation: any, template: any, organization?
       margin-bottom: 8px;
       font-size: 14px;
     }
-    
+
     /* Dark mode protection - ensure text is visible in dark mode */
     @media (prefers-color-scheme: dark) {
       .quotation-container, .quotation-container * {
@@ -203,7 +203,7 @@ export function renderQuotationHTML(quotation: any, template: any, organization?
         color: ${styles.primaryColor} !important;
       }
     }
-    
+
     ${styles.customCSS || ''}
   `;
   };
@@ -219,41 +219,41 @@ export function renderQuotationHTML(quotation: any, template: any, organization?
       <div style="display: flex; justify-content: space-between;">
         <div style="flex: 1;">
           <h3 style="margin-top: 0; margin-bottom: 14px; font-weight: 800; font-size: 16px; color: var(--primary-color, ${styles.primaryColor});">Client Information</h3>
-          
+
           <div class="client-info-row">
             <strong class="info-label">Name:</strong>
             <span class="info-value">${client.firstName || ''} ${client.lastName || ''}</span>
           </div>
-          
+
           <div class="client-info-row">
             <strong class="info-label">Email:</strong>
             <span class="info-value">${client.email || ''}</span>
           </div>
-          
+
           <div class="client-info-row">
             <strong class="info-label">Phone:</strong>
             <span class="info-value">${client.phone || client.whatsappNumber || ''}</span>
           </div>
         </div>
-        
+
         <div style="flex: 1;">
           <h3 style="margin-top: 0; margin-bottom: 14px; font-weight: 800; font-size: 16px; color: var(--primary-color, ${styles.primaryColor});">Project Details</h3>
-          
+
           <div class="client-info-row">
             <strong class="info-label">Project:</strong>
             <span class="info-value">${lead.title || 'General Inquiry'}</span>
           </div>
-          
+
           <div class="client-info-row">
             <strong class="info-label">Quotation #:</strong>
             <span class="info-value">${quotation.quotationNumber || ''}</span>
           </div>
-          
+
           <div class="client-info-row">
             <strong class="info-label">Date:</strong>
             <span class="info-value">${new Date(quotation.issueDate).toLocaleDateString()}</span>
           </div>
-          
+
           <div class="client-info-row">
             <strong class="info-label">Valid until:</strong>
             <span class="info-value">${quotation.validUntil ? new Date(quotation.validUntil).toLocaleDateString() : 'N/A'}</span>
@@ -416,12 +416,12 @@ export function renderQuotationHTML(quotation: any, template: any, organization?
         ${compileStyles()}
               /* Modern and exciting Zapllo branding */
       @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&display=swap');
-      
+
       .zapllo-branding-container {
         text-align: center;
         margin-top: 40px;
       }
-      
+
       .zapllo-branding {
         display: inline-flex;
         align-items: center;
@@ -432,7 +432,7 @@ export function renderQuotationHTML(quotation: any, template: any, organization?
         font-family: 'Poppins', sans-serif;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
       }
-      
+
      .zapllo-powered-text {
   font-size: 10px;
   text-transform: uppercase;
@@ -443,7 +443,7 @@ export function renderQuotationHTML(quotation: any, template: any, organization?
   background-clip: text;
   font-weight: 500;
 }
-      
+
       .zapllo-name {
         font-size: 13px;
         font-weight: 600;
@@ -453,20 +453,20 @@ export function renderQuotationHTML(quotation: any, template: any, organization?
         -webkit-text-fill-color: transparent;
         background-clip: text;
       }
-      
+
       .zapllo-logo {
         height: 18px;
         vertical-align: middle;
       }
 
-    
+
 
       </style>
     </head>
     <body class="light">
       <div class="quotation-container">
         ${layout.header.show ? processVariables(layout.header.content) : ''}
-        
+
         ${layout.sections.filter((section: any) => section.isVisible).sort((a: any, b: any) => a.order - b.order).map((section: any) => {
     switch (section.type) {
       case 'client_info':
@@ -492,7 +492,7 @@ export function renderQuotationHTML(quotation: any, template: any, organization?
         return '';
     }
   }).join('')}
-        
+
         ${layout.footer.show ? processVariables(layout.footer.content) : ''}
            <div class="zapllo-branding-container">
         <div class="zapllo-branding">
@@ -501,9 +501,9 @@ export function renderQuotationHTML(quotation: any, template: any, organization?
         </div>
       </div>
     </div>
-    
-    
-    
+
+
+
       <!-- Hidden debug info -->
       <div style="display: none;" id="debug-info">
         Organization: ${JSON.stringify(organization?._id || 'Not provided')}

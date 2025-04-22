@@ -237,16 +237,16 @@ export default function FormPreview({
         >
           {formTitle}
         </CardTitle>
-        {formDescription && (
-          <CardDescription
-            className={cn(coverImage && "text-white/90 drop-shadow-md")}
-            style={{
-              color: coverImage ? 'rgba(255,255,255,0.9)' : `${theme.textColor}99`
-            }}
-          >
-            {formDescription}
-          </CardDescription>
-        )}
+        {/* {formDescription && (
+  <CardDescription
+    className={cn(coverImage && "text-white drop-shadow-md")}
+    style={{
+      color: coverImage ? 'rgba(255,255,255,0.85)' : `${theme.textColor}99`
+    }}
+  >
+    {formDescription}
+  </CardDescription>
+)} */}
       </CardHeader>
 
       {settings.multiPage && settings.progressBar && (

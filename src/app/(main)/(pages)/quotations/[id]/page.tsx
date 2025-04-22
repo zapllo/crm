@@ -596,7 +596,7 @@ export default function QuotationDetailPage() {
   return (
     <div className="container mx-auto p-6">
       <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div className="flex items-center gap-3">
+        <div className="flex dark:!text-white items-center gap-3">
           <Button
             variant="outline"
             size="sm"
@@ -604,8 +604,8 @@ export default function QuotationDetailPage() {
           >
             <ArrowLeft className="h-4 w-4 mr-1" /> Back
           </Button>
-          <div>
-            <h1 className="text-2xl font-bold">{quotation.title}</h1>
+          <div className='dark:!text-white'>
+            <h1 className="text-2xl  font-bold">{quotation.title}</h1>
             <div className="flex items-center gap-2 mt-1">
               <span className="text-muted-foreground">
                 {quotation.quotationNumber}
@@ -620,7 +620,7 @@ export default function QuotationDetailPage() {
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex dark:!text-white flex-wrap gap-2">
           {quotation.status === 'draft' && (
             <Button
               variant="outline"
@@ -684,7 +684,7 @@ export default function QuotationDetailPage() {
                 />
 
                 {/* Optional: Add floating controls if needed */}
-                <div className="absolute bottom-4 right-4">
+                <div className="absolute bottom-4 dark:!text-white right-4">
                   <Button variant="outline" size="sm" onClick={handleDownloadPDF}>
                     <Download className="h-4 w-4 mr-1" /> Download PDF
                   </Button>

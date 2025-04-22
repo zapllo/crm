@@ -4,22 +4,29 @@ import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import axios from "axios";
 import { useToast } from "@/hooks/use-toast";
-import { 
-  Loader2, 
-  Shield, 
-  Check, 
-  X, 
-  MessageSquare, 
-  Send, 
+import {
+  Loader2,
+  Shield,
+  Check,
+  X,
+  MessageSquare,
+  Send,
   User,
   Clock,
-  Download
+  Download,
+  Mail,
+  FileText,
+  Calendar,
+  CheckCircle2,
+  XCircle,
+  Clock8,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -29,6 +36,15 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 import QuotationPreview from "@/components/quotations/QuotationPreview";
 
@@ -47,7 +63,8 @@ export default function PublicQuotationPage() {
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [approveComment, setApproveComment] = useState("");
   const [rejectReason, setRejectReason] = useState("");
-  
+  const [activeTab, setActiveTab] = useState("preview");
+
   // Auto-scroll to comments section after adding a comment
   const commentsRef = useRef<HTMLDivElement>(null);
 
@@ -60,7 +77,7 @@ export default function PublicQuotationPage() {
       } catch (error: any) {
         console.error("Error fetching quotation:", error);
         setError(
-          error.response?.data?.error || 
+          error.response?.data?.error ||
           "This quotation is not available or has expired."
         );
       } finally {
@@ -87,7 +104,7 @@ export default function PublicQuotationPage() {
         title: "Quotation Approved",
         description: "Thank you! The quotation has been approved successfully.",
       });
-      
+
       // Update quotation data to reflect the change
       setQuotation({
         ...quotation,
@@ -101,7 +118,7 @@ export default function PublicQuotationPage() {
           }
         ]
       });
-      
+
       setApproveDialogOpen(false);
       setApproveComment("");
     } catch (error: any) {
@@ -125,7 +142,7 @@ export default function PublicQuotationPage() {
       });
       return;
     }
-    
+
     try {
       setLoading(true);
       await axios.post(`/api/public/quotations/${params.token}`, {
@@ -139,7 +156,7 @@ export default function PublicQuotationPage() {
         title: "Revision Requested",
         description: "Your feedback has been submitted. Thank you.",
       });
-      
+
       // Update quotation data to reflect the change
       setQuotation({
         ...quotation,
@@ -153,7 +170,7 @@ export default function PublicQuotationPage() {
           }
         ]
       });
-      
+
       setRejectDialogOpen(false);
       setRejectReason("");
     } catch (error: any) {
@@ -177,7 +194,7 @@ export default function PublicQuotationPage() {
       });
       return;
     }
-    
+
     try {
       setSubmittingComment(true);
       await axios.post(`/api/public/quotations/${params.token}`, {
@@ -191,9 +208,8 @@ export default function PublicQuotationPage() {
         title: "Comment Added",
         description: "Your comment has been added successfully.",
       });
-      
+
       // Update quotation data to reflect the new comment
-      // Add to approval history since our API now adds comments there
       setQuotation({
         ...quotation,
         approvalHistory: [
@@ -205,9 +221,9 @@ export default function PublicQuotationPage() {
           }
         ]
       });
-      
+
       setCommentText("");
-      
+
       // Scroll to comments section
       setTimeout(() => {
         commentsRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -237,27 +253,55 @@ export default function PublicQuotationPage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'draft':
-        return <Badge variant="outline">Draft</Badge>;
+        return <Badge variant="outline" className="font-medium">Draft</Badge>;
       case 'sent':
-        return <Badge className="bg-blue-500 hover:bg-blue-600 text-white">Sent</Badge>;
+        return <Badge className="bg-blue-500 text-white font-medium">Awaiting Response</Badge>;
       case 'approved':
-        return <Badge className="bg-green-500 hover:bg-green-600 text-white">Approved</Badge>;
+        return <Badge className="bg-green-500 text-white font-medium">Approved</Badge>;
       case 'rejected':
-        return <Badge className="bg-red-500 hover:bg-red-600 text-white">Changes Requested</Badge>;
+        return <Badge className="bg-red-500 text-white font-medium">Changes Requested</Badge>;
       case 'expired':
-        return <Badge className="bg-gray-500 hover:bg-gray-600 text-white">Expired</Badge>;
+        return <Badge className="bg-gray-500 text-white font-medium">Expired</Badge>;
       default:
-        return <Badge variant="outline">{status}</Badge>;
+        return <Badge variant="outline" className="font-medium">{status}</Badge>;
+    }
+  };
+
+  const getAvatarInitials = (name: string = 'Anonymous') => {
+    if (name === 'Anonymous' || name === 'Client') return 'CL';
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+  };
+
+  const getActivityIcon = (entry: any) => {
+    const isComment = entry.comment && entry.comment.startsWith('Comment from');
+
+    if (isComment) {
+      return <MessageSquare className="h-5 w-5 text-blue-500" />;
+    } else if (entry.status === 'approved') {
+      return <CheckCircle2 className="h-5 w-5 text-green-500" />;
+    } else if (entry.status === 'revision_requested') {
+      return <XCircle className="h-5 w-5 text-red-500" />;
+    } else {
+      return <Clock8 className="h-5 w-5 text-amber-500" />;
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
         <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
-          <h1 className="mt-6 text-2xl font-bold">Loading Quotation</h1>
-          <p className="mt-2 text-gray-500 dark:text-gray-400">Please wait while we retrieve your quotation...</p>
+          <div className="relative w-16 h-16 mx-auto">
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Loader2 className="h-10 w-10 animate-spin text-primary" />
+            </div>
+            <div className="absolute inset-0 flex items-center justify-center animate-ping opacity-75">
+              <div className="w-8 h-8 rounded-full bg-primary/10"></div>
+            </div>
+          </div>
+          <h1 className="mt-8 text-2xl font-bold animate-pulse">Loading Quotation</h1>
+          <p className="mt-2 text-gray-500 dark:text-gray-400 max-w-xs mx-auto">
+            Please wait while we retrieve your quotation details...
+          </p>
         </div>
       </div>
     );
@@ -266,15 +310,21 @@ export default function PublicQuotationPage() {
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
-        <Card className="max-w-md w-full">
-          <CardHeader>
-            <CardTitle className="text-center">Quotation Not Available</CardTitle>
+        <Card className="max-w-md w-full border-red-200 shadow-lg">
+          <CardHeader className="text-center space-y-2">
+            <div className="mx-auto w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+              <Shield className="h-6 w-6 text-red-500" />
+            </div>
+            <CardTitle>Quotation Not Available</CardTitle>
+            <CardDescription className="text-red-500">{error}</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-center">
-              <Shield className="h-12 w-12 text-red-500 mx-auto" />
-              <p className="mt-4 text-muted-foreground">{error}</p>
-              <Button className="mt-6" onClick={() => router.push('/')}>
+            <div className="text-center space-y-3">
+              <p className="text-muted-foreground">The link you followed may be expired, invalid, or you might not have permission to view this quotation.</p>
+              <Button
+                className="mt-4 transition-all duration-300 hover:scale-105"
+                onClick={() => router.push('/')}
+              >
                 Return to Home
               </Button>
             </div>
@@ -285,338 +335,410 @@ export default function PublicQuotationPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-5xl mx-auto px-4 py-8">
-        <header className="mb-6">
-          <div className="flex items-center justify-between">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+      <div className="max-w-6xl mx-auto px-4 py-6 sm:py-10">
+        <header className="mb-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 sm:p-6 transition-all">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold">{quotation?.organization?.companyName || 'Company'}</h1>
-              <div className="flex items-center gap-2 mt-1">
-                <p className="text-muted-foreground">Quotation: {quotation?.quotationNumber}</p>
-                <span className="text-muted-foreground">•</span>
+              <div className="flex items-center gap-3">
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
+                  {quotation?.organization?.companyName || 'Company'}
+                </h1>
                 {getStatusBadge(quotation.status)}
               </div>
+              <div className="flex flex-wrap items-center gap-2 mt-2">
+                <div className="flex items-center gap-1 text-muted-foreground">
+                  <FileText className="h-4 w-4" />
+                  <span>{quotation?.quotationNumber}</span>
+                </div>
+                <span className="text-muted-foreground hidden sm:inline">•</span>
+                <div className="flex items-center gap-1 text-muted-foreground">
+                  <Calendar className="h-4 w-4" />
+                  <span>Valid until {new Date(quotation.validUntil).toLocaleDateString()}</span>
+                </div>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 bg-primary/5 p-2 rounded-lg self-start">
               <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
                 <Shield className="h-4 w-4 text-primary" />
               </div>
-              <span className="text-sm text-muted-foreground">Secure Quotation</span>
+              <span className="text-sm dark:text-white font-medium">Secure Quotation</span>
             </div>
           </div>
         </header>
 
         <main>
-          {/* Action Buttons */}
+          {/* Action Buttons for sent status */}
           {quotation.status === 'sent' && (
-            <div className="mb-6 bg-muted/30 rounded-lg p-4 flex flex-col sm:flex-row justify-between items-center gap-4">
-              <div>
-                <h3 className="font-semibold">Ready to respond?</h3>
-                <p className="text-sm text-muted-foreground">You can approve this quotation or request changes.</p>
-              </div>
-              <div className="flex gap-2">
-                <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" className="border-red-200 bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700">
-                      <X className="h-4 w-4 mr-1" /> Request Changes
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="z-[100]">
-                    <DialogHeader>
-                      <DialogTitle>Request Changes</DialogTitle>
-                      <DialogDescription>
-                        Please explain what changes you'd like to see.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="py-4 space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Your Name (Optional)</label>
-                          <input 
-                            className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            placeholder="Your name"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Your Email (Optional)</label>
-                          <input 
-                            className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            placeholder="Your email"
-                            type="email"
-                          />
-                        </div>
-                      </div>
-                      <Textarea
-                        placeholder="Describe the changes needed..."
-                        value={rejectReason}
-                        onChange={(e) => setRejectReason(e.target.value)}
-                        className="min-h-[100px]"
-                        required
-                      />
-                    </div>
-                    <DialogFooter>
-                      <Button variant="outline" onClick={() => setRejectDialogOpen(false)}>
-                        Cancel
-                      </Button>
-                      <Button 
-                        variant="destructive"
-                        onClick={handleReject}
-                        disabled={!rejectReason.trim() || loading}
-                      >
-                        {loading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <X className="h-4 w-4 mr-1" />}
-                        Request Changes
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-
-                <Dialog open={approveDialogOpen} onOpenChange={setApproveDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button className="bg-green-600 hover:bg-green-700">
-                      <Check className="h-4 w-4 mr-1" /> Approve
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="z-[100]">
-                    <DialogHeader>
-                      <DialogTitle>Approve Quotation</DialogTitle>
-                      <DialogDescription>
-                        You're about to approve this quotation.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="py-4 space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Your Name (Optional)</label>
-                          <input 
-                            className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            placeholder="Your name"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Your Email (Optional)</label>
-                          <input 
-                            className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            placeholder="Your email"
-                            type="email"
-                          />
-                        </div>
-                      </div>
-                      <Textarea
-                        placeholder="Add an optional comment with your approval..."
-                        value={approveComment}
-                        onChange={(e) => setApproveComment(e.target.value)}
-                        className="min-h-[100px]"
-                      />
-                    </div>
-                    <DialogFooter>
-                      <Button variant="outline" onClick={() => setApproveDialogOpen(false)}>
-                        Cancel
-                      </Button>
-                      <Button 
-                        className="bg-green-600 hover:bg-green-700"
-                        onClick={handleApprove}
-                        disabled={loading}
-                      >
-                        {loading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Check className="h-4 w-4 mr-1" />}
-                        Approve Quotation
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-              </div>
-            </div>
-          )}
-
-          {/* Quotation Preview */}
-          <Card className="mb-8 shadow-sm">
-            <CardContent className="p-0">
-              <QuotationPreview 
-                quotation={quotation} 
-                showActions={false}
-              />
-            </CardContent>
-            <CardFooter className="p-4 bg-muted/30 border-t flex justify-between">
-              <div className="text-sm text-muted-foreground">
-                Quotation valid until: {new Date(quotation.validUntil).toLocaleDateString()}
-              </div>
-              <Button variant="outline" size="sm" onClick={() => window.open(`/api/public/quotations/${params.token}/pdf`, '_blank')}>
-                <Download className="h-4 w-4 mr-1" /> Download PDF
-              </Button>
-            </CardFooter>
-          </Card>
-
-          {/* Communication & Activity Section */}
-          <div ref={commentsRef} className="mt-10 mb-6">
-            <h2 className="text-xl font-bold mb-6">Communication & Activity</h2>
-            
-            {/* Activity Timeline */}
-            <Card className="mb-6">
-              <CardHeader>
-                <CardTitle className="text-base">Activity Timeline</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {quotation.approvalHistory && quotation.approvalHistory.length > 0 ? (
-                  <div className="space-y-4">
-                    {quotation.approvalHistory.map((entry: any, index: number) => {
-                      // Determine if this is a comment (check for the "Comment from" pattern)
-                      const isComment = entry.comment && entry.comment.startsWith('Comment from');
-                      
-                      // Format names appropriately based on entry type
-                      let actionText, iconColor, icon, personName, commentContent;
-                      
-                      if (isComment) {
-                        // Parse out the name and actual comment content
-                        const commentPattern = /Comment from (.*?) \((.*?)\): (.*)/;
-                        const match = entry.comment.match(commentPattern);
-                        
-                        if (match) {
-                          personName = match[1] === 'Anonymous' ? 'Client' : match[1];
-                          const emailPart = match[2] !== 'No email' ? ` (${match[2]})` : '';
-                          commentContent = match[3];
-                          
-                          actionText = `added a comment`;
-                          iconColor = "text-blue-500";
-                          icon = <MessageSquare className="h-5 w-5" />;
-                        } else {
-                          // Fallback if the pattern doesn't match
-                          actionText = "commented";
-                          personName = "Client";
-                          commentContent = entry.comment;
-                          iconColor = "text-blue-500";
-                          icon = <MessageSquare className="h-5 w-5" />;
-                        }
-                      } else if (entry.status === 'approved') {
-                        actionText = "approved the quotation";
-                        personName = "Client";
-                        commentContent = entry.comment;
-                        iconColor = "text-green-500";
-                        icon = <Check className="h-5 w-5" />;
-                      } else if (entry.status === 'revision_requested') {
-                        actionText = "requested changes";
-                        personName = "Client";
-                        commentContent = entry.comment;
-                        iconColor = "text-red-500";
-                        icon = <X className="h-5 w-5" />;
-                      } else if (entry.status === 'pending') {
-                        actionText = "updated status";
-                        personName = entry.updatedBy?.firstName 
-                          ? `${entry.updatedBy.firstName} ${entry.updatedBy.lastName}`
-                          : "System";
-                        commentContent = entry.comment;
-                        iconColor = "text-amber-500";
-                        icon = <Clock className="h-5 w-5" />;
-                      }
-                      
-                      return (
-                        <div key={index} className="flex gap-4">
-                          <div className={`flex-shrink-0 mt-1 h-8 w-8 rounded-full bg-muted flex items-center justify-center ${iconColor} bg-opacity-20`}>
-                            {icon}
-                          </div>
-                          <div className="flex-grow">
-                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-1">
-                              <div className="font-medium">
-                                <span>{personName}</span> <span className="text-muted-foreground">{actionText}</span>
-                              </div>
-                              <div className="text-xs text-muted-foreground">
-                                {formatDate(entry.timestamp)}
-                              </div>
+            <Card className="mb-6 border-blue-200 dark:border-blue-800 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 shadow-md overflow-hidden">
+              <CardContent className="p-0">
+                <div className="flex flex-col md:flex-row items-stretch">
+                  <div className="p-6 flex-grow">
+                    <h3 className="text-xl font-semibold text-blue-800 dark:text-blue-300">Ready to respond?</h3>
+                    <p className="text-blue-600 dark:text-blue-400 mt-1">
+                      Please review this quotation and let us know if you'd like to proceed or request any changes.
+                    </p>
+                  </div>
+                  <div className="flex flex-row md:flex-col justify-center gap-3 p-4 md:p-6 bg-gradient-to-r from-blue-100/50 to-indigo-100/50 dark:from-blue-900/40 dark:to-indigo-900/40">
+                    <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="border-red-200 bg-white dark:bg-gray-800 text-red-600 hover:bg-red-50"
+                        >
+                          <X className="h-4 w-4 mr-2" /> Request Changes
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="z-[100] sm:max-w-md">
+                        <DialogHeader>
+                          <DialogTitle className='dark:text-white'>Request Changes</DialogTitle>
+                          <DialogDescription>
+                            Please explain what changes you'd like to see.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="py-4 space-y-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <label className="text-sm dark:text-muted-foreground font-medium">Your Name (Optional)</label>
+                              <Input
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                placeholder="Your name"
+                              />
                             </div>
-                            {commentContent && (
-                              <div className="mt-1 text-sm bg-muted/20 p-3 rounded-md">
-                                {commentContent}
-                              </div>
-                            )}
+                            <div className="space-y-2">
+                              <label className="text-sm dark:text-muted-foreground font-medium">Your Email (Optional)</label>
+                              <Input
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                placeholder="Your email"
+                                type="email"
+                              />
+                            </div>
                           </div>
+                          <Textarea
+                            placeholder="Describe the changes needed..."
+                            value={rejectReason}
+                            onChange={(e) => setRejectReason(e.target.value)}
+                            className="min-h-[120px]"
+                            required
+                          />
                         </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground text-center py-6">No activity recorded yet.</p>
-                )}
-              </CardContent>
-            </Card>
-            
-            {/* Add Comment Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Add a Comment</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Your Name</label>
-                      <div className="flex">
-                        <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm">
-                          <User className="h-4 w-4" />
-                        </span>
-                        <input 
-                          className="flex h-9 w-full rounded-none rounded-r-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors"
-                          value={name}
-                          onChange={(e) => setName(e.target.value)}
-                          placeholder="Your name"
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Your Email</label>
-                      <input 
-                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="Your email address"
-                        type="email"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Your Comment</label>
-                    <Textarea
-                      placeholder="Enter your comment here..."
-                      value={commentText}
-                      onChange={(e) => setCommentText(e.target.value)}
-                      className="min-h-[120px]"
-                    />
-                  </div>
-                  
-                  <div className="flex justify-end">
-                    <Button 
-                      onClick={handleAddComment}
-                      disabled={!commentText.trim() || submittingComment}
-                    >
-                      {submittingComment ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                          Submitting...
-                        </>
-                      ) : (
-                        <>
-                          <Send className="h-4 w-4 mr-1" />
-                          Submit Comment
-                        </>
-                      )}
-                    </Button>
+                        <DialogFooter>
+                          <Button className="dark:text-white" variant="outline" onClick={() => setRejectDialogOpen(false)}>
+                            Cancel
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            onClick={handleReject}
+                            disabled={!rejectReason.trim() || loading}
+                            className="gap-2"
+                          >
+                            {loading ?
+                              <Loader2 className="h-4 w-4 animate-spin" /> :
+                              <X className="h-4 w-4" />
+                            }
+                            Request Changes
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+
+                    <Dialog open={approveDialogOpen} onOpenChange={setApproveDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button className="bg-green-600 hover:bg-green-700 gap-2">
+                          <Check className="h-4 w-4" /> Approve
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="z-[100] sm:max-w-md">
+                        <DialogHeader>
+                          <DialogTitle className="dark:text-white">Approve Quotation</DialogTitle>
+                          <DialogDescription>
+                            You're about to approve this quotation.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="py-4 space-y-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <label className="text-sm dark:text-muted-foreground font-medium">Your Name (Optional)</label>
+                              <Input
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                placeholder="Your name"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-sm dark:text-muted-foreground font-medium">Your Email (Optional)</label>
+                              <Input
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                placeholder="Your email"
+                                type="email"
+                              />
+                            </div>
+                          </div>
+                          <Textarea
+                            placeholder="Add an optional comment with your approval..."
+                            value={approveComment}
+                            onChange={(e) => setApproveComment(e.target.value)}
+                            className="min-h-[120px]"
+                          />
+                        </div>
+                        <DialogFooter>
+                          <Button className="dark:text-white" variant="outline" onClick={() => setApproveDialogOpen(false)}>
+                            Cancel
+                          </Button>
+                          <Button
+                            className="bg-green-600 hover:bg-green-700 gap-2"
+                            onClick={handleApprove}
+                            disabled={loading}
+                          >
+                            {loading ?
+                              <Loader2 className="h-4 w-4 animate-spin" /> :
+                              <Check className="h-4 w-4" />
+                            }
+                            Approve Quotation
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
                   </div>
                 </div>
               </CardContent>
             </Card>
+          )}
+
+          {/* Mobile tabs for small screens */}
+          <div className="md:hidden mb-6">
+            <Tabs defaultValue="preview" onValueChange={setActiveTab} value={activeTab}>
+              <TabsList className="grid grid-cols-2 w-full">
+                <TabsTrigger value="preview">Quotation</TabsTrigger>
+                <TabsTrigger value="communication">Communication</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+
+          <div className="flex flex-col md:flex-row gap-6">
+            {/* Quotation Preview */}
+            <div className={`${activeTab === 'preview' ? 'block' : 'hidden'} md:block md:flex-1 transition-all`}>
+              <Card className="shadow-md overflow-hidden border-gray-200 dark:border-gray-700">
+                <CardHeader className="bg-gray-50 dark:bg-gray-800 p-4 border-b">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg">Quotation Details</CardTitle>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => window.open(`/api/public/quotations/${params.token}/pdf`, '_blank')}
+                            className="gap-2"
+                          >
+                            <Download className="h-4 w-4" /> Download PDF
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Download as PDF document</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <QuotationPreview
+                    quotation={quotation}
+                    showActions={false}
+                  />
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Communication & Activity Section */}
+            <div
+              ref={commentsRef}
+              className={`${activeTab === 'communication' ? 'block' : 'hidden'} md:block md:w-full md:max-w-md transition-all`}
+            >
+              <Card className="shadow-md overflow-hidden border-gray-200 dark:border-gray-700">
+                <CardHeader className="bg-gray-50 dark:bg-gray-800 p-4 border-b">
+                  <CardTitle className="text-lg">Communication & Activity</CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <ScrollArea className="h-[50vh] md:h-[60vh]">
+                    <div className="p-4">
+                      {quotation.approvalHistory && quotation.approvalHistory.length > 0 ? (
+                        <div className="space-y-6">
+                          {quotation.approvalHistory.map((entry: any, index: number) => {
+                            // Determine if this is a comment (check for the "Comment from" pattern)
+                            const isComment = entry.comment && entry.comment.startsWith('Comment from');
+
+                            // Format names appropriately based on entry type
+                            let actionText, iconColor, personName, commentContent;
+
+                            if (isComment) {
+                              // Parse out the name and actual comment content
+                              const commentPattern = /Comment from (.*?) \((.*?)\): (.*)/;
+                              const match = entry.comment.match(commentPattern);
+
+                              if (match) {
+                                personName = match[1] === 'Anonymous' ? 'Client' : match[1];
+                                const emailPart = match[2] !== 'No email' ? ` (${match[2]})` : '';
+                                commentContent = match[3];
+
+                                actionText = `added a comment`;
+                                iconColor = "text-blue-500";
+                              } else {
+                                // Fallback if the pattern doesn't match
+                                actionText = "commented";
+                                personName = "Client";
+                                commentContent = entry.comment;
+                                iconColor = "text-blue-500";
+                              }
+                            } else if (entry.status === 'approved') {
+                              actionText = "approved the quotation";
+                              personName = "Client";
+                              commentContent = entry.comment;
+                              iconColor = "text-green-500";
+                            } else if (entry.status === 'revision_requested') {
+                              actionText = "requested changes";
+                              personName = "Client";
+                              commentContent = entry.comment;
+                              iconColor = "text-red-500";
+                            } else if (entry.status === 'pending') {
+                              actionText = "updated status";
+                              personName = entry.updatedBy?.firstName
+                                ? `${entry.updatedBy.firstName} ${entry.updatedBy.lastName}`
+                                : "System";
+                              commentContent = entry.comment;
+                              iconColor = "text-amber-500";
+                            }
+
+                            return (
+                              <div key={index} className="relative pl-6 pb-6">
+                                {/* Timeline line */}
+                                {index < quotation.approvalHistory.length - 1 && (
+                                  <div className="absolute left-4 top-6 bottom-0 w-px bg-gray-200 dark:bg-gray-700"></div>
+                                )}
+
+                                <div className="flex gap-3">
+                                  <div className="flex-shrink-0">
+                                    <Avatar className="h-8 w-8 border-2 border-white dark:border-gray-800 overflow-visible">
+                                      <AvatarFallback className={`${
+                                        isComment ? "bg-blue-100 text-blue-600" :
+                                        entry.status === 'approved' ? "bg-green-100 text-green-600" :
+                                        entry.status === 'revision_requested' ? "bg-red-100 text-red-600" :
+                                        "bg-amber-100 text-amber-600"
+                                      } text-xs`}>
+                                        {getAvatarInitials(personName)}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                  </div>
+
+                                  <div className="flex-grow space-y-1">
+                                    <div className="flex flex-wrap items-center justify-between gap-1">
+                                      <div className="font-medium text-sm">
+                                        <span>{personName}</span>
+                                        <span className="text-muted-foreground ml-1">{actionText}</span>
+                                      </div>
+                                      <div className="text-xs text-muted-foreground whitespace-nowrap">
+                                        {formatDate(entry.timestamp)}
+                                      </div>
+                                    </div>
+
+                                    {commentContent && (
+                                      <div className="mt-2 text-sm bg-gray-50 dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
+                                        {commentContent}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="py-8 text-center">
+                          <div className="mx-auto w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-3">
+                            <MessageSquare className="h-6 w-6 text-gray-400" />
+                          </div>
+                          <p className="text-muted-foreground">No activity recorded yet.</p>
+                          <p className="text-sm text-muted-foreground mt-1">Be the first to add a comment!</p>
+                        </div>
+                      )}
+                    </div>
+                  </ScrollArea>
+
+                  <div className="border-t p-4 bg-gray-50 dark:bg-gray-800/50">
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <div className="flex">
+                            <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm">
+                              <User className="h-4 w-4" />
+                            </span>
+                            <Input
+                              className="rounded-l-none"
+                              value={name}
+                              onChange={(e) => setName(e.target.value)}
+                              placeholder="Your name"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <div className="flex">
+                            <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm">
+                              <Mail className="h-4 w-4" />
+                            </span>
+                            <Input
+                              className="rounded-l-none"
+                              value={email}
+                              onChange={(e) => setEmail(e.target.value)}
+                              placeholder="Your email"
+                              type="email"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <Textarea
+                        placeholder="Add your comment here..."
+                        value={commentText}
+                        onChange={(e) => setCommentText(e.target.value)}
+                        className="min-h-[80px] resize-y"
+                      />
+
+                      <div className="flex justify-end">
+                        <Button
+                          onClick={handleAddComment}
+                          disabled={!commentText.trim() || submittingComment}
+                          className="gap-2"
+                        >
+                          {submittingComment ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Send className="h-4 w-4" />
+                          )}
+                          {submittingComment ? "Sending..." : "Send Comment"}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </main>
 
-        <footer className="mt-12 pt-6 border-t text-center text-sm text-muted-foreground">
-          <p className="mb-2">This is a secure document shared directly with you. Please do not share this link without authorization.</p>
-          <p> Powered by Zapllo CRM</p>
-        </footer>
+        <footer className="mt-12 pt-6 border-t text-center">
+          <div className="flex flex-col items-center justify-center gap-2">
+            <p className="text-sm text-muted-foreground max-w-md">
+              This is a secure quotation document shared directly with you. Please do not share this link without authorization.
+            </p>
+            <div className="flex items-center gap-1 mt-1">
+              <Shield className="h-4 w-4 text-primary" />
+              <p className="text-xs font-medium">Powered by Zapllo CRM</p>
+            </div>
+          </div>
+          </footer>
       </div>
     </div>
   );
