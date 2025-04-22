@@ -448,7 +448,7 @@ export default function RolesPage() {
                 isOpen={isAddModalOpen}
                 setIsOpen={setIsAddModalOpen}
                 onAdded={fetchRoles}
-                orgId={typeof orgId === 'string' ? orgId : ""}
+               
             />
 
             {/* Edit Role Modal */}

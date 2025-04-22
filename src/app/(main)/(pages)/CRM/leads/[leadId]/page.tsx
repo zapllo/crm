@@ -103,7 +103,8 @@ export default function LeadDetails() {
     // Add permission check
     const { isLoading: permissionsLoading, isInitialized } = usePermissions();
     const hasViewPermission = canView("Leads");
-
+    // Add this state for email dialog control
+    const [emailDialogOpen, setEmailDialogOpen] = useState(false);
     // Read "tab" parameter from URL
     const defaultTab = searchParams.get("tab") || "timeline";
 
@@ -213,7 +214,11 @@ export default function LeadDetails() {
                 </div>
 
                 <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => window.location.href = `mailto:${leadDetails.contact?.email}`}>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setEmailDialogOpen(true)}
+                    >
                         <Mail className="mr-2 h-4 w-4" />
                         Email
                     </Button>
@@ -501,11 +506,11 @@ export default function LeadDetails() {
                                     </div>
                                 </div>
 
-                                <div className="flex justify-between">
-                                    {/* <Button variant="outline" size="sm" className="w-[48%]">
+                                <div className="flex gap-2 justify-between">
+                                    <Button onClick={() => setEmailDialogOpen(true)} variant="outline" size="sm" className="w-full">
                                         <FaEnvelope className="mr-2 h-3 w-3" />
                                         Email
-                                    </Button> */}
+                                    </Button>
 
                                     <Button onClick={() => router.push(`/CRM/contacts/${leadDetails.contact?.id}`)} variant="outline" size="sm" className="w-full">
                                         <Eye className="mr-2 h-3 w-3" />
@@ -515,7 +520,15 @@ export default function LeadDetails() {
                             </CardContent>
                         </Card>
                     )}
-
+                    {/* Email Dialog */}
+                    {leadDetails?.contact?.email && (
+                        <EmailsTab
+                            leadId={leadId || ''}
+                            contactEmail={leadDetails.contact.email}
+                            isDialogOpen={emailDialogOpen}
+                            setIsDialogOpen={setEmailDialogOpen}
+                        />
+                    )}
                     {/* Company Details Card */}
                     {leadDetails.contact?.company && (
                         <Card className="shadow-sm border-muted">
@@ -526,7 +539,7 @@ export default function LeadDetails() {
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                <div className="flex items-center gap-3">
+                                <div className="flex items-center  gap-3">
                                     <div className="h-10 w-10 bg-primary/10 rounded-full flex items-center justify-center">
                                         <FaBuilding className="h-5 w-5 text-primary" />
                                     </div>

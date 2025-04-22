@@ -64,11 +64,11 @@ export default function BillingPage() {
   const [selectedCategory, setSelectedCategory] = useState<ProductCategory>("sales");
   // Update userCounts to include the new product
   const [userCounts, setUserCounts] = useState({
-    crm: 5,
-    quotation: 5,
-    formbuilder: 5,
-    tasks: 5,
-    bundle: 5
+    crm: 1,
+    quotation: 1,
+    formbuilder: 1,
+    tasks: 1,
+    bundle: 1
   });
 
   const [showDetails, setShowDetails] = useState(false);
@@ -104,39 +104,7 @@ export default function BillingPage() {
       const org = user.organization;
       const newUserCounts = { ...userCounts };
 
-      // If the organization has a subscribedUserCount, use it for the subscribed modules
-      if (org.subscribedUserCount) {
-        // Check active subscriptions for all products
-        if (org.activeSubscriptions?.includes('crm')) {
-          newUserCounts.crm = org.subscribedUserCount;
-        } else {
-          newUserCounts.crm = 1; // Default to 1 if not subscribed
-        }
 
-        if (org.activeSubscriptions?.includes('quotation')) {
-          newUserCounts.quotation = org.subscribedUserCount;
-        } else {
-          newUserCounts.quotation = 1; // Default to 1 if not subscribed
-        }
-
-        if (org.activeSubscriptions?.includes('formbuilder')) {
-          newUserCounts.formbuilder = org.subscribedUserCount;
-        } else {
-          newUserCounts.formbuilder = 1; // Default to 1 if not subscribed
-        }
-
-        if (org.activeSubscriptions?.includes('tasks')) {
-          newUserCounts.tasks = org.subscribedUserCount;
-        } else {
-          newUserCounts.tasks = 1; // Default to 1 if not subscribed
-        }
-
-        if (org.activeSubscriptions?.includes('bundle')) {
-          newUserCounts.bundle = org.subscribedUserCount;
-        } else {
-          newUserCounts.bundle = 1; // Default to 1 if not subscribed
-        }
-      }
 
       setUserCounts(newUserCounts);
 
@@ -700,7 +668,7 @@ export default function BillingPage() {
                   </Button>
                 ) : (
                   <Button
-                    className={`w-full ${selectedFormBuilderPlan === plan.id ? 'bg-primary' : ''}`}
+                    className={`w-full ${selectedFormBuilderPlan === plan.id ? 'bg-primary hover:bg-primary/80' : ''}`}
                     variant={selectedFormBuilderPlan === plan.id ? 'default' : 'outline'}
                     onClick={() => setSelectedFormBuilderPlan(plan.id)}
                   >
@@ -737,7 +705,7 @@ export default function BillingPage() {
         >
           <TabsList className="grid grid-cols-2 bg-accent w-full">
             <TabsTrigger className='border-none'  value="perUser">Per-User Products</TabsTrigger>
-            <TabsTrigger  className='border-none' value="formBuilder">Form Builder Plans</TabsTrigger>
+            <TabsTrigger  className='border-none' value="formBuilder">AI Form Builder Plans</TabsTrigger>
           </TabsList>
         </Tabs>
       </div>
@@ -745,7 +713,7 @@ export default function BillingPage() {
       {isFormBuilderSelected ? (
         <div>
           <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold">Form Builder Plans</h2>
+            <h2 className="text-2xl font-bold">AI Form Builder Plans</h2>
             <p className="text-muted-foreground">
               Create beautiful forms and collect submissions based on your needs
             </p>

@@ -54,7 +54,7 @@ export default function PreviewFormPageContent() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full">
+      <div className="flex items-center justify-center h-full mt-36">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
           <p>Loading form preview...</p>
@@ -64,7 +64,7 @@ export default function PreviewFormPageContent() {
   }
 
   return (
-    <div className="container h-full  flex flex-col py-4 max-w-full px-0 md:px-4">
+    <div className="container h-full  flex flex-col py-4 max-w-full px-0 md:px-4 mt-12">
       <div className="flex justify-between items-center py-2 px-4 border-b">
         <div className="flex items-center">
           <Button

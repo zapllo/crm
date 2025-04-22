@@ -378,7 +378,7 @@ export default function PublicFormPageContent() {
           </Button>
         </div>
 
-      
+
         <div className="border-t px-6 py-4 flex items-center justify-center space-x-2 text-xs text-muted-foreground"
           style={{
             borderColor: `${form.theme?.primaryColor || '#3B82F6'}20`,

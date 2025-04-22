@@ -412,7 +412,7 @@ export default function AddNoteDialog({ leadId, onNoteAdded }: AddNoteDialogProp
                     onValueChange={(v) => setActiveTab(v as "text" | "audio")}
                     className="w-full"
                 >
-                    <TabsList className="grid grid-cols-2 w-full rounded-none border-b">
+                    <TabsList className="grid grid-cols-2 w-full rounded-none ">
                         <TabsTrigger
                             value="text"
                             className="data-[state=active]:bg-green-50 dark:data-[state=active]:bg-green-950/30 data-[state=active]:text-green-700 dark:data-[state=active]:text-green-400 rounded-none flex gap-2 py-3"
@@ -487,7 +487,7 @@ export default function AddNoteDialog({ leadId, onNoteAdded }: AddNoteDialogProp
 
                                     <div className="border rounded-md overflow-hidden">
                                         {/* Canvas-based waveform visualization */}
-                                   
+
                                         <div className="h-24 bg-black/5 dark:bg-white/5 p-4">
                                             <div className="h-full flex items-center justify-between">
                                                 {waveformData.length > 0 ? (

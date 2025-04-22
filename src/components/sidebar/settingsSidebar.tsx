@@ -14,7 +14,8 @@ import {
   Users,
   CreditCard,
   Code,
-  Mail
+  Mail,
+  Phone
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 
@@ -97,6 +98,12 @@ const SettingsSidebar: React.FC = () => {
       title: "Billing",
       href: "/settings/billing",
       icon: <CreditCard className="h-5 w-5" />,
+      description: "Manage your subscription and payment methods"
+    },
+    {
+      title: "Caller Wallet",
+      href: "/settings/wallet",
+      icon: <Phone className="h-5 w-5" />,
       description: "Manage your subscription and payment methods"
     },
     {

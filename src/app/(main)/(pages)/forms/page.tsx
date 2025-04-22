@@ -41,6 +41,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import FormBuilderPricingPage from '@/components/billing/FormBuilderPricingPage';
 import { useUserContext } from '@/contexts/userContext';
 import FormBuilderUsageStats from '@/components/form-builder/FormBuilderUsageStats';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 
 function FormLimitsWarning({ limits }: { limits: { maxForms: number, currentForms: number, maxSubmissionsPerMonth: number, currentMonthSubmissions: number, plan: string | null } | null }) {
@@ -123,6 +124,41 @@ export default function FormsPage() {
   const [aiProcessing, setAiProcessing] = useState(false);
   const [aiProgress, setAiProgress] = useState(0);
   const [selectedFormId, setSelectedFormId] = useState<string | null>(null);
+  // First, add a deleteConfirmOpen state to track the confirmation dialog
+const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+
+const deleteForm = (formId: string) => {
+  setSelectedFormId(formId);
+  setDeleteConfirmOpen(true);
+};
+
+const confirmDeleteForm = async () => {
+  if (!selectedFormId) return;
+
+  try {
+    const response = await axios.delete(`/api/forms/${selectedFormId}`);
+
+    if (response.data.success) {
+      toast({
+        title: "Form deleted",
+        description: "Form has been deleted successfully.",
+      });
+
+      fetchForms();
+    } else {
+      throw new Error(response.data.message || "Failed to delete form");
+    }
+  } catch (error: any) {
+    toast({
+      title: "Error deleting form",
+      description: error.message || "There was a problem deleting the form.",
+      variant: "destructive"
+    });
+  } finally {
+    setSelectedFormId(null);
+    setDeleteConfirmOpen(false);
+  }
+};
   // Add at the beginning of the component
   const [accessStatus, setAccessStatus] = useState({
     hasAccess: false,
@@ -342,61 +378,7 @@ export default function FormsPage() {
     }
   };
 
-  const deleteForm = async (formId: string) => {
-    setSelectedFormId(formId);
 
-    toast({
-      title: "Delete form?",
-      description: "This action cannot be undone.",
-      action: (
-        <div className="flex gap-2">
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={() => {
-              confirmDeleteForm(formId);
-            }}
-          >
-            Delete
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setSelectedFormId(null);
-            }}
-          >
-            Cancel
-          </Button>
-        </div>
-      ),
-    });
-  };
-
-  const confirmDeleteForm = async (formId: string) => {
-    try {
-      const response = await axios.delete(`/api/forms/${formId}`);
-
-      if (response.data.success) {
-        toast({
-          title: "Form deleted",
-          description: "Form has been deleted successfully.",
-        });
-
-        fetchForms();
-      } else {
-        throw new Error(response.data.message || "Failed to delete form");
-      }
-    } catch (error: any) {
-      toast({
-        title: "Error deleting form",
-        description: error.message || "There was a problem deleting the form.",
-        variant: "destructive"
-      });
-    } finally {
-      setSelectedFormId(null);
-    }
-  };
 
   const filteredForms = forms.filter((form: any) => {
     const matchesSearch = form.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -560,6 +542,7 @@ export default function FormsPage() {
               </DropdownMenuContent>
             </DropdownMenu>
           </TooltipProvider>
+
         </div>
       )
     }
@@ -803,7 +786,30 @@ export default function FormsPage() {
           </CardContent>
         </Card>
       )} */}
-
+  <AlertDialog  open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+  <AlertDialogContent>
+    <AlertDialogHeader>
+      <AlertDialogTitle className="text-xl flex items-center gap-2 text-red-500">
+        <Trash2 className="h-5 w-5" />
+        Confirm Deletion
+      </AlertDialogTitle>
+      <AlertDialogDescription className="text-base">
+        This action cannot be undone. This will permanently delete the form and all its submissions.
+        <br /><br />
+        Are you sure you want to continue?
+      </AlertDialogDescription>
+    </AlertDialogHeader>
+    <AlertDialogFooter className="mt-4">
+      <AlertDialogCancel className="font-medium">Cancel</AlertDialogCancel>
+      <AlertDialogAction
+        onClick={confirmDeleteForm}
+        className="bg-red-500 hover:bg-red-600 text-white font-medium"
+      >
+        Delete
+      </AlertDialogAction>
+    </AlertDialogFooter>
+  </AlertDialogContent>
+</AlertDialog>
       {/* AI Form Creation Dialog */}
       <Dialog open={showAIDialog} onOpenChange={setShowAIDialog}>
         <DialogContent className="sm:max-w-md">

@@ -59,13 +59,20 @@ const FIELD_CATEGORIES = {
 interface EmailsTabProps {
   leadId: string;
   contactEmail?: string; // Optional prop for the
+  isDialogOpen?: boolean;
+  setIsDialogOpen?: (open: boolean) => void;
   // If you want to default the "To" field from the lead's contact email,
   // you could pass that here, e.g. contactEmail?: string;
 }
 
-export default function EmailsTab({ leadId, contactEmail }: EmailsTabProps) {
+export default function EmailsTab({ leadId, contactEmail,   isDialogOpen,
+  setIsDialogOpen }: EmailsTabProps) {
   // 1) Dialog state
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [internalDialogOpen, setInternalDialogOpen] = useState(false);
+
+  // Use the external control if provided, otherwise use internal state
+  const dialogOpen = isDialogOpen !== undefined ? isDialogOpen : internalDialogOpen;
+  const setDialogOpen = setIsDialogOpen || setInternalDialogOpen;
   const [dialogMode, setDialogMode] = useState<"manual" | "template">("manual");
   const [isSending, setIsSending] = useState(false);
 
@@ -467,7 +474,7 @@ export default function EmailsTab({ leadId, contactEmail }: EmailsTabProps) {
       </Dialog>
 
       {/* Preview Dialog (Could be implemented similar to template preview) */}
-      {/* 
+      {/*
       <Dialog open={showPreview} onOpenChange={setShowPreview}>
         <DialogContent>
           Preview content would go here

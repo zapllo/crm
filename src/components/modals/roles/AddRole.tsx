@@ -49,7 +49,7 @@ interface AddRoleProps {
   isOpen: boolean;
   setIsOpen: (val: boolean) => void;
   onAdded: () => void;
-  orgId: string;
+
 }
 
 // Define constants
@@ -76,7 +76,7 @@ export default function AddRole({
   isOpen,
   setIsOpen,
   onAdded,
-  orgId,
+
 }: AddRoleProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pagePermissions, setPagePermissions] = useState<Record<string, Record<string, boolean>>>(() => {
@@ -183,7 +183,6 @@ export default function AddRole({
 
       await axios.post("/api/roles", {
         ...values,
-        orgId,
         pages: pagesArray,
         features: featuresArray,
       });

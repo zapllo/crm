@@ -47,10 +47,28 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
     try {
         await connectDB();
-        const data = await request.json();
-        const { name, leadAccess, pages, features, orgId } = data;
+        // Get userId from the token
+        const userId = getDataFromToken(request);
+        if (!userId) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
 
-        if (!name || !leadAccess || !orgId) {
+        // Get the user and their organization
+        const user = await User.findById(userId).select('-password');
+        if (!user) {
+            return NextResponse.json({ error: 'User not found' }, { status: 404 });
+        }
+
+        const organizationId = user.organization;
+        if (!organizationId) {
+            return NextResponse.json({ error: 'User has no associated organization' }, { status: 400 });
+        }
+
+        // Parse request body
+        const data = await request.json();
+        const { name, leadAccess, pages, features } = data;
+
+        if (!name || !leadAccess ) {
             return NextResponse.json(
                 { error: "Missing required fields (name, leadAccess, orgId)" },
                 { status: 400 }
@@ -58,7 +76,7 @@ export async function POST(request: Request) {
         }
 
         const newRole = await Role.create({
-            organization: orgId,
+            organization: organizationId,
             name,
             leadAccess,
             pagePermissions: pages || [],

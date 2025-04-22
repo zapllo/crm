@@ -847,7 +847,7 @@ export const msmeTemplates: FormTemplate[] = [
     description: "Register suppliers and vendors for your business with comprehensive information collection",
     category: "procurement",
     tags: ["vendor", "supplier", "procurement", "registration"],
-    coverImage: "https://images.unsplash.com/photo-1635359406771-40215b8aca96?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1674&q=80",
+    coverImage: "https://res.cloudinary.com/dndzbt8al/image/upload/v1745315149/premium_photo-1683288662040-5ca51d0880b2_tdq2sq.avif",
     fields: [
       {
         id: generateId(),

@@ -258,14 +258,7 @@ export default function EditRole({
                     <DialogDescription>
                         Customize role permissions and access levels
                     </DialogDescription>
-                    <Button
-                        className="absolute right-4 top-4 h-8 w-8 p-0 rounded-full"
-                        onClick={() => setIsOpen(false)}
-                        variant="ghost"
-                        aria-label="Close"
-                    >
-                        <X className="h-4 w-4" />
-                    </Button>
+                   
                 </DialogHeader>
 
                 <Separator className="mt-2" />

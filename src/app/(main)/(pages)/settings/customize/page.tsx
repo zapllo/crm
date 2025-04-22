@@ -248,22 +248,16 @@ export default function CustomizePage() {
         fetchFields();
     }, []);
 
-    const handleDelete = async (id: string) => {
-        try {
-            await axios.delete("/api/contact-custom-fields", { data: { id } });
-            fetchFields();
-            toast({
-                title: "Success",
-                description: "Field deleted successfully",
-            });
-        } catch (error) {
-            console.error("Error deleting field:", error);
-            toast({
-                title: "Error",
-                description: "Failed to delete field. Please try again.",
-                variant: "destructive",
-            });
-        }
+    const handleDelete = async (fieldId: string) => {
+        // Get the field name to display in the confirmation
+        const fieldToDelete = fields.find(field => field._id === fieldId);
+
+        setItemToDelete({
+            id: fieldId,
+            type: 'contactField',
+            name: fieldToDelete?.name || 'Unknown field'
+        });
+        setDeleteConfirmOpen(true);
     };
 
     // Replace your existing delete handlers with these versions:
@@ -333,6 +327,14 @@ export default function CustomizePage() {
                         description: `Contact tag "${itemToDelete.name}" deleted successfully`
                     });
                     break;
+                case 'contactField':
+                    await axios.delete("/api/contact-custom-fields", { data: { id: itemToDelete.id } });
+                    fetchFields();
+                    toast({
+                        title: "Success",
+                        description: `Field "${itemToDelete.name}" deleted successfully`
+                    });
+                    break;
                 case 'field':
                     const [pipelineId, fieldIndex] = itemToDelete.id.split('-');
                     const pipeline = pipelines.find(p => p._id === pipelineId);
@@ -363,6 +365,7 @@ export default function CustomizePage() {
             setItemToDelete(null);
         }
     };
+
 
     // Filter functions
     const filteredPipelines = pipelines.filter(pipeline =>
@@ -1328,6 +1331,7 @@ export default function CustomizePage() {
                             {itemToDelete?.type === 'pipeline' && <strong>the pipeline</strong>}
                             {itemToDelete?.type === 'tag' && <strong>the tag</strong>}
                             {itemToDelete?.type === 'contactTag' && <strong>the contact tag</strong>}
+                            {itemToDelete?.type === 'contactField' && <strong>the contact field</strong>}
                             {itemToDelete?.type === 'field' && <strong>the field</strong>}
                             {itemToDelete?.name ? <span className="font-medium"> "{itemToDelete.name}"</span> : ''}.
                             <br /><br />

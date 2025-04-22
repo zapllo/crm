@@ -210,7 +210,7 @@ export default function MoveLeadDialog({ leadId, currentStage, onLeadMoved }: {
                 </Button>
             </DialogTrigger>
 
-            <DialogContent style={{ pointerEvents: 'auto' }} className="max-w-lg sm:max-w-xl h-full max-h-screen p-0 overflow-y-scroll scrollbar-hide z-[100]">
+            <DialogContent style={{ pointerEvents: 'auto' }} className="max-w-lg sm:max-w-xl h-fit max-h-screen p-0 overflow-y-scroll scrollbar-hide z-[100]">
                 <DialogHeader className="px-6 py-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-b">
                     <DialogTitle className="flex items-center gap-2 text-xl">
                         <IconReplace className="h-5 w-5 text-blue-600" />
@@ -218,7 +218,7 @@ export default function MoveLeadDialog({ leadId, currentStage, onLeadMoved }: {
                     </DialogTitle>
                 </DialogHeader>
 
-                <div className="p-6 space-y-5">
+                <div className="px-6 space-y-5">
                     {/* Current Status Section */}
                     <div className="bg-muted/30 p-4 rounded-lg border">
                         <h3 className="text-sm font-medium mb-2 flex items-center gap-2">
