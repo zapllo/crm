@@ -174,7 +174,6 @@ export default function GeneralSettings() {
         isOpen={isAddRoleOpen}
         setIsOpen={setIsAddRoleOpen}
         onAdded={handleRoleAdded}
-        orgId={orgId}
       />
     </div>
   );

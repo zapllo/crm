@@ -505,13 +505,11 @@ export default function LeadDetails() {
                                         </a>
                                     </div>
                                 </div>
-
                                 <div className="flex gap-2 justify-between">
                                     <Button onClick={() => setEmailDialogOpen(true)} variant="outline" size="sm" className="w-full">
                                         <FaEnvelope className="mr-2 h-3 w-3" />
                                         Email
                                     </Button>
-
                                     <Button onClick={() => router.push(`/CRM/contacts/${leadDetails.contact?.id}`)} variant="outline" size="sm" className="w-full">
                                         <Eye className="mr-2 h-3 w-3" />
                                         View
