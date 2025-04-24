@@ -106,31 +106,58 @@ export async function GET(request: Request) {
           closeStages: '$pipelineData.closeStages'
         }
       },
+      // Replace the $addFields section with this corrected version
       {
         $addFields: {
           isWon: {
-            $in: [
-              '$stage',
-              {
-                $filter: {
-                  input: '$closeStages',
-                  as: 'closeStage',
-                  cond: { $eq: ['$$closeStage.won', true] }
-                }
-              }
-            ]
+            $cond: {
+              if: {
+                $gt: [
+                  {
+                    $size: {
+                      $filter: {
+                        input: "$closeStages",
+                        as: "closeStage",
+                        cond: {
+                          $and: [
+                            { $eq: ["$$closeStage.name", "$stage"] },
+                            { $eq: ["$$closeStage.won", true] }
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  0
+                ]
+              },
+              then: true,
+              else: false
+            }
           },
           isLost: {
-            $in: [
-              '$stage',
-              {
-                $filter: {
-                  input: '$closeStages',
-                  as: 'closeStage',
-                  cond: { $eq: ['$$closeStage.lost', true] }
-                }
-              }
-            ]
+            $cond: {
+              if: {
+                $gt: [
+                  {
+                    $size: {
+                      $filter: {
+                        input: "$closeStages",
+                        as: "closeStage",
+                        cond: {
+                          $and: [
+                            { $eq: ["$$closeStage.name", "$stage"] },
+                            { $eq: ["$$closeStage.lost", true] }
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  0
+                ]
+              },
+              then: true,
+              else: false
+            }
           }
         }
       },
@@ -306,8 +333,8 @@ export async function GET(request: Request) {
     ]);
 
     // Consolidate reports by time period to handle duplicate keys
-const consolidateTimePeriods = (items: any[]) => {
-  const consolidatedMap = new Map<string, any>();
+    const consolidateTimePeriods = (items: any[]) => {
+      const consolidatedMap = new Map<string, any>();
 
       items.forEach(item => {
         if (!consolidatedMap.has(item.date)) {
@@ -691,17 +718,17 @@ const consolidateTimePeriods = (items: any[]) => {
     ]);
 
     // 9. Calculate conversion rates
-interface ConversionRate {
-  _id: any;
-  name: string;
-  conversionRate: number;
-}
+    interface ConversionRate {
+      _id: any;
+      name: string;
+      conversionRate: number;
+    }
 
-const conversionRates: {
-  overall: number;
-  bySource: ConversionRate[];
-  byPipeline: ConversionRate[];
-} = {
+    const conversionRates: {
+      overall: number;
+      bySource: ConversionRate[];
+      byPipeline: ConversionRate[];
+    } = {
       overall: 0,
       bySource: [],
       byPipeline: [],
@@ -717,14 +744,14 @@ const conversionRates: {
       _id: source._id,
       name: source.sourceName,
       conversionRate: source.totalCount > 0 ? (source.wonCount / source.totalCount) * 100 : 0
-})) as ConversionRate[];
+    })) as ConversionRate[];
 
     // By pipeline conversion rates
     conversionRates.byPipeline = pipelineWiseLeads.map(pipeline => ({
       _id: pipeline._id,
       name: pipeline.pipelineName,
       conversionRate: pipeline.totalCount > 0 ? (pipeline.wonCount / pipeline.totalCount) * 100 : 0
-})) as ConversionRate[];
+    })) as ConversionRate[];
 
     // Prepare response data
     const dashboardData = {
