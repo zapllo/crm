@@ -2865,7 +2865,7 @@ function DroppableStage({
     return (
         <Card
             className={cn(
-                "min-w-[300px] border bg-card transition-all duration-150",
+                "min-w-[325px] border bg-card transition-all duration-150",
                 isOver && canEditStage && "ring-2 ring-primary ring-offset-2"
             )}
             style={{
