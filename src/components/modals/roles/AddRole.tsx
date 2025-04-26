@@ -245,7 +245,7 @@ export default function AddRole({
         <Separator className="mt-2" />
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 px-6 py-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 px-6 py-">
             <div className="flex flex-col md:flex-row gap-6">
               <div className="flex-1 space-y-4">
                 <div className="space-y-1">

@@ -446,7 +446,7 @@ export default function FollowupSection({ leadId }: { leadId: string }) {
                                     ? "No pending follow-ups found."
                                     : "No closed follow-ups found."}
                         </p>
-                      
+
                     </div>
                 ) : (
                     <AnimatePresence>
@@ -510,12 +510,12 @@ export default function FollowupSection({ leadId }: { leadId: string }) {
                                                                     {followup.stage}
                                                                 </Badge>
 
-                                                                <div className="flex items-center text-sm text-muted-foreground">
+                                                                <div className="flex items-center text-xs text-muted-foreground">
                                                                     <CalendarIcon className="h-3.5 w-3.5 mr-1" />
                                                                     {safeFormatDate(followup.followupDate, "MMM d, yyyy", "Invalid date")}
                                                                 </div>
 
-                                                                <span className="text-sm text-muted-foreground hidden sm:inline">
+                                                                <span className="text-xs text-muted-foreground hidden sm:inline">
                                                                     {safeFormatDistanceToNow(followup.createdAt)} ago
                                                                 </span>
                                                             </div>

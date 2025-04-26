@@ -301,13 +301,7 @@ export default function PublicFormPageContent() {
           >
             {form.name}
           </h1>
-          {form.description && (
-            <p
-              className={`mt-2 ${form.coverImage ? 'text-white/90 drop-shadow-md' : 'text-muted-foreground'}`}
-            >
-              {form.description}
-            </p>
-          )}
+         
         </div>
         {form.settings?.multiPage && form.settings?.progressBar && (
           <div className="bg-muted w-full h-2">

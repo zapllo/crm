@@ -523,10 +523,7 @@ export default function ContactDetailsPage() {
                                                 `No leads matching "${searchTerm}" were found.` :
                                                 `There are no leads associated with this contact yet.`}
                                         </p>
-                                        <Button>
-                                            <PlusCircle className="mr-2 h-4 w-4" />
-                                            Create New Lead
-                                        </Button>
+                                       
                                     </div>
                                 ) : (
                                     <Table>

@@ -5,7 +5,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     FaUser, FaLayerGroup, FaGlobe, FaCalendar, FaRupeeSign,
     FaFileAlt, FaEnvelope, FaBuilding, FaFlag, FaLocationArrow,
-    FaMapMarkerAlt, FaPhoneAlt, FaClock, FaTasks, FaUserCheck, FaStickyNote
+    FaMapMarkerAlt, FaPhoneAlt, FaClock, FaTasks, FaUserCheck, FaStickyNote,
+    FaFile,
+    FaDownload,
+    FaPlayCircle,
+    FaLink,
+    FaExternalLinkAlt,
+    FaPaperclip
 } from "react-icons/fa";
 
 import LeadTimeline from '@/components/leads/timeline';
@@ -88,6 +94,10 @@ interface LeadDetailsType {
         details: string;
     }[];
     customFieldValues?: Record<string, any>; // Add this line for custom field values
+    // Add these new fields
+    files?: string[];
+    audioRecordings?: string[];
+    links?: { url: string; title: string }[];
 
     createdAt: Date;
     updatedAt: Date;
@@ -182,6 +192,135 @@ export default function LeadDetails() {
         }
         return "bg-gray-100 text-gray-800 border-gray-300";
     };
+
+// Component for file attachments
+const FileAttachments = ({ files }: { files: string[] }) => {
+    if (!files || files.length === 0) return (
+        <div className="text-center text-muted-foreground py-3">
+            No file attachments available
+        </div>
+    );
+
+    return (
+        <div className="space-y-2">
+            {files.map((fileUrl, index) => {
+                const fileName = fileUrl.split('/').pop() || `File ${index + 1}`;
+                return (
+                    <div key={index} className="flex items-center justify-between bg-muted/50 p-2 rounded-md">
+                        <div className="flex items-center">
+                            <div className="bg-primary/10 p-2 rounded mr-3">
+                                <FaFile className="h-4 w-4 text-primary" />
+                            </div>
+                            <div className="overflow-hidden">
+                                <p className="text-sm font-medium truncate" style={{ maxWidth: "150px" }}>{fileName}</p>
+                                <p className="text-xs text-muted-foreground">Attachment</p>
+                            </div>
+                        </div>
+                        <div className="flex gap-1">
+                           
+                            <Button variant="ghost" size="icon" asChild className="h-7 w-7">
+                                <a href={fileUrl} download>
+                                    <FaDownload className="h-3.5 w-3.5" />
+                                </a>
+                            </Button>
+                        </div>
+                    </div>
+                );
+            })}
+        </div>
+    );
+};
+
+// Component for audio recordings
+// Component for audio recordings with shortened filenames
+const AudioRecordings = ({ recordings }: { recordings: string[] }) => {
+    if (!recordings || recordings.length === 0) return (
+        <div className="text-center text-muted-foreground py-3">
+            No audio recordings available
+        </div>
+    );
+
+    // Helper function to shorten filename while keeping extension
+    const shortenFileName = (fileName: string, maxLength: number = 20) => {
+        const parts = fileName.split('.');
+        const extension = parts.length > 1 ? `.${parts.pop()}` : '';
+        const name = parts.join('.');
+
+        if (name.length <= maxLength) return fileName;
+
+        return `${name.substring(0, maxLength)}...${extension}`;
+    };
+
+    return (
+        <div className="space-y-2">
+            {recordings.map((audioUrl, index) => {
+                const fileName = audioUrl.split('/').pop() || `Recording ${index + 1}`;
+                const shortName = shortenFileName(fileName);
+
+                return (
+                    <div key={index} className="bg-muted/50 p-3 rounded-md">
+                        <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center">
+                                <div className="bg-primary/10 p-2 rounded mr-3">
+                                    <FaPlayCircle className="h-4 w-4 text-primary" />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-medium truncate" style={{ maxWidth: "150px" }}
+                                       title={fileName}> {/* Added title for hover tooltip */}
+                                        {shortName}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">Audio Recording</p>
+                                </div>
+                            </div>
+                            <Button variant="ghost" size="icon" asChild className="h-7 w-7">
+                                <a href={audioUrl} download>
+                                    <FaDownload className="h-3.5 w-3.5" />
+                                </a>
+                            </Button>
+                        </div>
+                        <audio controls className="w-full h-8">
+                            <source src={audioUrl} type="audio/mpeg" />
+                            Your browser does not support the audio element.
+                        </audio>
+                    </div>
+                );
+            })}
+        </div>
+    );
+};
+
+// Component for links
+const LinksList = ({ links }: { links: { url: string; title: string }[] }) => {
+    if (!links || links.length === 0) return (
+        <div className="text-center text-muted-foreground py-3">
+            No links available
+        </div>
+    );
+
+    return (
+        <div className="space-y-2">
+            {links.map((link, index) => (
+                <div key={index} className="flex items-center justify-between bg-muted/50 p-2 rounded-md">
+                    <div className="flex items-center">
+                        <div className="bg-primary/10 p-2 rounded mr-3">
+                            <FaLink className="h-4 w-4 text-primary" />
+                        </div>
+                        <div>
+                            <p className="text-sm font-medium">{link.title || 'Untitled Link'}</p>
+                            <p className="text-xs text-muted-foreground truncate" style={{ maxWidth: "180px" }}>{link.url}</p>
+                        </div>
+                    </div>
+                    <Button variant="ghost" size="icon" asChild className="h-7 w-7">
+                        <a href={link.url} target="_blank" rel="noopener noreferrer">
+                            <FaExternalLinkAlt className="h-3.5 w-3.5" />
+                        </a>
+                    </Button>
+                </div>
+            ))}
+        </div>
+    );
+};
+
 
     return (
         <div className="space-y-6 pb-6 mt-6">
@@ -414,6 +553,59 @@ export default function LeadDetails() {
                             </div>
                         </CardContent>
                     </Card>
+                    {/* Files Card */}
+{leadDetails.files && leadDetails.files.length > 0 && (
+    <Card className="shadow-sm border-muted">
+        <CardHeader className="pb-2">
+            <CardTitle className="text-lg font-medium flex items-center justify-between">
+                <div className="flex items-center">
+                    <FaPaperclip className="mr-2 h-4 w-4 text-primary" />
+                    File Attachments
+                </div>
+
+            </CardTitle>
+        </CardHeader>
+        <CardContent>
+            <FileAttachments files={leadDetails.files} />
+        </CardContent>
+    </Card>
+)}
+
+{/* Audio Recordings Card */}
+{leadDetails.audioRecordings && leadDetails.audioRecordings.length > 0 && (
+    <Card className="shadow-sm border-muted">
+        <CardHeader className="pb-2">
+            <CardTitle className="text-lg font-medium flex items-center justify-between">
+                <div className="flex items-center">
+                    <FaPlayCircle className="mr-2 h-4 w-4 text-primary" />
+                    Audio Recordings
+                </div>
+
+            </CardTitle>
+        </CardHeader>
+        <CardContent>
+            <AudioRecordings recordings={leadDetails.audioRecordings} />
+        </CardContent>
+    </Card>
+)}
+
+{/* Links Card */}
+{leadDetails.links && leadDetails.links.length > 0 && (
+    <Card className="shadow-sm border-muted">
+        <CardHeader className="pb-2">
+            <CardTitle className="text-lg font-medium flex items-center justify-between">
+                <div className="flex items-center">
+                    <FaLink className="mr-2 h-4 w-4 text-primary" />
+                    Links
+                </div>
+
+            </CardTitle>
+        </CardHeader>
+        <CardContent>
+            <LinksList links={leadDetails.links} />
+        </CardContent>
+    </Card>
+)}
                     {/* Add this card after the Lead Information card in the left panel */}
                     {leadDetails.customFieldValues &&
                         Object.keys(leadDetails.customFieldValues).length > 0 && (

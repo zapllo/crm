@@ -294,7 +294,7 @@ export default function LeadTimeline({ leadId, onlyStages = false }: { leadId: s
                                             className="relative"
                                         >
                                             {/* Timeline node - larger, more prominent */}
-                                            <div className={`absolute -left-[20px] z-[10] top-0 w-[40px] h-[40px] rounded-full flex items-center justify-center -ml-5 ${bgColor} ${borderColor} border-2 shadow-md z-10 transition-all duration-200 hover:scale-110`}>
+                                            <div className={`absolute -left-[20px] z-[0] top-0 w-[40px] h-[40px] rounded-full flex items-center justify-center -ml-5 ${bgColor} ${borderColor} border-2 shadow-md z-10 transition-all duration-200 hover:scale-110`}>
                                                 <span className={`${color} transition-transform`}>
                                                     {icon}
                                                 </span>

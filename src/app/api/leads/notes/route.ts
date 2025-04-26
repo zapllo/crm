@@ -42,15 +42,15 @@ export async function POST(req: Request) {
         await lead.save();
 
         await createNotification({
-          orgId: lead.organization,
-          recipientId: lead.assignedTo || createdBy,
-          actorId:  lead.assignedTo ,
-          action: "note",
-          entityType: "lead",
-          entityId: lead._id,
-          entityName: lead.title,
-          message: `Note added: ${text?.substring(0, 50)}${text?.length > 50 ? '...' : ''}`,
-          url: `/CRM/leads/${leadId}?tab=notes`,
+            orgId: lead.organization,
+            recipientId: lead.assignedTo || createdBy,
+            actorId: createdBy ? new mongoose.Types.ObjectId(createdBy.toString()) : undefined,
+            action: "note",
+            entityType: "lead",
+            entityId: lead._id.toString(),
+            entityName: lead.title,
+            message: `Note added: ${text?.substring(0, 50)}${text?.length > 50 ? '...' : ''}`,
+            url: `/CRM/leads/${leadId}?tab=notes`,
         });
         // Fetch the user's info to return with the response
         const user = await User.findById(createdBy).select('firstName lastName profileImage');
@@ -117,3 +117,77 @@ export async function GET(req: Request) {
     }
 }
 
+
+// Add the DELETE method to your existing notes API route
+export async function DELETE(req: Request) {
+    const { searchParams } = new URL(req.url);
+    const leadId = searchParams.get('leadId');
+    const noteId = searchParams.get('noteId');
+
+    if (!leadId || !noteId) {
+        return new Response(
+            JSON.stringify({ error: 'Lead ID and Note ID are required' }),
+            { status: 400 }
+        );
+    }
+
+    try {
+        await connectDB();
+
+        // Get the current user from token
+        const userData = getDataFromToken(req);
+
+        // Find the lead
+        const lead = await Lead.findById(leadId);
+        if (!lead) {
+            return new Response(JSON.stringify({ error: 'Lead not found' }), { status: 404 });
+        }
+
+        // Find the note index
+        const noteIndex = lead.notes.findIndex((note: any) => note._id.toString() === noteId);
+
+        if (noteIndex === -1) {
+            return new Response(JSON.stringify({ error: 'Note not found' }), { status: 404 });
+        }
+
+        // Get the note before removing it (for timeline entry)
+        const noteToDelete = lead.notes[noteIndex];
+
+        // Remove the note from the array
+        lead.notes.splice(noteIndex, 1);
+
+        // Add timeline entry for note deletion
+        lead.timeline.push({
+            stage: "Note Deleted",
+            action: "Note deleted from lead",
+            remark: noteToDelete.text
+                ? `Deleted note: "${noteToDelete.text.substring(0, 50)}${noteToDelete.text.length > 50 ? '...' : ''}"`
+                : "Audio note was deleted",
+            movedBy: userData,
+            timestamp: new Date(),
+        });
+
+        // Save the lead
+        await lead.save();
+
+        // Create notification for note deletion
+        await createNotification({
+            orgId: lead.organization,
+            recipientId: lead.assignedTo || userData,
+            actorId: userData ? new mongoose.Types.ObjectId(userData.toString()) : undefined,
+            action: "delete",
+            entityType: "lead",
+            entityId: lead._id.toString(),
+            entityName: lead.title,
+            message: `Note deleted: ${noteToDelete.text?.substring(0, 50) || 'Audio note'}`,
+            url: `/CRM/leads/${leadId}?tab=notes`,
+        });
+
+        return new Response(JSON.stringify({
+            message: 'Note deleted successfully'
+        }), { status: 200 });
+    } catch (error) {
+        console.error('Error deleting note:', error);
+        return new Response(JSON.stringify({ error: 'Failed to delete note' }), { status: 500 });
+    }
+}

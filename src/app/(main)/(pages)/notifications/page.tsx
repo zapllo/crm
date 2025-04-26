@@ -468,7 +468,7 @@ const groupedNotifications = (Array.isArray(filteredNotifications) ? filteredNot
   };
 
   return (
-    <div className="container py-6 space-y-6 max-w-screen-xl mt-16">
+    <div className="container py-6 space-y-6 max-w-screen-xl h-fit max-h-screen overflow-y-scroll mt-16">
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}

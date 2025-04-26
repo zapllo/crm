@@ -37,6 +37,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog';
 
 interface Note {
     _id: string;
@@ -64,6 +65,10 @@ export default function NotesSection({ leadId }: { leadId: string }) {
     const [recordingTime, setRecordingTime] = useState(0);
     const [waveformData, setWaveformData] = useState<number[]>([]);
     const [isUploading, setIsUploading] = useState(false);
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
 
     // Refs for audio recording
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -294,6 +299,30 @@ export default function NotesSection({ leadId }: { leadId: string }) {
             setIsSaving(false);
         }
     };
+
+    // Add this function to handle the delete functionality
+    const handleDeleteNote = async () => {
+        if (!noteToDelete) return;
+
+        try {
+            setIsDeleting(true);
+
+            // Call the API to delete the note
+            await axios.delete(`/api/leads/notes?leadId=${leadId}&noteId=${noteToDelete}`);
+
+            // Remove the note from state
+            setNotes(prev => prev.filter(note => note._id !== noteToDelete));
+
+            // Close dialog
+            setDeleteDialogOpen(false);
+            setNoteToDelete(null);
+        } catch (error) {
+            console.error('Error deleting note:', error);
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
 
     return (
         <div className="space-y-6 bg-card">
@@ -529,6 +558,49 @@ export default function NotesSection({ leadId }: { leadId: string }) {
                             </div>
                         </div>
                     </div>
+                    {/* Delete Confirmation Dialog */}
+<Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+    <DialogContent className="sm:max-w-[425px] z-[100]">
+        <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+                <Trash2 className="h-5 w-5 text-destructive" />
+                Delete Note
+            </DialogTitle>
+            <DialogDescription>
+                Are you sure you want to delete this note? This action cannot be undone.
+            </DialogDescription>
+        </DialogHeader>
+        <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+                variant="outline"
+                onClick={() => {
+                    setDeleteDialogOpen(false);
+                    setNoteToDelete(null);
+                }}
+            >
+                Cancel
+            </Button>
+            <Button
+                variant="destructive"
+                onClick={handleDeleteNote}
+                disabled={isDeleting}
+                className="gap-2"
+            >
+                {isDeleting ? (
+                    <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Deleting...
+                    </>
+                ) : (
+                    <>
+                        <Trash2 className="h-4 w-4" />
+                        Delete Note
+                    </>
+                )}
+            </Button>
+        </DialogFooter>
+    </DialogContent>
+</Dialog>
 
                     {/* Notes List */}
                     <ScrollArea className=" pr-4">
@@ -597,15 +669,18 @@ export default function NotesSection({ leadId }: { leadId: string }) {
                                                                         {formatDistanceToNow(new Date(note.timestamp), { addSuffix: true })}
                                                                     </span>
                                                                     <DropdownMenu>
-                                                                        <DropdownMenuTrigger asChild>
-                                                                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-                                                                                <MoreHorizontal className="h-4 w-4" />
-                                                                            </Button>
+
+                                                                        <DropdownMenuTrigger
+                                                                            className="text-red-600 cursor-pointer"
+                                                                            onClick={(e) => {
+                                                                                e.preventDefault();
+                                                                                setNoteToDelete(note._id);
+                                                                                setDeleteDialogOpen(true);
+                                                                            }}
+                                                                        >
+                                                                            <Trash2 className="h-4 w-4 mr-2" />
+                                                                            
                                                                         </DropdownMenuTrigger>
-                                                                        <DropdownMenuContent align="end">
-                                                                            <DropdownMenuItem>Copy Text</DropdownMenuItem>
-                                                                            <DropdownMenuItem className="text-red-600">Delete Note</DropdownMenuItem>
-                                                                        </DropdownMenuContent>
                                                                     </DropdownMenu>
                                                                 </div>
                                                             </div>

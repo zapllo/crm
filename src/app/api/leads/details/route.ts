@@ -81,6 +81,10 @@ export async function GET(req: Request) {
                 createdAt: lead.createdAt,
                 updatedAt: lead.updatedAt,
                 timeline: lead.timeline.reverse(), // ✅ Latest first
+                // Add these fields to the response
+                files: lead.files || [],
+                audioRecordings: lead.audioRecordings || [],
+                links: lead.links || [],
             }),
             { status: 200 }
         );

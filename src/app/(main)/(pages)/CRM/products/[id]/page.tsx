@@ -765,7 +765,7 @@ const printBarcode = () => {
 
             {/* Image View Dialog */}
             <Dialog open={isImageDialogOpen} onOpenChange={setIsImageDialogOpen}>
-                <DialogContent className="max-w-4xl p-0 overflow-hidden">
+                <DialogContent className="max-w-4xl p-0 overflow-hidden z-[100]">
                     <DialogHeader className="p-6 pb-0">
                         <DialogTitle>Product Image: {product.productName}</DialogTitle>
                     </DialogHeader>

@@ -470,13 +470,7 @@ export default function CompanyDetailsPage() {
                             <CardHeader className="pb-3">
                                 <div className="flex justify-between items-center">
                                     <CardTitle className="text-lg">Recent Contacts</CardTitle>
-                                    <Button
-                                        variant="link"
-                                        onClick={() => setActiveTab("contacts")}
-                                        className="p-0 h-auto"
-                                    >
-                                        View All
-                                    </Button>
+                                    
                                 </div>
                                 <CardDescription>
                                     The most recent contacts associated with {company.companyName}

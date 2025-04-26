@@ -722,7 +722,7 @@ export default function QuotationDetailPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="overflow-x-auto">
-                      <table className="w-full border-collapse">
+                      <table className="w-full border-collapse text-sm">
                         <thead>
                           <tr className="border-b">
                             <th className="text-left py-2 px-4">Item</th>
@@ -737,7 +737,7 @@ export default function QuotationDetailPage() {
                           {quotation.items.map((item, index) => (
                             <tr key={index} className="border-b">
                               <td className="py-3 px-4">
-                                <div className="font-medium">{item.name}</div>
+                                <div className="font-medium ">{item.name}</div>
                                 {item.description && (
                                   <div className="text-sm text-muted-foreground mt-1">{item.description}</div>
                                 )}
