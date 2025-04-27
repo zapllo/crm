@@ -148,3 +148,69 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "Server error" }, { status: 500 });
     }
 }
+
+
+export async function DELETE(request: Request) {
+    try {
+        await connectDB();
+
+        // 1. Get userId from token
+        const userId = getDataFromToken(request);
+        if (!userId) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        // 2. Fetch the user from DB
+        const user = await User.findById(userId);
+        if (!user) {
+            return NextResponse.json({ error: "User not found" }, { status: 404 });
+        }
+
+        if (!user.organization) {
+            return NextResponse.json({ error: "Missing orgId" }, { status: 400 });
+        }
+
+        // 3. Get the contact ID from the request body
+        const { id } = await request.json();
+        if (!id || !Types.ObjectId.isValid(id)) {
+            return NextResponse.json({ error: "Invalid contact ID" }, { status: 400 });
+        }
+
+        // 4. Find the contact
+        const contact = await Contact.findById(id).populate("company");
+        if (!contact) {
+            return NextResponse.json({ error: "Contact not found" }, { status: 404 });
+        }
+
+        // 5. Verify the contact belongs to a company in the user's organization
+        const company = await companyModel.findById(contact.company);
+        if (!company) {
+            return NextResponse.json({ error: "Associated company not found" }, { status: 404 });
+        }
+
+        if (company.organization.toString() !== user.organization.toString()) {
+            return NextResponse.json({ error: "Contact does not belong to your organization" }, { status: 403 });
+        }
+
+        // 6. Delete the contact
+        await Contact.findByIdAndDelete(id);
+
+        // 7. Create notification for contact deletion
+        await createNotification({
+            orgId: user.organization,
+            recipientId: new mongoose.Types.ObjectId(userId),
+            actorId: new mongoose.Types.ObjectId(userId),
+            action: "delete",
+            entityType: "contact",
+            entityId: new mongoose.Types.ObjectId(id),
+            entityName: `${contact.firstName} ${contact.lastName}`,
+            message: `Contact deleted: ${contact.firstName} ${contact.lastName} from ${company?.companyName || 'Unknown Company'}`,
+            url: `/CRM/contacts`,
+        });
+
+        return NextResponse.json({ success: true, message: "Contact deleted successfully" }, { status: 200 });
+    } catch (error: any) {
+        console.error("Error deleting contact:", error);
+        return NextResponse.json({ error: "Server error" }, { status: 500 });
+    }
+}

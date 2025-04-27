@@ -404,8 +404,10 @@ export function renderQuotationHTML(quotation: any, template: any, organization?
     </div>
   `;
   };
-  // Generate complete HTML
-  const html = `
+
+
+// Adjust the branding HTML and styles at the bottom of the generate HTML function:
+const html = `
     <!DOCTYPE html>
     <html class="light">
     <head>
@@ -414,53 +416,48 @@ export function renderQuotationHTML(quotation: any, template: any, organization?
       <title>Quotation ${quotation.quotationNumber || ''}</title>
       <style>
         ${compileStyles()}
-              /* Modern and exciting Zapllo branding */
-      @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&display=swap');
 
-      .zapllo-branding-container {
-        text-align: center;
-        margin-top: 40px;
-      }
+        /* Updated Zapllo branding to match the form style */
+        .zapllo-branding-container {
+          margin-top: 40px;
+          width: 100%;
+        }
 
-      .zapllo-branding {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-        padding: 8px 16px;
-        border-radius: 6px;
-        font-family: 'Poppins', sans-serif;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      }
+        .zapllo-branding {
+          border-top-width: 1px;
+          padding: 16px 24px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          font-size: 12px;
+          border-color: ${styles.primaryColor || '#3B82F6'}20;
+          background: linear-gradient(to right,
+            ${styles.backgroundColor || '#ffffff'},
+            ${styles.primaryColor || '#3B82F6'}05,
+            ${styles.backgroundColor || '#ffffff'});
+        }
 
-     .zapllo-powered-text {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  background: linear-gradient(to right, #1976D2, #9C27B0);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  font-weight: 500;
-}
+        .zapllo-powered-text {
+          color: #6c737f;
+          font-weight: 700;
+        }
 
-      .zapllo-name {
-        font-size: 13px;
-        font-weight: 600;
-        letter-spacing: 0.5px;
-        background: linear-gradient(to right, #FF9D6C, #FF5E62);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-      }
+        .zapllo-logo {
+          height: 16px;
+          margin-right: 4px;
+        }
 
-      .zapllo-logo {
-        height: 18px;
-        vertical-align: middle;
-      }
+        .zapllo-link {
+          display: flex;
+          align-items: center;
+          text-decoration: none;
+          transition: opacity 0.3s;
+        }
 
-
-
+        .zapllo-link:hover {
+          opacity: 0.8;
+        }
       </style>
     </head>
     <body class="light">
@@ -494,15 +491,21 @@ export function renderQuotationHTML(quotation: any, template: any, organization?
   }).join('')}
 
         ${layout.footer.show ? processVariables(layout.footer.content) : ''}
-           <div class="zapllo-branding-container">
-        <div class="zapllo-branding">
-          <span class="zapllo-powered-text">Powered by</span>
-          <img src="https://res.cloudinary.com/dndzbt8al/image/upload/v1743846882/logo-01_1_a2qvzt.png" alt="Zapllo" class="zapllo-logo" />
+
+        <div class="zapllo-branding-container">
+          <div class="zapllo-branding">
+            <span class="zapllo-powered-text">Powered by</span>
+            <a href="https://zapllo.com" target="_blank" rel="noopener noreferrer" class="zapllo-link">
+              <img
+                src="https://res.cloudinary.com/dndzbt8al/image/upload/v1743846882/logo-01_1_a2qvzt.png"
+                alt="Zapllo"
+                class="zapllo-logo"
+              />
+              <span class="zapllo-brand-name" style="color: ${styles.primaryColor || '#3B82F6'}; font-weight: 600;"></span>
+            </a>
+          </div>
         </div>
       </div>
-    </div>
-
-
 
       <!-- Hidden debug info -->
       <div style="display: none;" id="debug-info">
@@ -515,4 +518,5 @@ export function renderQuotationHTML(quotation: any, template: any, organization?
   `;
 
   return html;
+
 }
