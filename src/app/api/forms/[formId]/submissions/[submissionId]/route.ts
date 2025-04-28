@@ -5,13 +5,12 @@ import FormSubmission from '@/models/formSubmissionModel';
 import { getDataFromToken } from '@/lib/getDataFromToken';
 import { User } from '@/models/userModel';
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: { formId: string; submissionId: string } }
+export async function PUT(request: Request,
+  { params }: { params: Promise<{ formId: string, submissionId:string }> }
 ) {
   try {
-    const { formId, submissionId } = params;
-
+    const formId = (await params).formId;
+    const submissionId = (await params).submissionId;
     // Get userId from the token cookie
     const userId = getDataFromToken(request);
     if (!userId) {
@@ -121,12 +120,12 @@ export async function PUT(
 }
 
 // Implement the GET endpoint to fetch a single submission
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { formId: string; submissionId: string } }
+export async function GET(request: Request,
+  { params }: { params: Promise<{ formId: string, submissionId:string }> }
 ) {
   try {
-    const { formId, submissionId } = params;
+    const formId = (await params).formId;
+    const submissionId = (await params).submissionId;
 
     // Get userId from the token cookie
     const userId = getDataFromToken(request);
