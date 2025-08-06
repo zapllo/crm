@@ -79,12 +79,30 @@ export async function POST(req: NextRequest) {
             call.status = callStatus;
         }
 
-        // Handle recording URL if available
         if (recordingUrl) {
           call.recordingUrl = recordingUrl;
           call.twilioRecordingSid = recordingSid;
-        }
 
+          // Enable transcription for the recording
+          if (recordingSid) {
+            try {
+              const twilioClient = twilio(
+                process.env.TWILIO_ACCOUNT_SID,
+                process.env.TWILIO_AUTH_TOKEN
+              );
+
+              // Create transcription
+              await twilioClient.recordings(recordingSid).transcriptions.create({
+                transcriptionCallback: `${process.env.NEXT_PUBLIC_APP_URL}/api/calls/transcription`,
+                transcriptionCallbackMethod: 'POST'
+              });
+
+              console.log(`Transcription requested for recording: ${recordingSid}`);
+            } catch (transcriptionError) {
+              console.error('Failed to request transcription:', transcriptionError);
+            }
+          }
+        }
 
 
         // Update call duration if available
@@ -124,10 +142,9 @@ export async function POST(req: NextRequest) {
             }
           }
         }
-        // With simply:
+        // Replace the old transcription comment with:
         if (callStatus === 'completed' && recordingSid) {
-          // Store the recording URL but don't attempt transcription
-          console.log(`Call ${callId} completed with recording ${recordingSid}`);
+          console.log(`Call ${callId} completed with recording ${recordingSid} - transcription requested`);
         }
 
         console.log(`Updating call ${callId} to status: ${call.status}`);

@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
-import { CalendarIcon, Loader2, Plus, Trash2, ArrowRight, CheckCircle2 } from "lucide-react";
+import { CalendarIcon, Loader2, Plus, Trash2, ArrowRight, CheckCircle2, Search, Package } from "lucide-react";
 import { format } from "date-fns";
 
 // UI Components
@@ -52,6 +52,25 @@ interface Lead {
   };
 }
 
+interface Product {
+  _id: string;
+  productName: string;
+  hsnCode: string;
+  barcode?: string;
+  category: {
+    _id: string;
+    name: string;
+  };
+  unit: {
+    _id: string;
+    name: string;
+  };
+  rate: number;
+  maxDiscount?: number;
+  description?: string;
+  imageUrl?: string;
+}
+
 interface QuotationItem {
   name: string;
   description: string;
@@ -60,6 +79,8 @@ interface QuotationItem {
   discount: number;
   tax: number;
   total: number;
+  productId?: string; // Optional product reference
+  maxDiscount?: number; // For validation
 }
 
 interface QuotationTerm {
@@ -96,7 +117,6 @@ interface OrganizationSettings {
   template?: string;
 }
 
-
 const CreateQuotationForm: React.FC = () => {
   const router = useRouter();
   const { toast } = useToast();
@@ -112,15 +132,17 @@ const CreateQuotationForm: React.FC = () => {
 
   // Data states
   const [leads, setLeads] = useState<Lead[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [templates, setTemplates] = useState<QuotationTemplate[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [leadPopoverOpen, setLeadPopoverOpen] = useState(false);
+  const [productSearchTerm, setProductSearchTerm] = useState("");
+  const [productPopoverStates, setProductPopoverStates] = useState<Record<number, boolean>>({});
 
   const [settings, setSettings] = useState<OrganizationSettings>({
     defaultCurrency: 'USD',
     defaultQuotationExpiry: 30,
   });
-
 
   // Form state
   const [quotationData, setQuotationData] = useState({
@@ -171,11 +193,10 @@ const CreateQuotationForm: React.FC = () => {
   // Load data on component mount
   useEffect(() => {
     fetchLeads();
+    fetchProducts();
     fetchTemplates();
     fetchOrganizationSettings();
   }, []);
-
-
 
   // Recalculate totals whenever items, discounts, taxes, or shipping changes
   useEffect(() => {
@@ -218,6 +239,21 @@ const CreateQuotationForm: React.FC = () => {
     }
   };
 
+  // New function to fetch products
+  const fetchProducts = async () => {
+    try {
+      const { data } = await axios.get("/api/products");
+      setProducts(data);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch products data",
+        variant: "destructive",
+      });
+    }
+  };
+
   const fetchTemplates = async () => {
     try {
       const { data } = await axios.get("/api/quotations/templates");
@@ -237,6 +273,47 @@ const CreateQuotationForm: React.FC = () => {
     });
     setLeadPopoverOpen(false);
     setValidationErrors({ ...validationErrors, leadId: "" });
+  };
+
+  // New function to handle product selection
+  const handleProductSelection = (product: Product, index: number) => {
+    const updatedItems = [...quotationData.items];
+    const item = {
+      ...updatedItems[index],
+      name: product.productName,
+      description: product.description || "",
+      unitPrice: product.rate,
+      productId: product._id,
+      maxDiscount: product.maxDiscount,
+    };
+
+    // Calculate item total
+    const quantity = item.quantity;
+    const unitPrice = item.unitPrice;
+    const discount = item.discount || 0;
+    const tax = item.tax || 0;
+
+    // Calculate price after discount
+    const discountAmount = (unitPrice * quantity) * (discount / 100);
+    const priceAfterDiscount = (unitPrice * quantity) - discountAmount;
+
+    // Calculate tax amount
+    const taxAmount = priceAfterDiscount * (tax / 100);
+
+    // Calculate total
+    item.total = priceAfterDiscount + taxAmount;
+
+    updatedItems[index] = item;
+    setQuotationData({ ...quotationData, items: updatedItems });
+
+    // Close the popover
+    setProductPopoverStates({ ...productPopoverStates, [index]: false });
+    setProductSearchTerm("");
+
+    // Clear validation error if any
+    if (validationErrors.items && item.name && item.quantity > 0) {
+      setValidationErrors({ ...validationErrors, items: "" });
+    }
   };
 
   // Modified tab change handler with validation
@@ -314,6 +391,19 @@ const CreateQuotationForm: React.FC = () => {
     const updatedItems = [...quotationData.items];
     const item = { ...updatedItems[index], [field]: value };
 
+    // Validate discount against maxDiscount if product is selected
+    if (field === 'discount' && item.maxDiscount !== undefined) {
+      if (value > item.maxDiscount) {
+        toast({
+          title: "Discount Limit Exceeded",
+          description: `Maximum discount for this product is ${item.maxDiscount}%`,
+          variant: "destructive",
+        });
+        value = item.maxDiscount;
+        item.discount = value;
+      }
+    }
+
     // Calculate item total
     if (field === 'quantity' || field === 'unitPrice' || field === 'discount' || field === 'tax') {
       const quantity = item.quantity;
@@ -330,6 +420,12 @@ const CreateQuotationForm: React.FC = () => {
 
       // Calculate total
       item.total = priceAfterDiscount + taxAmount;
+    }
+
+    // Clear product reference if name is manually changed
+    if (field === 'name' && item.productId) {
+      item.productId = undefined;
+      item.maxDiscount = undefined;
     }
 
     updatedItems[index] = item;
@@ -464,6 +560,14 @@ const CreateQuotationForm: React.FC = () => {
       lead.contact.whatsappNumber.includes(searchTerm)
   );
 
+  // Filtered products based on search term
+  const filteredProducts = products.filter(
+    (product) =>
+      product.productName.toLowerCase().includes(productSearchTerm.toLowerCase()) ||
+      product.hsnCode.toLowerCase().includes(productSearchTerm.toLowerCase()) ||
+      (product.barcode && product.barcode.toLowerCase().includes(productSearchTerm.toLowerCase()))
+  );
+
   // Calculate progress
   const calculateProgress = () => {
     const tabs = ["details", "items", "terms"];
@@ -472,7 +576,7 @@ const CreateQuotationForm: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto p-4 max-w-5xl">
+    <div className=" mx-auto p-4 -5xl">
       <form>
         <div className="mb-6">
           <h1 className="text-2xl font-bold mb-2">Create New Quotation</h1>
@@ -681,51 +785,6 @@ const CreateQuotationForm: React.FC = () => {
                     </Popover>
                   </div>
                 </div>
-
-                {/* Template & Currency */}
-                {/* <div className="grid grid-cols-2 gap-4">
-                  <div className="grid gap-2">
-                    <Label>Currency <span className="text-red-500">*</span></Label>
-                    <Select
-                      value={quotationData.currency}
-                      onValueChange={(value) => setQuotationData({ ...quotationData, currency: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select currency" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="USD">USD - US Dollar</SelectItem>
-                        <SelectItem value="EUR">EUR - Euro</SelectItem>
-                        <SelectItem value="GBP">GBP - British Pound</SelectItem>
-                        <SelectItem value="INR">INR - Indian Rupee</SelectItem>
-                        <SelectItem value="AUD">AUD - Australian Dollar</SelectItem>
-                        <SelectItem value="CAD">CAD - Canadian Dollar</SelectItem>
-                        <SelectItem value="SGD">SGD - Singapore Dollar</SelectItem>
-                        <SelectItem value="AED">AED - UAE Dirham</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="grid gap-2">
-                    <Label>Template <span className="text-red-500">*</span></Label>
-                    <Select
-                      value={quotationData.template}
-                      onValueChange={(value) => setQuotationData({ ...quotationData, template: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select template" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="default">Default Template</SelectItem>
-                        {templates.map((template) => (
-                          <SelectItem key={template._id} value={template._id}>
-                            {template.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div> */}
               </CardContent>
               <CardFooter className="flex justify-between pt-4 border-t">
                 <Button variant="outline" onClick={() => router.back()}>
@@ -744,7 +803,7 @@ const CreateQuotationForm: React.FC = () => {
               <CardHeader>
                 <CardTitle>Items & Pricing</CardTitle>
                 <CardDescription>
-                  Add all the products or services included in this quotation
+                  Add all the products or services included in this quotation. Select from your product catalog or add custom items.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -767,18 +826,119 @@ const CreateQuotationForm: React.FC = () => {
                         <tr key={index} className="border-b">
                           <td className="p-2">
                             <div className="space-y-1">
-                              <Input
-                                placeholder="Item name"
-                                value={item.name}
-                                onChange={(e) => handleItemChange(index, 'name', e.target.value)}
-                                className={!item.name && validationErrors.items ? "border-red-500" : ""}
-                              />
+                              <div className="flex gap-1">
+                                <Input
+                                  placeholder="Item name"
+                                  value={item.name}
+                                  onChange={(e) => handleItemChange(index, 'name', e.target.value)}
+                                  className={!item.name && validationErrors.items ? "border-red-500" : ""}
+                                />
+                                {/* Product Selection Button */}
+<Popover
+                                  open={productPopoverStates[index] || false}
+                                  onOpenChange={(open) => 
+                                    setProductPopoverStates({ ...productPopoverStates, [index]: open })
+                                  }
+                                >
+                                  <PopoverTrigger asChild>
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="icon"
+                                      className="shrink-0"
+                                      title="Select from products"
+                                    >
+                                      <Package className="h-4 w-4" />
+                                    </Button>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-[400px] p-0" align="start">
+                                    <div className="p-2">
+                                      <div className="flex items-center gap-2 mb-2">
+                                        <Search className="h-4 w-4 text-muted-foreground" />
+                                        <Input
+                                          placeholder="Search products..."
+                                          value={productSearchTerm}
+                                          onChange={(e) => setProductSearchTerm(e.target.value)}
+                                          className="border-0 focus:ring-0 p-0"
+                                        />
+                                      </div>
+                                      <Separator className="mb-2" />
+                                      <div className="max-h-[300px] overflow-auto">
+                                        {filteredProducts.length > 0 ? (
+                                          filteredProducts.map((product) => (
+                                            <div
+                                              key={product._id}
+                                              onClick={() => handleProductSelection(product, index)}
+                                              className="flex items-start p-3 hover:bg-accent rounded-md cursor-pointer border-b last:border-b-0"
+                                            >
+                                              <div className="flex-1">
+                                                <div className="flex items-center justify-between">
+                                                  <span className="font-medium text-sm">{product.productName}</span>
+                                                  <Badge variant="secondary" className="text-xs">
+                                                    {new Intl.NumberFormat('en-US', {
+                                                      style: 'currency',
+                                                      currency: quotationData.currency,
+                                                    }).format(product.rate)}
+                                                  </Badge>
+                                                </div>
+                                                <div className="text-xs text-muted-foreground mt-1">
+                                                  HSN: {product.hsnCode}
+                                                  {product.barcode && ` • Barcode: ${product.barcode}`}
+                                                </div>
+                                                {product.description && (
+                                                  <div className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                                    {product.description}
+                                                  </div>
+                                                )}
+                                                <div className="flex items-center gap-2 mt-1">
+                                                  <Badge variant="outline" className="text-xs">
+                                                    {product.category?.name || 'No Category'}
+                                                  </Badge>
+                                                  <Badge variant="outline" className="text-xs">
+                                                    {product.unit?.name || 'No Unit'}
+                                                  </Badge>
+                                                  {product.maxDiscount && (
+                                                    <Badge variant="outline" className="text-xs text-orange-600">
+                                                      Max discount: {product.maxDiscount}%
+                                                    </Badge>
+                                                  )}
+                                                </div>
+                                              </div>
+                                            </div>
+                                          ))
+                                        ) : (
+                                          <div className="text-center p-6 text-muted-foreground">
+                                            <Package className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                                            <p className="text-sm">No products found</p>
+                                            {productSearchTerm && (
+                                              <p className="text-xs mt-1">
+                                                Try adjusting your search terms
+                                              </p>
+                                            )}
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </PopoverContent>
+                                </Popover>
+                              </div>
                               <Textarea
                                 placeholder="Description (optional)"
                                 value={item.description}
                                 onChange={(e) => handleItemChange(index, 'description', e.target.value)}
                                 className="text-sm min-h-[60px]"
                               />
+                              {/* Show product info if selected */}
+                              {item.productId && (
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                  <Badge variant="outline" className="text-xs">
+                                    Product Selected
+                                  </Badge>
+                                  {item.maxDiscount && (
+                                    <span>Max discount: {item.maxDiscount}%</span>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           </td>
                           <td className="p-2">
@@ -804,11 +964,15 @@ const CreateQuotationForm: React.FC = () => {
                             <Input
                               type="number"
                               min="0"
-                              max="100"
+                              max={item.maxDiscount || 100}
                               value={item.discount}
                               onChange={(e) => handleItemChange(index, 'discount', Number(e.target.value))}
                               className="text-right"
+                              title={item.maxDiscount ? `Maximum discount: ${item.maxDiscount}%` : undefined}
                             />
+                            {item.maxDiscount && item.discount > item.maxDiscount && (
+                              <p className="text-xs text-red-500 mt-1">Max: {item.maxDiscount}%</p>
+                            )}
                           </td>
                           <td className="p-2">
                             <Input
@@ -879,7 +1043,7 @@ const CreateQuotationForm: React.FC = () => {
                               <SelectValue placeholder="Discount Type" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="percentage">Percentage (%)</SelectItem>
+                              <SelectItem value="percentage"> (%)</SelectItem>
                               <SelectItem value="fixed">Fixed Amount</SelectItem>
                             </SelectContent>
                           </Select>

@@ -17,11 +17,9 @@ export interface IOrganization extends Document {
   subscriptionExpires?: Date;
   trialExpires: Date;
   activeSubscriptions?: string[];
-
   // Logo and branding
   logo?: string;
   additionalLogos?: string[];
-
   // Organization-specific settings
   settings?: {
     quotations?: {
@@ -32,9 +30,9 @@ export interface IOrganization extends Document {
       emailSignature?: string;
     }
   };
-
   // Integration related fields
   webhookSecret: string;
+  aiCredits: number;
   apiConfigurations: {
     webhooksEnabled: boolean;
     apiKeysEnabled: boolean;
@@ -43,7 +41,6 @@ export interface IOrganization extends Document {
     maxWebhooksAllowed: number;
     maxApiKeysAllowed: number;
   };
-
   // WhatsApp Business API integration - simplified
   whatsappIntegration?: {
     wabaId?: string;
@@ -64,7 +61,6 @@ export interface IOrganization extends Document {
       syncedAt: Date;
     }[];
   };
-
   notifications?: {
     newLeadEmail: boolean;
     newLeadWhatsapp: boolean;
@@ -144,6 +140,10 @@ const organizationSchema = new Schema<IOrganization>(
     credits: {
       type: Number,
       default: 0
+    },
+    aiCredits: {
+      type: Number,
+      default: 100 // Start with 100 free AI credits
     },
     subscribedPlan: {
       type: String,

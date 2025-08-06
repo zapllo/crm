@@ -33,11 +33,13 @@ import {
   BarChart3,
   BadgeCheck,
   Gift,
-  CheckCheck
+  CheckCheck,
+  AlertTriangle
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import Link from 'next/link'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 
 // Define the task type
 interface Task {
@@ -247,6 +249,14 @@ export default function ChecklistPage() {
 
     loadTasks();
   }, []);
+
+  const handleReset = () => {
+    setTasks(prevTasks => prevTasks.map(task => ({ ...task, completed: false })));
+    toast({
+      title: "Progress reset",
+      description: "Your onboarding progress has been reset.",
+    });
+  };
 
   // Calculate progress and save to localStorage whenever tasks change
   useEffect(() => {
@@ -642,23 +652,37 @@ export default function ChecklistPage() {
       {/* Reset Button at the bottom */}
       {tasks.some(task => task.completed) && (
         <div className="flex justify-center pt-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              const confirmReset = window.confirm("Are you sure you want to reset all your onboarding progress?");
-              if (confirmReset) {
-                setTasks(prevTasks => prevTasks.map(task => ({ ...task, completed: false })));
-                toast({
-                  title: "Progress reset",
-                  description: "Your onboarding progress has been reset.",
-                });
-              }
-            }}
-            className="text-muted-foreground text-xs"
-          >
-            Reset Onboarding Progress
-          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-muted-foreground text-xs"
+              >
+                Reset Onboarding Progress
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle className="flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5 text-amber-500" />
+                  Reset Onboarding Progress
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to reset all your onboarding progress? This action cannot be undone and will mark all completed tasks as incomplete.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleReset}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Reset Progress
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       )}
     </div>

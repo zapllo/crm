@@ -1589,7 +1589,7 @@ export default function LeadsDashboard() {
                                 ) : null}
                                 <SelectValue placeholder="Select a Pipeline" />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="z-[100]">
                                 {pipelines?.map((pipeline) => (
                                     <SelectItem key={pipeline._id} value={pipeline._id}>
                                         {pipeline.name}
@@ -2241,7 +2241,7 @@ export default function LeadsDashboard() {
                                                     <SelectTrigger>
                                                         <SelectValue placeholder={`Select ${field.name.toLowerCase()}`} />
                                                     </SelectTrigger>
-                                                    <SelectContent>
+                                                    <SelectContent className="z-[100]">
                                                         {field.options.map((option) => (
                                                             <SelectItem key={option} value={option}>
                                                                 {option}

@@ -6,11 +6,29 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, PhoneCall, PhoneIncoming, PhoneOutgoing, Check, X, Play, MoreVertical, Download, MessageSquare } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { 
+    Loader2, 
+    PhoneCall, 
+    PhoneIncoming, 
+    PhoneOutgoing, 
+    Check, 
+    X, 
+    Play, 
+    MoreVertical, 
+    Download, 
+    MessageSquare,
+    FileText,
+    ChevronDown,
+    ChevronRight,
+    Edit2,
+    Sparkles
+} from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
     Dialog,
     DialogContent,
@@ -46,6 +64,7 @@ type CallType = {
     status: string;
     notes?: string;
     transcription?: string;
+    summary?: string;
     cost: number;
     startTime: string;
     endTime?: string;
@@ -60,34 +79,32 @@ export default function CallHistory({ contactId, limit = 5 }: { contactId?: stri
     const [showDetailsDialog, setShowDetailsDialog] = useState(false);
     const [filter, setFilter] = useState<'all' | 'inbound' | 'outbound'>('all');
     const [searchTerm, setSearchTerm] = useState('');
+    const [editingNotes, setEditingNotes] = useState<string | null>(null);
+    const [notesText, setNotesText] = useState('');
+    const [saving, setSaving] = useState(false);
+    const [expandedTranscriptions, setExpandedTranscriptions] = useState<Set<string>>(new Set());
 
     const downloadRecording = async (url: string, filename: string) => {
         try {
-            // Show loading toast
             toast({
                 title: "Downloading recording...",
                 description: "Please wait while we prepare your download.",
             });
 
-            // Fetch the audio file
             const response = await fetch(url);
             const blob = await response.blob();
 
-            // Create download link
             const downloadUrl = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = downloadUrl;
             link.setAttribute('download', filename);
 
-            // Append to the body, click and remove
             document.body.appendChild(link);
             link.click();
             link.remove();
 
-            // Clean up the object URL
             window.URL.revokeObjectURL(downloadUrl);
 
-            // Success toast
             toast({
                 title: "Download complete",
                 description: "Your recording has been downloaded successfully.",
@@ -100,6 +117,43 @@ export default function CallHistory({ contactId, limit = 5 }: { contactId?: stri
                 variant: "destructive",
             });
         }
+    };
+
+    const handleSaveNotes = async (callId: string) => {
+        try {
+            setSaving(true);
+            await axios.put(`/api/calls/${callId}/notes`, { notes: notesText });
+            
+            // Update local state
+            setCalls(calls.map(call => 
+                call._id === callId ? { ...call, notes: notesText } : call
+            ));
+            
+            setEditingNotes(null);
+            toast({
+                title: "Notes saved",
+                description: "Call notes have been updated successfully.",
+            });
+        } catch (error) {
+            console.error('Error saving notes:', error);
+            toast({
+                title: "Error",
+                description: "Failed to save notes. Please try again.",
+                variant: "destructive"
+            });
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const toggleTranscription = (callId: string) => {
+        const newExpanded = new Set(expandedTranscriptions);
+        if (newExpanded.has(callId)) {
+            newExpanded.delete(callId);
+        } else {
+            newExpanded.add(callId);
+        }
+        setExpandedTranscriptions(newExpanded);
     };
 
     useEffect(() => {
@@ -152,10 +206,8 @@ export default function CallHistory({ contactId, limit = 5 }: { contactId?: stri
     };
 
     const filteredCalls = calls.filter(call => {
-        // Apply direction filter
         if (filter !== 'all' && call.direction !== filter) return false;
 
-        // Apply search filter
         if (searchTerm) {
             const fullName = `${call.contactId.firstName} ${call.contactId.lastName}`.toLowerCase();
             const email = call.contactId.email.toLowerCase();
@@ -228,19 +280,19 @@ export default function CallHistory({ contactId, limit = 5 }: { contactId?: stri
                     </div>
                 )}
 
-                <ScrollArea className={`${contactId ? 'h-[280px]' : 'h-[540px]'}`}>
-                    <div className="space-y-3">
+                <ScrollArea className={`${contactId ? 'h-[400px]' : 'h-[600px]'}`}>
+                    <div className="space-y-4">
                         {filteredCalls.map((call) => (
                             <Card key={call._id} className="overflow-hidden">
-                                <CardContent className="p-0">
-                                    <div className="flex items-start p-4 gap-3">
+                                <CardContent className="p-4">
+                                    <div className="flex items-start gap-3">
                                         <Avatar className="h-10 w-10">
                                             <AvatarFallback className="bg-primary/10 text-primary">
                                                 {getInitials(call.contactId.firstName, call.contactId.lastName)}
                                             </AvatarFallback>
                                         </Avatar>
 
-                                        <div className="flex-1 min-w-0">
+                                        <div className="flex-1 min-w-0 space-y-3">
                                             <div className="flex justify-between items-start">
                                                 <div>
                                                     <p className="font-medium truncate">
@@ -290,37 +342,142 @@ export default function CallHistory({ contactId, limit = 5 }: { contactId?: stri
                                                                 View Details
                                                             </DropdownMenuItem>
                                                             {call.recordingUrl && (
-                                                                <DropdownMenuItem>
-                                                                    <a
-                                                                        href={call.recordingUrl}
-                                                                        download
-                                                                        className="flex items-center w-full"
-                                                                        onClick={(e) => {
-                                                                            e.preventDefault();
-                                                                            downloadRecording(call.recordingUrl || '', `ZC_Recording_${call._id}.mp3`);
-                                                                        }}
-                                                                    >
-                                                                        Download Recording
-                                                                    </a>
+                                                                <DropdownMenuItem
+                                                                    onClick={() => downloadRecording(call.recordingUrl || '', `ZC_Recording_${call._id}.mp3`)}
+                                                                >
+                                                                    <Download className="h-4 w-4 mr-2" />
+                                                                    Download Recording
                                                                 </DropdownMenuItem>
                                                             )}
                                                         </DropdownMenuContent>
                                                     </DropdownMenu>
                                                 </div>
                                             </div>
-                                        </div>
-                                    </div>
 
-                                    {call.recordingUrl && (
-                                        <div className="px-4 pb-4 pt-0">
-                                            <div className="bg-muted p-2 rounded-md">
-                                                <audio controls className="w-full h-8">
-                                                    <source src={call.recordingUrl} type="audio/mpeg" />
-                                                    Your browser does not support the audio element.
-                                                </audio>
+                                            {/* Call Details */}
+                                            <div className="text-sm text-muted-foreground space-y-1">
+                                                <p>Duration: {formatDuration(call.duration)}</p>
+                                                <p>Started: {format(new Date(call.startTime), "MMM d, yyyy 'at' h:mm a")}</p>
+                                                {call.cost && <p>Cost: ₹{(call.cost / 100).toFixed(2)}</p>}
+                                            </div>
+
+                                            {/* Recording */}
+                                            {call.recordingUrl && (
+                                                <div className="bg-muted/50 p-3 rounded-lg">
+                                                    <audio controls className="w-full h-8">
+                                                        <source src={call.recordingUrl} type="audio/mpeg" />
+                                                        Your browser does not support the audio element.
+                                                    </audio>
+                                                </div>
+                                            )}
+
+                                            {/* AI Summary */}
+                                            {call.summary && (
+                                                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+                                                    <div className="flex items-start gap-3">
+                                                        <div className="rounded-full bg-blue-100 dark:bg-blue-900 p-1.5 mt-0.5">
+                                                            <Sparkles className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <h4 className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 flex items-center gap-2">
+                                                                AI Call Summary
+                                                            </h4>
+                                                            <p className="text-sm text-blue-800 dark:text-blue-200 leading-relaxed">
+                                                                {call.summary}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Transcription */}
+                                            {call.transcription && (
+                                                <div className="border rounded-lg">
+                                                    <Collapsible 
+                                                        open={expandedTranscriptions.has(call._id)}
+                                                        onOpenChange={() => toggleTranscription(call._id)}
+                                                    >
+                                                        <CollapsibleTrigger className="flex items-center justify-between w-full p-3 hover:bg-muted/50 transition-colors">
+                                                            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                                                                <FileText className="h-4 w-4" />
+                                                                Call Transcription
+                                                            </div>
+                                                            {expandedTranscriptions.has(call._id) ? (
+                                                                <ChevronDown className="h-4 w-4" />
+                                                            ) : (
+                                                                <ChevronRight className="h-4 w-4" />
+                                                            )}
+                                                        </CollapsibleTrigger>
+                                                        <CollapsibleContent>
+                                                            <div className="px-3 pb-3">
+                                                                <div className="bg-muted/30 p-3 rounded-md text-sm max-h-40 overflow-y-auto">
+                                                                    <p className="whitespace-pre-wrap leading-relaxed">
+                                                                        {call.transcription}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        </CollapsibleContent>
+                                                    </Collapsible>
+                                                </div>
+                                            )}
+
+                                            {/* Notes Section */}
+                                            <div className="border-t pt-3">
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                                                    <span className="text-sm font-medium">Call Notes</span>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => {
+                                                            setEditingNotes(call._id);
+                                                            setNotesText(call.notes || '');
+                                                        }}
+                                                        className="h-6 px-2 ml-auto"
+                                                    >
+                                                        <Edit2 className="h-3 w-3" />
+                                                    </Button>
+                                                </div>
+                                                
+                                                {editingNotes === call._id ? (
+                                                    <div className="space-y-2">
+                                                        <Textarea
+                                                            value={notesText}
+                                                            onChange={(e) => setNotesText(e.target.value)}
+                                                            placeholder="Add call notes..."
+                                                            className="min-h-[80px] resize-none"
+                                                        />
+                                                        <div className="flex gap-2">
+                                                            <Button
+                                                                size="sm"
+                                                                onClick={() => handleSaveNotes(call._id)}
+                                                                disabled={saving}
+                                                            >
+                                                                {saving ? (
+                                                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                                                ) : (
+                                                                    'Save'
+                                                                )}
+                                                            </Button>
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                onClick={() => setEditingNotes(null)}
+                                                            >
+                                                                Cancel
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="bg-muted/30 p-3 rounded-md min-h-[60px]">
+                                                        <p className="text-sm text-muted-foreground">
+                                                            {call.notes || 'No notes added for this call'}
+                                                        </p>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
-                                    )}
+                                    </div>
                                 </CardContent>
                             </Card>
                         ))}
@@ -330,7 +487,7 @@ export default function CallHistory({ contactId, limit = 5 }: { contactId?: stri
 
             {/* Call Details Dialog */}
             <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
-                <DialogContent className="sm:max-w-md z-[100]">
+                <DialogContent className="sm:max-w-2xl z-[100] max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle>Call Details</DialogTitle>
                     </DialogHeader>
@@ -403,22 +560,35 @@ export default function CallHistory({ contactId, limit = 5 }: { contactId?: stri
                                             <source src={selectedCall.recordingUrl} type="audio/mpeg" />
                                             Your browser does not support the audio element.
                                         </audio>
-                                        {/* <Button
-                                            variant="outline"
-                                            size="sm"
-                                            className="w-full mt-2 gap-2"
-                                        >
-                                            <a
-                                                href={selectedCall.recordingUrl}
-                                                download={`ZC_Recording_${selectedCall._id}.mp3`}
-                                                className="w-full mt-2 gap-2 inline-flex items-center justify-center px-4 py-2 border rounded-md text-sm font-medium bg-white text-black hover:bg-gray-100 transition-colors"
-                                            >
-                                                <Download className="h-4 w-4" />
-                                                Download Recording
-                                            </a>
-
-                                        </Button> */}
                                     </div>
+                                </div>
+                            )}
+
+                            {selectedCall.summary && (
+                                <div className="space-y-2">
+                                    <p className="text-sm font-medium flex items-center gap-2">
+                                        <Sparkles className="h-4 w-4 text-blue-500" />
+                                        AI Summary
+                                    </p>
+                                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-md p-4 border border-blue-200 dark:border-blue-800">
+                                        <p className="text-sm leading-relaxed text-blue-800 dark:text-blue-200">
+                                            {selectedCall.summary}
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {selectedCall.transcription && (
+                                <div className="space-y-2">
+                                    <p className="text-sm font-medium flex items-center gap-2">
+                                        <FileText className="h-4 w-4" />
+                                        Full Transcription
+                                    </p>
+                                    <ScrollArea className="max-h-60 rounded-md border p-3">
+                                        <p className="text-sm whitespace-pre-wrap leading-relaxed">
+                                            {selectedCall.transcription}
+                                        </p>
+                                    </ScrollArea>
                                 </div>
                             )}
 
@@ -431,15 +601,6 @@ export default function CallHistory({ contactId, limit = 5 }: { contactId?: stri
                                     <div className="bg-muted rounded-md p-3 text-sm">
                                         {selectedCall.notes}
                                     </div>
-                                </div>
-                            )}
-
-                            {selectedCall.transcription && (
-                                <div className="space-y-2">
-                                    <p className="text-sm font-medium">Transcription</p>
-                                    <ScrollArea className="h-24 rounded-md border p-3">
-                                        <p className="text-sm">{selectedCall.transcription}</p>
-                                    </ScrollArea>
                                 </div>
                             )}
                         </div>

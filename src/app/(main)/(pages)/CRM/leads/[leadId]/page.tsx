@@ -12,12 +12,14 @@ import {
     FaLink,
     FaExternalLinkAlt,
     FaPaperclip,
-    FaMoneyBill
+    FaMoneyBill,
+    FaFileInvoiceDollar
 } from "react-icons/fa";
 
 import LeadTimeline from '@/components/leads/timeline';
 import FollowupSection from '@/components/leads/followups';
 import NotesSection from '@/components/leads/notes';
+import QuotationsTab from '@/components/leads/quotations'; // Add this import
 import axios from 'axios';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -52,7 +54,7 @@ interface LeadDetailsType {
         name: string;
         openStages: string[];
         closeStages: string[];
-        customFields?: { // Add custom field definitions here
+        customFields?: {
             name: string;
             type: "Text" | "Date" | "Number" | "MultiSelect";
             options?: string[];
@@ -65,7 +67,7 @@ interface LeadDetailsType {
         email: string;
     } | null;
     source: {
-        name: string; // Added name property explicitly
+        name: string;
     };
     closingDate: string;
     amount: number;
@@ -94,8 +96,7 @@ interface LeadDetailsType {
         date: string;
         details: string;
     }[];
-    customFieldValues?: Record<string, any>; // Add this line for custom field values
-    // Add these new fields
+    customFieldValues?: Record<string, any>;
     files?: string[];
     audioRecordings?: string[];
     links?: { url: string; title: string }[];
@@ -110,12 +111,16 @@ export default function LeadDetails() {
     const searchParams = useSearchParams();
     const [leadDetails, setLeadDetails] = useState<LeadDetailsType | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [quotationsCount, setQuotationsCount] = useState(0); // Add this state
     const router = useRouter();
+    
     // Add permission check
     const { isLoading: permissionsLoading, isInitialized } = usePermissions();
     const hasViewPermission = canView("Leads");
+    
     // Add this state for email dialog control
     const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+    
     // Read "tab" parameter from URL
     const defaultTab = searchParams.get("tab") || "timeline";
 
@@ -130,9 +135,20 @@ export default function LeadDetails() {
         }
     };
 
-    // Fetch Lead Details
+    // Add function to fetch quotations count
+    const fetchQuotationsCount = async () => {
+        try {
+            const response = await axios.get(`/api/leads/quotations?leadId=${leadId}`);
+            setQuotationsCount(response.data.quotations?.length || 0);
+        } catch (error) {
+            console.error('Error fetching quotations count:', error);
+        }
+    };
+
+    // Fetch Lead Details and Quotations Count
     useEffect(() => {
         fetchLeadDetails();
+        fetchQuotationsCount();
     }, [leadId]);
 
     // Add this before any rendering logic
@@ -194,134 +210,131 @@ export default function LeadDetails() {
         return "bg-gray-100 text-gray-800 border-gray-300";
     };
 
-// Component for file attachments
-const FileAttachments = ({ files }: { files: string[] }) => {
-    if (!files || files.length === 0) return (
-        <div className="text-center text-muted-foreground py-3">
-            No file attachments available
-        </div>
-    );
+    // Component for file attachments
+    const FileAttachments = ({ files }: { files: string[] }) => {
+        if (!files || files.length === 0) return (
+            <div className="text-center text-muted-foreground py-3">
+                No file attachments available
+            </div>
+        );
 
-    return (
-        <div className="space-y-2">
-            {files.map((fileUrl, index) => {
-                const fileName = fileUrl.split('/').pop() || `File ${index + 1}`;
-                return (
+        return (
+            <div className="space-y-2">
+                {files.map((fileUrl, index) => {
+                    const fileName = fileUrl.split('/').pop() || `File ${index + 1}`;
+                    return (
+                        <div key={index} className="flex items-center justify-between bg-muted/50 p-2 rounded-md">
+                            <div className="flex items-center">
+                                <div className="bg-primary/10 p-2 rounded mr-3">
+                                    <FaFile className="h-4 w-4 text-primary" />
+                                </div>
+                                <div className="overflow-hidden">
+                                    <p className="text-sm font-medium truncate" style={{ maxWidth: "150px" }}>{fileName}</p>
+                                    <p className="text-xs text-muted-foreground">Attachment</p>
+                                </div>
+                            </div>
+                            <div className="flex gap-1">
+                                <Button variant="ghost" size="icon" asChild className="h-7 w-7">
+                                    <a href={fileUrl} download>
+                                        <FaDownload className="h-3.5 w-3.5" />
+                                    </a>
+                                </Button>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+        );
+    };
+
+    // Component for audio recordings with shortened filenames
+    const AudioRecordings = ({ recordings }: { recordings: string[] }) => {
+        if (!recordings || recordings.length === 0) return (
+            <div className="text-center text-muted-foreground py-3">
+                No audio recordings available
+            </div>
+        );
+
+        // Helper function to shorten filename while keeping extension
+        const shortenFileName = (fileName: string, maxLength: number = 20) => {
+            const parts = fileName.split('.');
+            const extension = parts.length > 1 ? `.${parts.pop()}` : '';
+            const name = parts.join('.');
+
+            if (name.length <= maxLength) return fileName;
+
+            return `${name.substring(0, maxLength)}...${extension}`;
+        };
+
+        return (
+            <div className="space-y-2">
+                {recordings.map((audioUrl, index) => {
+                    const fileName = audioUrl.split('/').pop() || `Recording ${index + 1}`;
+                    const shortName = shortenFileName(fileName);
+
+                    return (
+                        <div key={index} className="bg-muted/50 p-3 rounded-md">
+                            <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center">
+                                    <div className="bg-primary/10 p-2 rounded mr-3">
+                                        <FaPlayCircle className="h-4 w-4 text-primary" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-medium truncate" style={{ maxWidth: "150px" }}
+                                           title={fileName}>
+                                            {shortName}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">Audio Recording</p>
+                                    </div>
+                                </div>
+                                <Button variant="ghost" size="icon" asChild className="h-7 w-7">
+                                    <a href={audioUrl} download>
+                                        <FaDownload className="h-3.5 w-3.5" />
+                                    </a>
+                                </Button>
+                            </div>
+                            <audio controls className="w-full h-8">
+                                <source src={audioUrl} type="audio/mpeg" />
+                                Your browser does not support the audio element.
+                            </audio>
+                        </div>
+                    );
+                })}
+            </div>
+        );
+    };
+
+    // Component for links
+    const LinksList = ({ links }: { links: { url: string; title: string }[] }) => {
+        if (!links || links.length === 0) return (
+            <div className="text-center text-muted-foreground py-3">
+                No links available
+            </div>
+        );
+
+        return (
+            <div className="space-y-2">
+                {links.map((link, index) => (
                     <div key={index} className="flex items-center justify-between bg-muted/50 p-2 rounded-md">
                         <div className="flex items-center">
                             <div className="bg-primary/10 p-2 rounded mr-3">
-                                <FaFile className="h-4 w-4 text-primary" />
+                                <FaLink className="h-4 w-4 text-primary" />
                             </div>
-                            <div className="overflow-hidden">
-                                <p className="text-sm font-medium truncate" style={{ maxWidth: "150px" }}>{fileName}</p>
-                                <p className="text-xs text-muted-foreground">Attachment</p>
+                            <div>
+                                <p className="text-sm font-medium">{link.title || 'Untitled Link'}</p>
+                                <p className="text-xs text-muted-foreground truncate" style={{ maxWidth: "180px" }}>{link.url}</p>
                             </div>
                         </div>
-                        <div className="flex gap-1">
-                           
-                            <Button variant="ghost" size="icon" asChild className="h-7 w-7">
-                                <a href={fileUrl} download>
-                                    <FaDownload className="h-3.5 w-3.5" />
-                                </a>
-                            </Button>
-                        </div>
+                        <Button variant="ghost" size="icon" asChild className="h-7 w-7">
+                            <a href={link.url} target="_blank" rel="noopener noreferrer">
+                                <FaExternalLinkAlt className="h-3.5 w-3.5" />
+                            </a>
+                        </Button>
                     </div>
-                );
-            })}
-        </div>
-    );
-};
-
-// Component for audio recordings
-// Component for audio recordings with shortened filenames
-const AudioRecordings = ({ recordings }: { recordings: string[] }) => {
-    if (!recordings || recordings.length === 0) return (
-        <div className="text-center text-muted-foreground py-3">
-            No audio recordings available
-        </div>
-    );
-
-    // Helper function to shorten filename while keeping extension
-    const shortenFileName = (fileName: string, maxLength: number = 20) => {
-        const parts = fileName.split('.');
-        const extension = parts.length > 1 ? `.${parts.pop()}` : '';
-        const name = parts.join('.');
-
-        if (name.length <= maxLength) return fileName;
-
-        return `${name.substring(0, maxLength)}...${extension}`;
+                ))}
+            </div>
+        );
     };
-
-    return (
-        <div className="space-y-2">
-            {recordings.map((audioUrl, index) => {
-                const fileName = audioUrl.split('/').pop() || `Recording ${index + 1}`;
-                const shortName = shortenFileName(fileName);
-
-                return (
-                    <div key={index} className="bg-muted/50 p-3 rounded-md">
-                        <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center">
-                                <div className="bg-primary/10 p-2 rounded mr-3">
-                                    <FaPlayCircle className="h-4 w-4 text-primary" />
-                                </div>
-                                <div>
-                                    <p className="text-sm font-medium truncate" style={{ maxWidth: "150px" }}
-                                       title={fileName}> {/* Added title for hover tooltip */}
-                                        {shortName}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">Audio Recording</p>
-                                </div>
-                            </div>
-                            <Button variant="ghost" size="icon" asChild className="h-7 w-7">
-                                <a href={audioUrl} download>
-                                    <FaDownload className="h-3.5 w-3.5" />
-                                </a>
-                            </Button>
-                        </div>
-                        <audio controls className="w-full h-8">
-                            <source src={audioUrl} type="audio/mpeg" />
-                            Your browser does not support the audio element.
-                        </audio>
-                    </div>
-                );
-            })}
-        </div>
-    );
-};
-
-// Component for links
-const LinksList = ({ links }: { links: { url: string; title: string }[] }) => {
-    if (!links || links.length === 0) return (
-        <div className="text-center text-muted-foreground py-3">
-            No links available
-        </div>
-    );
-
-    return (
-        <div className="space-y-2">
-            {links.map((link, index) => (
-                <div key={index} className="flex items-center justify-between bg-muted/50 p-2 rounded-md">
-                    <div className="flex items-center">
-                        <div className="bg-primary/10 p-2 rounded mr-3">
-                            <FaLink className="h-4 w-4 text-primary" />
-                        </div>
-                        <div>
-                            <p className="text-sm font-medium">{link.title || 'Untitled Link'}</p>
-                            <p className="text-xs text-muted-foreground truncate" style={{ maxWidth: "180px" }}>{link.url}</p>
-                        </div>
-                    </div>
-                    <Button variant="ghost" size="icon" asChild className="h-7 w-7">
-                        <a href={link.url} target="_blank" rel="noopener noreferrer">
-                            <FaExternalLinkAlt className="h-3.5 w-3.5" />
-                        </a>
-                    </Button>
-                </div>
-            ))}
-        </div>
-    );
-};
-
 
     return (
         <div className="space-y-6 pb-6 mt-6">
@@ -363,49 +376,32 @@ const LinksList = ({ links }: { links: { url: string; title: string }[] }) => {
                         Email
                     </Button>
 
-                    {/* <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button size="sm" variant="default">
-                                <Plus className="mr-2 h-4 w-4" />
-                                Actions
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Lead Actions</DropdownMenuLabel> */}
                     {canEdit("Leads") && (
                         <MoveLeadDialog
                             leadId={leadId || ''}
                             currentStage={leadDetails.stage}
                             onLeadMoved={() => fetchLeadDetails()}
-                        // trigger={<DropdownMenuItem onSelect={(e) => e.preventDefault()}>Move Stage</DropdownMenuItem>}
                         />
                     )}
                     {canAdd("Leads") && (
                         <AddNoteDialog
                             leadId={leadId || ''}
                             onNoteAdded={() => fetchLeadDetails()}
-                        // trigger={<DropdownMenuItem onSelect={(e) => e.preventDefault()}>Add Note</DropdownMenuItem>}
                         />
                     )}
-                    {/* <AddFollowupDialog
-                                onFollowupAdded={() => fetchLeadDetails()}
-                            // trigger={<DropdownMenuItem onSelect={(e) => e.preventDefault()}>Schedule Follow-up</DropdownMenuItem>}
-                            /> */}
-                    {/* </DropdownMenuContent>
-                    </DropdownMenu> */}
                 </div>
             </div>
 
             <div className="grid grid-cols-12 gap-6 px-6">
                 {/* ---- RIGHT PANEL ---- */}
-                <div className="col-span-12 lg:col-span-8 space-y-6">
+                <div className="col-span-12 space-y-6">
                     <Card className="shadow-sm border-muted">
                         <Tabs defaultValue={defaultTab} className="">
                             <CardHeader className="flex justify-center pb-0 overflow-x-scroll scrollbar-hide">
-                                <TabsList className="w-fit h-auto t   gap-4 bg-accent ">
+                                <TabsList className="w-fit -ml-4 h-auto gap-4 bg-accent">
                                     <TabsTrigger
                                         value="timeline"
-                                        className="text- border-none "
+                                        className="text- border-none"
                                     >
                                         <FaClock className="mr-2 h-4 w-4" />
                                         Timeline
@@ -438,10 +434,20 @@ const LinksList = ({ links }: { links: { url: string; title: string }[] }) => {
                                         <FaStickyNote className="mr-2 h-4 w-4" />
                                         Notes
                                     </TabsTrigger>
+                                    {/* Add Quotations Tab - only show if there are quotations */}
+                                    {quotationsCount > 0 && (
+                                        <TabsTrigger
+                                            value="quotations"
+                                            className="text- border-none"
+                                        >
+                                            <FaFileInvoiceDollar className="mr-2 h-4 w-4" />
+                                            Quotations ({quotationsCount})
+                                        </TabsTrigger>
+                                    )}
                                 </TabsList>
                             </CardHeader>
                             <CardContent className="p-6">
-                                <TabsContent value="timeline" className="m-0   mt-6">
+                                <TabsContent value="timeline" className="m-0 mt-6">
                                     <LeadTimeline leadId={leadId || ''} />
                                 </TabsContent>
                                 <TabsContent value="stages" className="m-0 mt-6">
@@ -456,13 +462,17 @@ const LinksList = ({ links }: { links: { url: string; title: string }[] }) => {
                                 <TabsContent value="emails" className="m-0 mt-6">
                                     <EmailsTab leadId={leadId || ''} />
                                 </TabsContent>
+                                {/* Add Quotations Tab Content */}
+                                <TabsContent value="quotations" className="m-0 mt-6">
+                                    <QuotationsTab leadId={leadId || ''} />
+                                </TabsContent>
                             </CardContent>
                         </Tabs>
                     </Card>
                 </div>
 
                 {/* ---- LEFT PANEL ---- */}
-                <div className="col-span-12 lg:col-span-4 space-y-6">
+                <div className="col-span-12 space-y-6">
                     <Card className="shadow-sm border-muted">
                         <CardHeader className="pb-2">
                             <CardTitle className="text-lg font-medium flex items-center">
@@ -484,7 +494,6 @@ const LinksList = ({ links }: { links: { url: string; title: string }[] }) => {
                                         <p className="text-xs text-muted-foreground">Owner</p>
                                     </div>
                                 </div>
-                                {/* <Button variant="outline" size="sm">Reassign</Button> */}
                             </div>
 
                             <Separator />
@@ -554,60 +563,59 @@ const LinksList = ({ links }: { links: { url: string; title: string }[] }) => {
                             </div>
                         </CardContent>
                     </Card>
+
                     {/* Files Card */}
-{leadDetails.files && leadDetails.files.length > 0 && (
-    <Card className="shadow-sm border-muted">
-        <CardHeader className="pb-2">
-            <CardTitle className="text-lg font-medium flex items-center justify-between">
-                <div className="flex items-center">
-                    <FaPaperclip className="mr-2 h-4 w-4 text-primary" />
-                    File Attachments
-                </div>
+                    {leadDetails.files && leadDetails.files.length > 0 && (
+                        <Card className="shadow-sm border-muted">
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-lg font-medium flex items-center justify-between">
+                                    <div className="flex items-center">
+                                        <FaPaperclip className="mr-2 h-4 w-4 text-primary" />
+                                        File Attachments
+                                    </div>
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <FileAttachments files={leadDetails.files} />
+                            </CardContent>
+                        </Card>
+                    )}
 
-            </CardTitle>
-        </CardHeader>
-        <CardContent>
-            <FileAttachments files={leadDetails.files} />
-        </CardContent>
-    </Card>
-)}
+                    {/* Audio Recordings Card */}
+                    {leadDetails.audioRecordings && leadDetails.audioRecordings.length > 0 && (
+                        <Card className="shadow-sm border-muted">
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-lg font-medium flex items-center justify-between">
+                                    <div className="flex items-center">
+                                        <FaPlayCircle className="mr-2 h-4 w-4 text-primary" />
+                                        Audio Recordings
+                                    </div>
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <AudioRecordings recordings={leadDetails.audioRecordings} />
+                            </CardContent>
+                        </Card>
+                    )}
 
-{/* Audio Recordings Card */}
-{leadDetails.audioRecordings && leadDetails.audioRecordings.length > 0 && (
-    <Card className="shadow-sm border-muted">
-        <CardHeader className="pb-2">
-            <CardTitle className="text-lg font-medium flex items-center justify-between">
-                <div className="flex items-center">
-                    <FaPlayCircle className="mr-2 h-4 w-4 text-primary" />
-                    Audio Recordings
-                </div>
+                    {/* Links Card */}
+                    {leadDetails.links && leadDetails.links.length > 0 && (
+                        <Card className="shadow-sm border-muted">
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-lg font-medium flex items-center justify-between">
+                                    <div className="flex items-center">
+                                        <FaLink className="mr-2 h-4 w-4 text-primary" />
+                                        Links
+                                    </div>
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <LinksList links={leadDetails.links} />
+                            </CardContent>
+                        </Card>
+                    )}
 
-            </CardTitle>
-        </CardHeader>
-        <CardContent>
-            <AudioRecordings recordings={leadDetails.audioRecordings} />
-        </CardContent>
-    </Card>
-)}
-
-{/* Links Card */}
-{leadDetails.links && leadDetails.links.length > 0 && (
-    <Card className="shadow-sm border-muted">
-        <CardHeader className="pb-2">
-            <CardTitle className="text-lg font-medium flex items-center justify-between">
-                <div className="flex items-center">
-                    <FaLink className="mr-2 h-4 w-4 text-primary" />
-                    Links
-                </div>
-
-            </CardTitle>
-        </CardHeader>
-        <CardContent>
-            <LinksList links={leadDetails.links} />
-        </CardContent>
-    </Card>
-)}
-                    {/* Add this card after the Lead Information card in the left panel */}
+                    {/* Custom Fields Card */}
                     {leadDetails.customFieldValues &&
                         Object.keys(leadDetails.customFieldValues).length > 0 && (
                             <Card className="shadow-sm border-muted">
@@ -658,6 +666,7 @@ const LinksList = ({ links }: { links: { url: string; title: string }[] }) => {
                                 </CardContent>
                             </Card>
                         )}
+
                     {/* Contact Details Card */}
                     {leadDetails.contact && (
                         <Card className="shadow-sm border-muted">
@@ -711,6 +720,7 @@ const LinksList = ({ links }: { links: { url: string; title: string }[] }) => {
                             </CardContent>
                         </Card>
                     )}
+
                     {/* Email Dialog */}
                     {leadDetails?.contact?.email && (
                         <EmailsTab
@@ -720,6 +730,7 @@ const LinksList = ({ links }: { links: { url: string; title: string }[] }) => {
                             setIsDialogOpen={setEmailDialogOpen}
                         />
                     )}
+
                     {/* Company Details Card */}
                     {leadDetails.contact?.company && (
                         <Card className="shadow-sm border-muted">
@@ -730,7 +741,7 @@ const LinksList = ({ links }: { links: { url: string; title: string }[] }) => {
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                <div className="flex items-center  gap-3">
+                                <div className="flex items-center gap-3">
                                     <div className="h-10 w-10 bg-primary/10 rounded-full flex items-center justify-center">
                                         <FaBuilding className="h-5 w-5 text-primary" />
                                     </div>
@@ -771,7 +782,6 @@ const LinksList = ({ links }: { links: { url: string; title: string }[] }) => {
                                 <Button onClick={() => router.push(`/CRM/companies/${leadDetails.contact?.company?.id}`)} variant="outline" size="sm" className="w-full">
                                     <FaBuilding className="mr-2 h-3 w-3" />
                                     View Company Profile
-
                                 </Button>
                             </CardContent>
                         </Card>
@@ -800,17 +810,6 @@ const LinksList = ({ links }: { links: { url: string; title: string }[] }) => {
                                     <p className="text-xs text-muted-foreground mt-1">Active for {formatDistanceToNow(new Date(leadDetails.createdAt))}</p>
                                 </div>
                             </div>
-                            {/*
-                            <div className="mt-4">
-                                <Button variant="outline" size="sm" className="w-full" onClick={() => {
-                                    const tabsElement = document.querySelector('[data-value="timeline"]');
-                                    if (tabsElement) {
-                                        (tabsElement as HTMLElement).click();
-                                    }
-                                }}>
-                                    View Full Activity
-                                </Button>
-                            </div> */}
                         </CardContent>
                     </Card>
                 </div>

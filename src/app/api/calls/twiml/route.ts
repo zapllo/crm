@@ -52,10 +52,12 @@ export async function POST(req: NextRequest) {
 
     // This <Dial> will create the second leg out to the phone number
     // bridging them with the inbound client call automatically
-    const dial = twiml.dial({
+   const dial = twiml.dial({
       // The CallerID can be your Twilio number
       callerId: process.env.TWILIO_PHONE_NUMBER,
-      record: 'record-from-answer', // If you want to record
+      record: 'record-from-answer', // Enable recording
+      recordingStatusCallback: `${process.env.NEXT_PUBLIC_APP_URL}/api/calls/webhook?callId=${call._id}`,
+      recordingStatusCallbackMethod: 'POST',
       timeLimit: 3600,  // max 1 hour
       // after the dial finishes, Twilio will do an HTTP request to your statusCallback
       action: `${process.env.NEXT_PUBLIC_APP_URL}/api/calls/webhook?callId=${call._id}`,

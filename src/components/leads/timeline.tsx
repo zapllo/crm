@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
 import { format, formatDistanceToNow } from "date-fns";
+import { useRouter } from "next/navigation";
 
 // Icons
 import {
@@ -19,7 +20,9 @@ import {
     CheckCircle,
     FlagIcon,
     Phone,
-    Mail
+    Mail,
+    FileText,
+    Eye
 } from "lucide-react";
 import {
     FaSyncAlt,
@@ -29,9 +32,9 @@ import {
     FaClock,
     FaCheck,
     FaExclamationTriangle,
-    FaWhatsapp
+    FaWhatsapp,
+    FaFileInvoiceDollar
 } from "react-icons/fa";
-import { IconArrowsLeftRight } from "@tabler/icons-react";
 
 // UI Components
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -44,7 +47,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface TimelineEntry {
-    type: "stage" | "followup" | "note";
+    type: "stage" | "followup" | "note" | "quotation";
     stage?: string;
     action: string;
     remark: string;
@@ -52,15 +55,19 @@ interface TimelineEntry {
     addedBy: string;
     timestamp: string; // ISO string
     followupType?: string;
+    quotationStatus?: string;
+    quotationId?: string;
 }
 
 export default function LeadTimeline({ leadId, onlyStages = false }: { leadId: string; onlyStages?: boolean }) {
     const [timeline, setTimeline] = useState<TimelineEntry[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [timelineFilter, setTimelineFilter] = useState<"all" | "stage" | "followup" | "note">(
+    const [timelineFilter, setTimelineFilter] = useState<"all" | "stage" | "followup" | "note" | "quotation">(
         onlyStages ? "stage" : "all"
     );
     const [isRefreshing, setIsRefreshing] = useState(false);
+    const router = useRouter();
+
     useEffect(() => {
         fetchTimeline();
     }, [leadId, onlyStages]);
@@ -85,6 +92,7 @@ export default function LeadTimeline({ leadId, onlyStages = false }: { leadId: s
             setIsLoading(false);
         }
     };
+
     // Function to refresh timeline data
     const handleRefresh = async () => {
         try {
@@ -93,9 +101,10 @@ export default function LeadTimeline({ leadId, onlyStages = false }: { leadId: s
         } finally {
             setTimeout(() => {
                 setIsRefreshing(false);
-            }, 600); // Slight delay to show the refresh animation
+            }, 600);
         }
     };
+
     // Filter timeline entries based on selected filter
     const filteredTimeline = timeline.filter(entry => {
         if (timelineFilter === "all") return true;
@@ -112,6 +121,17 @@ export default function LeadTimeline({ leadId, onlyStages = false }: { leadId: s
                 bgColor: "bg-amber-100 dark:bg-amber-900/30",
                 borderColor: "border-amber-300 dark:border-amber-700",
                 label: "Note Added"
+            };
+        }
+
+        // Handle quotation entries
+        if (type === "quotation") {
+            return {
+                icon: <FaFileInvoiceDollar className="h-4 w-4" />,
+                color: "text-blue-500",
+                bgColor: "bg-blue-100 dark:bg-blue-900/30",
+                borderColor: "border-blue-300 dark:border-blue-700",
+                label: entry?.quotationStatus === 'sent' ? "Quotation Sent" : "Quotation Created"
             };
         }
 
@@ -191,6 +211,12 @@ export default function LeadTimeline({ leadId, onlyStages = false }: { leadId: s
             label: "Activity"
         };
     };
+
+    // Handle quotation click
+    const handleQuotationClick = (quotationId: string) => {
+        router.push(`/quotations/${quotationId}`);
+    };
+
     return (
         <Card className="border-blue-100 dark:border-blue-900 shadow-md overflow-hidden">
             <CardHeader className="bg-gradient-to-r from-blue-50/80 to-indigo-50/80 dark:from-blue-950/50 dark:to-indigo-950/50 border-b px-6 py-4">
@@ -214,6 +240,7 @@ export default function LeadTimeline({ leadId, onlyStages = false }: { leadId: s
                                     <SelectItem value="stage">Stage Changes</SelectItem>
                                     <SelectItem value="followup">Follow-ups</SelectItem>
                                     <SelectItem value="note">Notes</SelectItem>
+                                    <SelectItem value="quotation">Quotations</SelectItem>
                                 </SelectContent>
                             </Select>
                         )}
@@ -240,7 +267,7 @@ export default function LeadTimeline({ leadId, onlyStages = false }: { leadId: s
             </CardHeader>
 
             <CardContent className="p-0">
-                <ScrollArea className="h-[calc(300vh-400px)] max-h-[500px]">
+                <ScrollArea className="h-fit max-h-[700px] overflow-y-scroll ">
                     <div className="p-6">
                         {isLoading ? (
                             <div className="space-y-8">
@@ -296,6 +323,7 @@ export default function LeadTimeline({ leadId, onlyStages = false }: { leadId: s
                                             new Date(entry.timestamp),
                                             { addSuffix: true }
                                         );
+
                                         return (
                                             <motion.div
                                                 key={`${entry.type}-${entry.timestamp}-${index}`}
@@ -310,19 +338,18 @@ export default function LeadTimeline({ leadId, onlyStages = false }: { leadId: s
                                                 className="relative group"
                                             >
                                                 {/* Connection line between nodes */}
-                                                {index < filteredTimeline.length - 1 && (
-                                                    <div className="absolute -left-[20px] top-[45px] w-[2px] h-[calc(100%-25px)] bg-gradient-to-b from-gray-300 to-gray-200 dark:from-gray-600 dark:to-gray-700 ml-[19px]" />
-                                                )}
-
+                                            
                                                 {/* Timeline node - clean and professional */}
-                                                <div className={`absolute -left-[20px] top-0 w-[40px] h-[40px] rounded-full flex items-center justify-center -ml-5 ${bgColor} ${borderColor} border-2 shadow-sm group-hover:shadow-md transition-shadow duration-200 z-10`}>
+                                                <div className={`absolute -left-[20px] top-0 w-[40px] h-[40px] rounded-full flex items-center justify-center -ml-5 ${bgColor} ${borderColor} border-2 shadow-sm group-hover:shadow-md transition-shadow duration-200 z-`}>
                                                     <span className={`${color}`}>
                                                         {icon}
                                                     </span>
                                                 </div>
 
                                                 {/* Timeline content - clean card design */}
-                                                <div className="ml-6 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md transition-shadow duration-200">
+                                                <div className={`ml-6 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-5 shadow-sm hover:shadow-md transition-shadow duration-200 ${entry.type === 'quotation' && entry.quotationId ? 'cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-950/20' : ''}`}
+                                                     onClick={() => entry.type === 'quotation' && entry.quotationId && handleQuotationClick(entry.quotationId)}
+                                                >
                                                     {/* Header section */}
                                                     <div className="flex justify-between items-start mb-3">
                                                         <div className="flex items-center gap-3 flex-wrap">
@@ -346,6 +373,20 @@ export default function LeadTimeline({ leadId, onlyStages = false }: { leadId: s
                                                                     </Badge>
                                                                 </div>
                                                             )}
+
+                                                            {/* Quotation status indicator */}
+                                                            {entry.type === "quotation" && entry.quotationStatus && (
+                                                                <Badge
+                                                                    variant="outline"
+                                                                    className={`rounded-md px-2 py-1 text-xs font-medium ${
+                                                                        entry.quotationStatus === 'sent' 
+                                                                            ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700'
+                                                                            : 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700'
+                                                                    }`}
+                                                                >
+                                                                    {entry.quotationStatus}
+                                                                </Badge>
+                                                            )}
                                                         </div>
 
                                                         {/* Clean timestamp */}
@@ -367,6 +408,9 @@ export default function LeadTimeline({ leadId, onlyStages = false }: { leadId: s
                                                     {/* Main action text */}
                                                     <p className="text-sm font-medium text-gray-900 dark:text-gray-100 leading-relaxed mb-3">
                                                         {entry.action}
+                                                        {entry.type === 'quotation' && entry.quotationId && (
+                                                            <Eye className="inline-block ml-2 h-3 w-3 text-blue-500" />
+                                                        )}
                                                     </p>
 
                                                     {/* Remark section - clean and minimal */}
@@ -376,7 +420,7 @@ export default function LeadTimeline({ leadId, onlyStages = false }: { leadId: s
                                                                 <MessageSquare className="h-3.5 w-3.5 text-gray-400 mt-0.5 flex-shrink-0" />
                                                                 <div>
                                                                     <span className="text-xs font-medium text-gray-600 dark:text-gray-400 block mb-1">
-                                                                        Remark
+                                                                        {entry.type === 'quotation' ? 'Details' : 'Remark'}
                                                                     </span>
                                                                     <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
                                                                         {entry.remark}
@@ -396,7 +440,8 @@ export default function LeadTimeline({ leadId, onlyStages = false }: { leadId: s
                                                                     </AvatarFallback>
                                                                 </Avatar>
                                                                 <span className="text-xs text-gray-600 dark:text-gray-400">
-                                                                    {entry.type === "stage" ? "Moved by" : "Added by"} {entry.movedBy || entry.addedBy}
+                                                                    {entry.type === "stage" ? "Moved by" : 
+                                                                     entry.type === "quotation" ? "Created by" : "Added by"} {entry.movedBy || entry.addedBy}
                                                                 </span>
                                                             </div>
                                                         ) : (
@@ -408,6 +453,7 @@ export default function LeadTimeline({ leadId, onlyStages = false }: { leadId: s
                                                             {entry.type === "stage" && !entry.action.includes("Note Added") && <ArrowRight className="h-3 w-3" />}
                                                             {entry.action.includes("Note Added") && <FaStickyNote className="h-3 w-3" />}
                                                             {entry.type === "followup" && <MessageSquare className="h-3 w-3" />}
+                                                            {entry.type === "quotation" && <FaFileInvoiceDollar className="h-3 w-3" />}
                                                         </div>
                                                     </div>
                                                 </div>

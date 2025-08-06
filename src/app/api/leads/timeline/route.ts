@@ -1,5 +1,6 @@
 import Lead from '@/models/leadModel';
 import FollowUp from '@/models/followupModel';
+import QuotationModel from '@/models/quotationModel';
 import connectDB from '@/lib/db';
 
 export async function GET(req: Request) {
@@ -25,9 +26,18 @@ export async function GET(req: Request) {
 
         // Fetch follow-ups for the lead (using `createdAt` as timestamp)
         const followups = await FollowUp.find({ lead: leadId })
-            .select('description type createdAt') // ✅ Using `createdAt` instead of `followupDate`
+            .select('description type createdAt')
             .populate({
                 path: 'addedBy',
+                model: 'User',
+                select: 'firstName lastName',
+            }).exec();
+
+        // Fetch quotations for the lead
+        const quotations = await QuotationModel.find({ lead: leadId })
+            .select('quotationNumber title status total currency createdAt updatedAt')
+            .populate({
+                path: 'creator',
                 model: 'User',
                 select: 'firstName lastName',
             }).exec();
@@ -37,7 +47,7 @@ export async function GET(req: Request) {
             stage: entry.stage,
             action: entry.action,
             remark: entry.remark,
-            timestamp: new Date(entry.timestamp).toISOString(), // ✅ Convert to Date for sorting
+            timestamp: new Date(entry.timestamp).toISOString(),
             type: 'stage',
             movedBy: entry.movedBy
                 ? `${entry.movedBy.firstName} ${entry.movedBy.lastName}`
@@ -49,15 +59,33 @@ export async function GET(req: Request) {
             stage: 'Follow-Up',
             action: `Follow-Up Type: ${followup.type}`,
             remark: followup.description,
-            timestamp: new Date(followup.createdAt).toISOString(), // ✅ Using `createdAt` instead of `followupDate`
+            timestamp: new Date(followup.createdAt).toISOString(),
             type: 'followup',
+            followupType: followup.type,
             addedBy: followup.addedBy
                 ? `${followup.addedBy.firstName} ${followup.addedBy.lastName}`
                 : 'Unknown User',
         }));
 
+        // Format quotation entries
+        const quotationEntries = quotations.map((quotation: any) => ({
+            stage: 'Quotation',
+            action: `Quotation ${quotation.status === 'sent' ? 'sent' : 'created'}: ${quotation.quotationNumber}`,
+            remark: `${quotation.title} - ${new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: quotation.currency || 'USD',
+            }).format(quotation.total || 0)}`,
+            timestamp: new Date(quotation.createdAt).toISOString(),
+            type: 'quotation',
+            quotationStatus: quotation.status,
+            quotationId: quotation._id,
+            addedBy: quotation.creator
+                ? `${quotation.creator.firstName} ${quotation.creator.lastName}`
+                : 'Unknown User',
+        }));
+
         // Combine and sort by timestamp (Latest First)
-        const combinedTimeline = [...timelineEntries, ...followupEntries].sort(
+        const combinedTimeline = [...timelineEntries, ...followupEntries, ...quotationEntries].sort(
             (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
         );
 

@@ -15,6 +15,7 @@ export interface ICall extends Document {
   status: 'queued' | 'initiated' | 'scheduled' | 'ringing' | 'in-progress' | 'completed' | 'failed' | 'busy' | 'no-answer' | 'canceled';
   notes?: string;
   transcription?: string;
+  summary?: string;
   sentiment?: {
     score: number; // -1 to 1
     analysis: string; // positive, negative, neutral
@@ -50,7 +51,14 @@ const callSchema = new Schema<ICall>(
       required: true
     },
     notes: { type: String },
-    transcription: { type: String },
+    transcription: {
+      type: String,
+      default: null
+    },
+    summary: {
+      type: String,
+      default: null
+    },
     sentiment: {
       score: { type: Number },
       analysis: { type: String, enum: ['positive', 'negative', 'neutral'] }

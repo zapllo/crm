@@ -15,7 +15,7 @@ import {
 import CreatePipelineForm from "@/components/modals/pipelines/pipelineModal";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { CrossCircledIcon } from "@radix-ui/react-icons";
-import { Pencil, Trash2, Database, Tag, Users, Sparkles, Settings2, ListPlus, Plus, Filter, Loader2, LayoutTemplateIcon } from "lucide-react";
+import { Pencil, Trash2, Database, Tag, Users, Sparkles, Settings2, ListPlus, Plus, Filter, Loader2, LayoutTemplateIcon, Brain } from "lucide-react";
 import EditPipelineForm from "@/components/modals/pipelines/editPipelineModal";
 import AddFieldForm from "@/components/modals/pipelines/addFieldModal";
 import EditFieldForm from "@/components/modals/pipelines/editFieldModal";
@@ -40,6 +40,7 @@ import { usePermissions } from "@/hooks/use-permissions";
 import { NoPermissionFallback } from "@/components/ui/no-permission-fallback";
 import { canView, canAdd, canDelete, canEdit, usePermissionStatus } from "@/contexts/permissionsContext";
 import PipelineTemplates from "@/components/pipelines/PipelineTemplates";
+import AIPipelineModal from "@/components/modals/pipelines/aiPipelineModal";
 
 
 interface CustomField {
@@ -122,6 +123,7 @@ export default function CustomizePage() {
     const [currentContactTag, setCurrentContactTag] = useState<ContactTag | null>(
         null
     );
+    const [isAIDialogOpen, setIsAIDialogOpen] = useState(false);
     const { isLoading: permissionsLoading, isInitialized } = usePermissions();
 
     // Add these to your state declarations
@@ -470,6 +472,45 @@ export default function CustomizePage() {
                                     </CardTitle>
                                     <CardDescription>Configure your sales processes and workflows</CardDescription>
                                 </div>
+                                <div className="flex gap-2">
+                                    {/* AI Generate Button */}
+                                    <Dialog open={isAIDialogOpen} onOpenChange={setIsAIDialogOpen}>
+                                        {canAdd("Settings") ? (
+                                            <DialogTrigger asChild>
+                                                <Button variant="outline" className="group flex justify-end gap-2">
+                                                    <Brain className="h-4 w-4 group-hover:animate-pulse" />
+                                                    Generate with AI
+                                                </Button>
+                                            </DialogTrigger>
+                                        ) : (
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button variant="outline" className="group flex opacity-30 gap-2">
+                                                            <Brain className="h-4 w-4 group-hover:animate-pulse" />
+                                                            Generate with AI
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        <p>You don't have permission to generate pipelines</p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                        )}
+                                        <DialogContent className="z-[100] w-full">
+                                            <DialogHeader>
+                                                <DialogTitle className="text-lg font-medium dark:text-white flex items-center gap-2">
+                                                    <Brain className="h-5 w-5 text-primary" />
+                                                    Generate Pipeline with AI
+                                                </DialogTitle>
+                                            </DialogHeader>
+                                            <AIPipelineModal
+                                                onClose={() => setIsAIDialogOpen(false)}
+                                                onSuccess={fetchPipelines}
+                                            />
+                                        </DialogContent>
+                                    </Dialog>
+                          
                                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                                     {canAdd("Settings") ? (
 
@@ -507,6 +548,7 @@ export default function CustomizePage() {
                                         </div>
                                     </DialogContent>
                                 </Dialog>
+                                      </div>
                             </CardHeader>
                             <CardContent className="p-0">
                                 <div className="p-4">
@@ -627,7 +669,7 @@ export default function CustomizePage() {
                     </Dialog>
                 </TabsContent>
                 <TabsContent value="pipelineTemplates" className="space-y-6">
-                <motion.div
+                    <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.3, delay: 0.2 }}
