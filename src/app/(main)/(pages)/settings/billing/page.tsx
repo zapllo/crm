@@ -684,7 +684,7 @@ export default function BillingPage() {
 
 
   return (
-    <div className="container mx-auto py-8 px-4">
+    <div className=" mx-auto py-8 px-4">
       <div className="text-center mb-10">
         <h1 className="text-4xl font-bold tracking-tight mb-2 bg-gradient-to-r from-purple-600 to-orange-500 text-transparent bg-clip-text">
           Power Up Your Business with Zapllo

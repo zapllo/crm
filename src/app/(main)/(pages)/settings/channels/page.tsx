@@ -421,7 +421,7 @@ export default function ChannelsPage() {
   const filteredTemplates = getCurrentTemplates();
 
   return (
-    <div className="p-6 space-y-8 max-w-7xl overflow-y-scroll h-screen mx-auto">
+    <div className="p-6 space-y-8 overflow-y-scroll scrollbar-hide h-screen mx-auto">
       <div className="flex flex-col space-y-2">
         <h1 className="text-3xl font-bold tracking-tight">Channels</h1>
         <p className="text-muted-foreground">

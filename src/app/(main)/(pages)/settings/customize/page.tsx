@@ -406,7 +406,7 @@ export default function CustomizePage() {
     }
 
     return (
-        <div className="min-h-screen p-6 space-y-8 container mx-auto max-w-7xl">
+        <div className="min-h-screen p-6 space-y-8  mx-auto ">
             <motion.div
                 className="flex items-center justify-between"
                 initial={{ opacity: 0, y: -20 }}

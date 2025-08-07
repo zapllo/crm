@@ -287,7 +287,7 @@ export default function Dashboard() {
         // ... existing code ...
 
         // In the main Dashboard component
-        <div className="container mx-auto h-full max-h-screen scrollbar-hide overflow-y-scroll p-4 space-y-6">
+        <div className="p-6  mx-auto h-full max-h-screen scrollbar-hide overflow-y-scroll p-4 space-y-6">
             <div className="flex flex-col mt-2 md:flex-row md:items-center justify-between gap-3 mb-6">
                 <div>
                     <h1 className="text-xl font-medium">👋 Welcome Back, {user?.firstName} </h1>

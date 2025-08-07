@@ -594,7 +594,7 @@ export default function QuotationDetailPage() {
 
 
   return (
-    <div className="container mx-auto p-6">
+    <div className=" mx-auto p-6">
       <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div className="flex dark:!text-white items-center gap-3">
           <Button

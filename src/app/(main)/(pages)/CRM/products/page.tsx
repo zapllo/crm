@@ -215,7 +215,7 @@ export default function ProductsPage() {
     }
 
     return (
-        <div className="p-6 max-w-7xl mt-4 mx-auto">
+        <div className="p-6  mt-4 mx-auto">
             <div className="flex flex-col gap-2 mb-8">
                 <h1 className="text-3xl font-bold tracking-tight">Products</h1>
                 <p className="text-muted-foreground">Manage your product catalog, edit details and track inventory.</p>

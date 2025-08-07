@@ -305,7 +305,7 @@ export default function MyQuotationsPage() {
   );
 
   return (
-    <div className="container mx-auto p-6">
+    <div className=" mx-auto p-6">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">My Quotations</h1>
         <Button onClick={() => router.push('/quotations/create')} className="bg-blue-600 hover:bg-blue-700">

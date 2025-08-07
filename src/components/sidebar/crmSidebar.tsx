@@ -36,7 +36,11 @@ type CRMNavItem = {
     badge?: { text: string; variant: 'default' | 'outline' | 'secondary' | 'destructive' };
 };
 
-const CRMSidebar: React.FC = () => {
+interface CRMSidebarProps {
+    collapsed?: boolean;
+}
+
+const CRMSidebar: React.FC<CRMSidebarProps> = ({ collapsed = false }) => {
     const pathname = usePathname();
     const router = useRouter();
     const [activeTip, setActiveTip] = useState(0);
@@ -70,7 +74,6 @@ const CRMSidebar: React.FC = () => {
             href: "/CRM/leads",
             icon: <FaFunnelDollar className="h-5 w-5" />,
             description: "Manage your potential customers",
-            // badge: { text: "New", variant: "outline" }
         },
         {
             title: "Contacts",
@@ -101,8 +104,10 @@ const CRMSidebar: React.FC = () => {
         },
     ];
 
-    // Rotate tips every 12 seconds
+    // Rotate tips every 12 seconds (only when not collapsed)
     useEffect(() => {
+        if (collapsed) return;
+        
         const tipInterval = setInterval(() => {
             setTipAnimation(true);
             setTimeout(() => {
@@ -112,7 +117,7 @@ const CRMSidebar: React.FC = () => {
         }, 12000);
 
         return () => clearInterval(tipInterval);
-    }, []);
+    }, [collapsed, crmTips.length]);
 
     // Keyboard shortcuts handler
     const handleKeyDown = useCallback((event: KeyboardEvent) => {
@@ -137,19 +142,8 @@ const CRMSidebar: React.FC = () => {
 
     return (
         <TooltipProvider delayDuration={300}>
-            <ScrollArea className="h-screen border-r bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-                <div className="px-4 py-6">
-                    {/* CRM Header */}
-                    {/* <div className="mb-4 px-3 py-2 bg-gradient-to-r from-[#815BF5]/10 to-purple-100/5 dark:from-[#815BF5]/20 dark:to-purple-900/5 rounded-lg border border-[#815BF5]/20">
-                        <div className="flex items-center text-sm font-medium text-[#815BF5]">
-                            <Building2 className="h-4 w-4 mr-1.5" />
-                            CRM Dashboard
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-2">
-                            Manage your customer relationships
-                        </p>
-                    </div> */}
-
+            <ScrollArea className="h-full border-r bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+                <div className={cn("py-6 transition-all duration-300", collapsed ? "px-2" : "px-4")}>
                     <nav className="space-y-1.5">
                         {navItems.map((item) => (
                             <Tooltip key={item.href}>
@@ -157,35 +151,41 @@ const CRMSidebar: React.FC = () => {
                                     <div
                                         onClick={() => router.push(item.href)}
                                         className={cn(
-                                            "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-all hover:bg-accent cursor-pointer group relative",
+                                            "flex items-center gap-3 rounded-md text-sm font-medium transition-all hover:bg-accent cursor-pointer group relative",
+                                            collapsed ? "px-2 py-3 justify-center" : "px-3 py-2.5",
                                             pathname === item.href
                                                 ? "bg-[#815BF5] text-white hover:bg-primary/80"
                                                 : "text-muted-foreground hover:text-primary"
                                         )}
                                     >
-                                        <div className="flex items-center justify-center">
+                                        <div className="flex items-center justify-center flex-shrink-0">
                                             {item.icon}
                                         </div>
-                                        <span className="flex-1">{item.title}</span>
                                         
-                                        {item.badge && (
-                                            <Badge variant={item.badge.variant} className="ml-auto mr-1.5">
-                                                {item.badge.text}
-                                            </Badge>
-                                        )}
-                                        
-                                        {item.shortcutKey && (
-                                            <kbd className="hidden sm:inline-flex h-5 items-center gap-1 rounded border bg-muted px-1.5 text-[10px] font-medium text-muted-foreground opacity-70">
-                                                Alt+{item.shortcutKey.toUpperCase()}
-                                            </kbd>
-                                        )}
+                                        {!collapsed && (
+                                            <>
+                                                <span className="flex-1">{item.title}</span>
+                                                
+                                                {item.badge && (
+                                                    <Badge variant={item.badge.variant} className="ml-auto mr-1.5">
+                                                        {item.badge.text}
+                                                    </Badge>
+                                                )}
+                                                
+                                                {item.shortcutKey && (
+                                                    <kbd className="hidden sm:inline-flex h-5 items-center gap-1 rounded border bg-muted px-1.5 text-[10px] font-medium text-muted-foreground opacity-70">
+                                                        Alt+{item.shortcutKey.toUpperCase()}
+                                                    </kbd>
+                                                )}
 
-                                        <ChevronRight
-                                            className={cn(
-                                                "h-4 w-4 opacity-0 transition-all group-hover:opacity-100",
-                                                pathname === item.href ? "text-white" : "text-muted-foreground"
-                                            )}
-                                        />
+                                                <ChevronRight
+                                                    className={cn(
+                                                        "h-4 w-4 opacity-0 transition-all group-hover:opacity-100",
+                                                        pathname === item.href ? "text-white" : "text-muted-foreground"
+                                                    )}
+                                                />
+                                            </>
+                                        )}
 
                                         {/* Hover effect - subtle gradient line */}
                                         {item.href !== pathname && (
@@ -211,58 +211,46 @@ const CRMSidebar: React.FC = () => {
                         ))}
                     </nav>
 
-                    <Separator className="my-6" />
+                    {!collapsed && (
+                        <>
+                            <Separator className="my-6" />
 
-                    {/* Rotating Tips Section with refresh button */}
-                    <div className="px-3 py-4 relative">
-                        <div
-                            className={cn(
-                                "rounded-md bg-gradient-to-br from-[#815BF5]/10 via-[#815BF5]/10 to-purple-500/10 p-4 text-xs border border-[#815BF5]/20 transition-all",
-                                tipAnimation ? "opacity-0 transform -translate-y-2" : "opacity-100"
-                            )}
-                        >
-                            <div className="flex items-center mb-2">
-                                <LightbulbIcon className="h-4 w-4 text-yellow-500 mr-1.5" />
-                                <p className="font-semibold text-[#815BF5] flex items-center">
-                                    CRM Tip
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-5 w-5 ml-auto rounded-full hover:bg-[#815BF5]/10"
-                                        onClick={() => {
-                                            setTipAnimation(true);
-                                            setTimeout(() => {
-                                                setActiveTip(prev => (prev + 1) % crmTips.length);
-                                                setTipAnimation(false);
-                                            }, 500);
-                                        }}
-                                        title="Next tip"
-                                    >
-                                        <RefreshCw className="h-3 w-3" />
-                                    </Button>
-                                </p>
+                            {/* Rotating Tips Section with refresh button */}
+                            <div className="px-3 py-4 relative">
+                                <div
+                                    className={cn(
+                                        "rounded-md bg-gradient-to-br from-[#815BF5]/10 via-[#815BF5]/10 to-purple-500/10 p-4 text-xs border border-[#815BF5]/20 transition-all",
+                                        tipAnimation ? "opacity-0 transform -translate-y-2" : "opacity-100"
+                                    )}
+                                >
+                                    <div className="flex items-center mb-2">
+                                        <LightbulbIcon className="h-4 w-4 text-yellow-500 mr-1.5" />
+                                        <p className="font-semibold text-[#815BF5] flex items-center">
+                                            CRM Tip
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-5 w-5 ml-auto rounded-full hover:bg-[#815BF5]/10"
+                                                onClick={() => {
+                                                    setTipAnimation(true);
+                                                    setTimeout(() => {
+                                                        setActiveTip(prev => (prev + 1) % crmTips.length);
+                                                        setTipAnimation(false);
+                                                    }, 500);
+                                                }}
+                                                title="Next tip"
+                                            >
+                                                <RefreshCw className="h-3 w-3" />
+                                            </Button>
+                                        </p>
+                                    </div>
+                                    <p className="mt-1 text-muted-foreground">
+                                        {crmTips[activeTip]}
+                                    </p>
+                                </div>
                             </div>
-                            <p className="mt-1 text-muted-foreground">
-                                {crmTips[activeTip]}
-                            </p>
-                        </div>
-
-                        {/* Help Box */}
-                        {/* <div className="mt-4 rounded-md bg-[#815BF5]/10 p-3 text-xs">
-                            <p className="font-semibold text-[#815BF5]">Need help?</p>
-                            <p className="mt-1 text-muted-foreground">
-                                Check our documentation or contact support for assistance.
-                            </p>
-                            <div className="mt-2 flex space-x-2">
-                                <Button variant="outline" size="sm" className="h-7 text-xs w-full">
-                                    Docs
-                                </Button>
-                                <Button size="sm" className="h-7 text-xs w-full bg-[#815BF5] hover:bg-[#815BF5]/90">
-                                    Support
-                                </Button>
-                            </div>
-                        </div> */}
-                    </div>
+                        </>
+                    )}
                 </div>
             </ScrollArea>
         </TooltipProvider>

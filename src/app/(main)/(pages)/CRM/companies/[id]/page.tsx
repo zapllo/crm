@@ -230,7 +230,7 @@ export default function CompanyDetailsPage() {
 
     if (!company) {
         return (
-            <div className="container mx-auto px-6 py-8">
+            <div className=" mx-auto px-6 py-8">
                 <div className="flex flex-col items-center justify-center h-[60vh] text-center">
                     <Building2 className="h-16 w-16 text-muted-foreground/60 mb-4" />
                     <h2 className="text-2xl font-semibold mb-2">Company Not Found</h2>
@@ -244,7 +244,7 @@ export default function CompanyDetailsPage() {
     }
 
     return (
-        <div className="container mx-auto px-4 py-6 max-w-7xl">
+        <div className=" mx-auto px-4 py-6 max-w-7xl">
             {/* Header / Navigation */}
             <div className="mb-8">
                 <div className="flex items-center mb-2">

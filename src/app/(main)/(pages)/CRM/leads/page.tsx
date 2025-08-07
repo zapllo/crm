@@ -1530,8 +1530,8 @@ export default function LeadsDashboard() {
     }
 
     return (
-        <div className="p-4 mt-4 h-screen bg-background">
-            <div className="max-w-[1600px] mx-auto">
+        <div className="p-4 mt-4  h-screen bg-background">
+            <div className=" mx-auto">
                 {/* Header with title */}
                 {/* <div className="mb-6">
                     <h1 className="text-2xl font-bold tracking-tight">Sales Pipeline</h1>
@@ -2864,7 +2864,7 @@ function DroppableStage({
     return (
         <Card
             className={cn(
-                "min-w-[325px] border bg-card transition-all duration-150 flex flex-col h-[calc(110vh-360px)]", // Added flex and height
+                "min-w-[325px] border bg-card transition-all duration-150 flex flex-col h-[calc(115vh-360px)]", // Added flex and height
                 isOver && canEditStage && "ring-2 ring-primary ring-offset-2"
             )}
             style={{

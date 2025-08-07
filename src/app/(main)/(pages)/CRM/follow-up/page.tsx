@@ -385,7 +385,7 @@ export default function FollowupPage() {
         <div className="flex flex-col h-screen mt-4 max-h-screen overflow-y-scroll scrollbar-hide bg-background">
             {/* Dashboard Header Section */}
             <div className="border-b bg-card">
-                <div className="container py-4">
+                <div className="p-6 py-4">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div>
                             <h1 className="text-2xl font-bold tracking-tight">Follow-up Dashboard</h1>
@@ -429,7 +429,7 @@ export default function FollowupPage() {
             </div>
 
             {/* Stats Cards Section */}
-            <div className="container py-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="p-6 py-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                 <StatsCard
                     title="Total Follow-ups"
                     value={stats.total}
@@ -464,7 +464,7 @@ export default function FollowupPage() {
             </div>
 
             {/* Filters Section */}
-            <div className="container pb-4">
+            <div className=" pb-4">
                 <Card className="bg-card">
                     <CardContent className="p-4">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -554,7 +554,7 @@ export default function FollowupPage() {
             </div>
 
             {/* Main Content Area */}
-            <div className="container mb-12 h-screen pb-4 flex-1 flex flex-col ">
+            <div className="p-6 mb-12 h-screen pb-4 flex-1 flex flex-col ">
                 <Tabs
                     defaultValue="all"
                     value={selectedTab}

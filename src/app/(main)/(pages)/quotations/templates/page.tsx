@@ -271,7 +271,7 @@ const templateCopy = {
     });
 
     return (
-        <div className="container mx-auto p-6">
+        <div className=" mx-auto p-6">
             <div className="flex items-center justify-between mb-6">
                 <h1 className="text-2xl font-bold">Quotation Templates</h1>
                 {/* <Button onClick={() => setIsNewTemplateDialogOpen(true)} className="bg-blue-600 hover:bg-blue-700">

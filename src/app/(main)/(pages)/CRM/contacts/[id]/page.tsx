@@ -219,7 +219,7 @@ export default function ContactDetailsPage() {
 
 
     return (
-        <div className="container mx-auto py-6 space-y-8">
+        <div className="px-6 mx-auto py-6 space-y-8">
             {/* Header / Navigation */}
             <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">

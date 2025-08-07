@@ -40,7 +40,7 @@ export default function WalletDashboard() {
   }, []);
 
   return (
-    <div className="container max-w-screen-xl mx-auto py-6 space-y-8">
+    <div className="mx-auto py-6 space-y-8">
       <div>
         <h1 className="text-3xl font-bold">Wallet Management</h1>
         <p className="text-muted-foreground mt-1">
