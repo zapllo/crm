@@ -32,16 +32,70 @@ export async function POST(request: NextRequest) {
 
     // Parse the request body
     const body = await request.json();
+    console.log('Received Zaptick lead data:', JSON.stringify(body, null, 2));
 
-    // Validate required fields
-    if (!body.leadData || !body.contactData || !body.pipelineData) {
+    // Validate required fields with detailed error messages
+    const { leadData, contactData, pipelineData } = body;
+
+    if (!leadData) {
       return NextResponse.json(
-        { error: "Missing required data (leadData, contactData, pipelineData)" },
+        { error: "Missing leadData in request body" },
         { status: 400 }
       );
     }
 
-    const { leadData, contactData, pipelineData } = body;
+    if (!contactData) {
+      return NextResponse.json(
+        { error: "Missing contactData in request body" },
+        { status: 400 }
+      );
+    }
+
+    if (!pipelineData) {
+      return NextResponse.json(
+        { error: "Missing pipelineData in request body" },
+        { status: 400 }
+      );
+    }
+
+    // Validate leadData fields
+    if (!leadData.title) {
+      return NextResponse.json(
+        { error: "Missing required field: leadData.title" },
+        { status: 400 }
+      );
+    }
+
+    if (!leadData.stage) {
+      return NextResponse.json(
+        { error: "Missing required field: leadData.stage" },
+        { status: 400 }
+      );
+    }
+
+    // Validate contactData fields
+    if (!contactData.name) {
+      return NextResponse.json(
+        { error: "Missing required field: contactData.name" },
+        { status: 400 }
+      );
+    }
+
+    if (!contactData.phone) {
+      return NextResponse.json(
+        { error: "Missing required field: contactData.phone" },
+        { status: 400 }
+      );
+    }
+
+    // Validate pipelineData fields
+    if (!pipelineData.name) {
+      return NextResponse.json(
+        { error: "Missing required field: pipelineData.name" },
+        { status: 400 }
+      );
+    }
+
     const organizationId = validKey.organization;
 
     // Find an admin user to use as the creator
@@ -64,6 +118,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!pipeline) {
+      console.log('Creating new pipeline:', pipelineData.name);
       // Create new pipeline with provided stages
       pipeline = await Pipeline.create({
         name: pipelineData.name,
@@ -84,6 +139,7 @@ export async function POST(request: NextRequest) {
     let company = await Company.findOne({ organization: organizationId });
     
     if (!company) {
+      console.log('Creating default company for organization:', organizationId);
       company = await Company.create({
         companyName: "Default Company",
         organization: organizationId,
@@ -105,11 +161,13 @@ export async function POST(request: NextRequest) {
     });
 
     if (!contact) {
+      console.log('Creating new contact:', contactData.name);
       // Create new contact
+      const nameParts = contactData.name.split(' ');
       contact = await Contact.create({
         company: company._id,
-        firstName: contactData.name.split(' ')[0] || contactData.name,
-        lastName: contactData.name.split(' ').slice(1).join(' ') || "",
+        firstName: nameParts[0] || contactData.name,
+        lastName: nameParts.slice(1).join(' ') || "",
         email: contactData.email || "",
         country: contactData.countryCode || "Unknown",
         whatsappNumber: contactData.phone,
@@ -128,13 +186,15 @@ export async function POST(request: NextRequest) {
         company._id,
         { $push: { contacts: contact._id } }
       );
+    } else {
+      console.log('Using existing contact:', contact._id);
     }
 
     // Get the count of leads for generating a lead ID
     const leadCount = await Lead.countDocuments({ organization: organizationId });
-    const leadId = `LEAD-${leadCount + 1}`;
+    const leadId = `LEAD-${String(leadCount + 1).padStart(4, '0')}`;
 
-    // Determine the stage
+    // Determine the stage - ensure it exists in the pipeline
     let stage = leadData.stage;
     if (!stage) {
       stage = pipeline.openStages && pipeline.openStages.length > 0
@@ -142,28 +202,62 @@ export async function POST(request: NextRequest) {
         : "New";
     }
 
+    // Validate that the stage exists in the pipeline
+    const stageExists = pipeline.openStages?.some((s: any) => s.name === stage) || 
+                      pipeline.closeStages?.some((s: any) => s.name === stage);
+    
+    if (!stageExists) {
+      console.log('Stage not found in pipeline, using default stage');
+      stage = pipeline.openStages && pipeline.openStages.length > 0
+        ? pipeline.openStages[0].name
+        : "New";
+    }
+
+    // Prepare close date
+    let closeDate = leadData.closeDate;
+    if (!closeDate) {
+      closeDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days from now
+    } else if (typeof closeDate === 'string') {
+      closeDate = new Date(closeDate);
+    }
+
+    console.log('Creating lead with data:', {
+      leadId,
+      title: leadData.title,
+      stage,
+      pipelineId: pipeline._id,
+      contactId: contact._id
+    });
+
     // Create the lead
     const lead = await Lead.create({
       leadId,
       title: leadData.title,
       description: leadData.description || `Lead created from Zaptick for ${contact.firstName} ${contact.lastName}`,
-      product: leadData.product,
+      product: leadData.product || null,
       contact: contact._id,
       amount: leadData.amount || 0,
-      closeDate: leadData.closeDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
-      source: leadData.source,
+      closeDate: closeDate,
+      source: leadData.source || null,
       assignedTo: leadData.assignedTo || adminUser._id,
       remarks: leadData.remarks || "Created via Zaptick integration",
       pipeline: pipeline._id,
       organization: organizationId,
       stage: stage,
+      customFieldValues: leadData.customFieldValues || {},
       timeline: [{
         stage: stage,
         action: "Created via Zaptick",
         remark: `Lead imported from Zaptick WhatsApp conversation`,
         timestamp: new Date(),
+        createdBy: adminUser._id,
         movedBy: adminUser._id
-      }]
+      }],
+      followups: [],
+      notes: [],
+      files: [],
+      audioRecordings: [],
+      links: []
     });
 
     // Add reference to the pipeline
@@ -171,6 +265,8 @@ export async function POST(request: NextRequest) {
       pipeline._id,
       { $push: { leads: lead._id } }
     );
+
+    console.log('Lead created successfully:', lead._id);
 
     return NextResponse.json({
       success: true,
@@ -189,10 +285,15 @@ export async function POST(request: NextRequest) {
         phone: contact.whatsappNumber
       }
     });
+    
   } catch (error: any) {
     console.error('Error processing Zaptick lead:', error);
     return NextResponse.json(
-      { error: "Failed to create lead from Zaptick", details: error.message },
+      { 
+        error: "Failed to create lead from Zaptick", 
+        details: error.message,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      },
       { status: 500 }
     );
   }
