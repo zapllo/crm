@@ -155,28 +155,34 @@ export async function POST(request: NextRequest) {
     let contact = await Contact.findOne({
       $or: [
         { whatsappNumber: contactData.phone },
-        ...(contactData.email ? [{ email: contactData.email }] : [])
+        ...(contactData.email && contactData.email !== '' ? [{ email: contactData.email }] : [])
       ],
       company: company._id
     });
 
     if (!contact) {
       console.log('Creating new contact:', contactData.name);
-      // Create new contact
+      // Create new contact with proper field handling
       const nameParts = contactData.name.split(' ');
+      
+      // Handle email - use a default if empty or not provided
+      const email = contactData.email && contactData.email.trim() !== '' 
+        ? contactData.email 
+        : `${contactData.phone.replace(/[+\s-]/g, '')}@zaptick-import.com`; // Generate a placeholder email
+
       contact = await Contact.create({
         company: company._id,
         firstName: nameParts[0] || contactData.name,
         lastName: nameParts.slice(1).join(' ') || "",
-        email: contactData.email || "",
+        email: email,
         country: contactData.countryCode || "Unknown",
         whatsappNumber: contactData.phone,
         state: "",
         city: "",
         pincode: "",
         address: "",
-        customFieldValues: contactData.customFields || {},
-        tags: contactData.tags || [],
+        customFieldValues: [], // Empty array instead of object for proper validation
+        tags: [], // Empty array instead of string tags to avoid ObjectId casting issues
         dateOfBirth: null,
         dateOfAnniversary: null
       });
@@ -188,6 +194,18 @@ export async function POST(request: NextRequest) {
       );
     } else {
       console.log('Using existing contact:', contact._id);
+      
+      // Update existing contact if needed - fix email if it's invalid
+      if (!contact.email || contact.email === '' || contact.email.includes('zaptick-import.com')) {
+        const newEmail = contactData.email && contactData.email.trim() !== '' 
+          ? contactData.email 
+          : `${contactData.phone.replace(/[+\s-]/g, '')}@zaptick-import.com`;
+          
+        if (newEmail !== contact.email) {
+          await Contact.findByIdAndUpdate(contact._id, { email: newEmail });
+          contact.email = newEmail;
+        }
+      }
     }
 
     // Get the count of leads for generating a lead ID
@@ -244,7 +262,7 @@ export async function POST(request: NextRequest) {
       pipeline: pipeline._id,
       organization: organizationId,
       stage: stage,
-      customFieldValues: leadData.customFieldValues || {},
+      customFieldValues: [], // Empty array for proper validation
       timeline: [{
         stage: stage,
         action: "Created via Zaptick",
