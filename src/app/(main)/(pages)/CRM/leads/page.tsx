@@ -24,7 +24,6 @@ import {
     Lock,
     Mail
 } from "lucide-react";
-
 import {
     Dialog,
     DialogClose,
@@ -34,7 +33,6 @@ import {
     DialogDescription,
     DialogFooter,
 } from "@/components/ui/dialog";
-
 import {
     DndContext,
     DragEndEvent,
@@ -45,7 +43,6 @@ import {
     useSensor,
     useSensors,
 } from "@dnd-kit/core";
-
 import { useRouter } from "next/navigation";
 import {
     DropdownMenu,
@@ -117,7 +114,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import BulkEmailDialog from "@/components/leads/bulkEmail";
 import LeadActionMenu from "@/components/modals/leads/LeadActionMenu";
 import MoveLeadDialog from "@/components/modals/leads/moveLeads2";
-
 
 /* ---------------- TYPES ---------------- */
 interface Lead {
@@ -1687,7 +1683,7 @@ export default function LeadsDashboard() {
                                 </div>
                             </div>
                             <div className="mt-1.5 text-xs font-medium text-muted-foreground flex items-center">
-                                <span className='flex gap-1 items-center'><FaMoneyBill/>{totalAmount.toLocaleString()}</span>
+                                <span className='flex gap-1 items-center'><FaMoneyBill />{totalAmount.toLocaleString()}</span>
                                 <span className="inline-block h-1 w-1 rounded-full bg-muted-foreground mx-1"></span>
                                 <span>Total Value</span>
                             </div>
@@ -1708,7 +1704,7 @@ export default function LeadsDashboard() {
                                 </div>
                             </div>
                             <div className="mt-1.5 text-xs font-medium text-muted-foreground flex items-center">
-                                <span className='flex gap-1 items-center'><FaMoneyBill/>{openAmount.toLocaleString()}</span>
+                                <span className='flex gap-1 items-center'><FaMoneyBill />{openAmount.toLocaleString()}</span>
                                 {totalCount > 0 && (
                                     <>
                                         <span className="inline-block h-1 w-1 rounded-full bg-muted-foreground mx-1"></span>
@@ -1733,7 +1729,7 @@ export default function LeadsDashboard() {
                                 </div>
                             </div>
                             <div className="mt-1.5 text-xs font-medium text-muted-foreground flex items-center">
-                               <span className='flex gap-1 items-center'><FaMoneyBill/>{closedAmount.toLocaleString()}</span>
+                                <span className='flex gap-1 items-center'><FaMoneyBill />{closedAmount.toLocaleString()}</span>
                                 {totalCount > 0 && (
                                     <>
                                         <span className="inline-block h-1 w-1 rounded-full bg-muted-foreground mx-1"></span>
@@ -1758,7 +1754,7 @@ export default function LeadsDashboard() {
                                 </div>
                             </div>
                             <div className="mt-1.5 text-xs font-medium text-muted-foreground flex items-center">
-                                <span className='flex gap-1 items-center'><FaMoneyBill/>{wonAmount.toLocaleString()}</span>
+                                <span className='flex gap-1 items-center'><FaMoneyBill />{wonAmount.toLocaleString()}</span>
                                 {closedCount > 0 && (
                                     <>
                                         <span className="inline-block h-1 w-1 rounded-full bg-muted-foreground mx-1"></span>
@@ -1783,7 +1779,7 @@ export default function LeadsDashboard() {
                                 </div>
                             </div>
                             <div className="mt-1.5 text-xs font-medium text-muted-foreground flex items-center">
-                                 <span className='flex gap-1 items-center'><FaMoneyBill/>{lostAmount.toLocaleString()}</span>
+                                <span className='flex gap-1 items-center'><FaMoneyBill />{lostAmount.toLocaleString()}</span>
                                 {closedCount > 0 && (
                                     <>
                                         <span className="inline-block h-1 w-1 rounded-full bg-muted-foreground mx-1"></span>
@@ -1953,7 +1949,7 @@ export default function LeadsDashboard() {
                                             {draggedLead.leadId}
                                         </Badge>
                                         <p className="text-xs flex items-center gap-1 font-medium">
-                                            <FaMoneyBill/>{draggedLead.amount?.toLocaleString() || 0}
+                                            <FaMoneyBill />{draggedLead.amount?.toLocaleString() || 0}
                                         </p>
                                     </div>
                                     {draggedLead.contact && (
@@ -2934,7 +2930,7 @@ function DroppableStage({
                 <div className="flex items-center justify-between py-2 text-sm">
                     <p className="text-muted-foreground text-xs">Total:</p>
                     <p className="font-medium text-lg flex gap-1 items-center">
-                        <FaMoneyBill/>
+                        <FaMoneyBill />
                         {totalAmount.toLocaleString()}
                     </p>
                 </div>
@@ -2972,7 +2968,7 @@ function DroppableStage({
                                 <p className="text-sm text-muted-foreground mb-2">
                                     {searchTerm.trim() ? "No matching leads found" : "No leads in this stage"}
                                 </p>
-                                
+
                                 {!searchTerm.trim() && canAddLead && onAddLead && (
                                     <Button
                                         variant="outline"

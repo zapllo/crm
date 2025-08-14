@@ -284,8 +284,6 @@ export default function Dashboard() {
     };
 
     return (
-        // ... existing code ...
-
         // In the main Dashboard component
         <div className="p-6  mx-auto h-full max-h-screen scrollbar-hide overflow-y-scroll p-4 space-y-6">
             <div className="flex flex-col mt-2 md:flex-row md:items-center justify-between gap-3 mb-6">

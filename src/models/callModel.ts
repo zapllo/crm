@@ -1,6 +1,5 @@
 import mongoose, { Schema, model, Document } from 'mongoose';
 
-
 export interface ICall extends Document {
   organizationId: mongoose.Types.ObjectId;
   userId: mongoose.Types.ObjectId;
@@ -9,13 +8,14 @@ export interface ICall extends Document {
   twilioCallSid: string;
   twilioRecordingSid?: string;
   recordingUrl?: string;
-  phoneNumber?: string; //
+  phoneNumber?: string;
   duration: number; // in seconds
   direction: 'inbound' | 'outbound';
   status: 'queued' | 'initiated' | 'scheduled' | 'ringing' | 'in-progress' | 'completed' | 'failed' | 'busy' | 'no-answer' | 'canceled';
   notes?: string;
   transcription?: string;
   summary?: string;
+  outcome?: 'Success' | 'Follow-up' | 'Interested' | 'Declined' | 'Inquiry' | 'Support' | 'Complaint' | 'Cancelled';
   sentiment?: {
     score: number; // -1 to 1
     analysis: string; // positive, negative, neutral
@@ -38,8 +38,7 @@ const callSchema = new Schema<ICall>(
     twilioCallSid: { type: String, required: true },
     twilioRecordingSid: { type: String },
     recordingUrl: { type: String },
-    phoneNumber: { type: String }, // Add this field
-    // Add these new fields
+    phoneNumber: { type: String },
     contactName: { type: String },
     customMessage: { type: String },
     scheduledFor: { type: Date },
@@ -57,6 +56,11 @@ const callSchema = new Schema<ICall>(
     },
     summary: {
       type: String,
+      default: null
+    },
+    outcome: {
+      type: String,
+      enum: ['Success', 'Follow-up', 'Interested', 'Declined', 'Inquiry', 'Support', 'Complaint', 'Cancelled'],
       default: null
     },
     sentiment: {

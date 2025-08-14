@@ -177,7 +177,6 @@ const CRMSidebar: React.FC<CRMSidebarProps> = ({ collapsed = false }) => {
                                                         Alt+{item.shortcutKey.toUpperCase()}
                                                     </kbd>
                                                 )}
-
                                                 <ChevronRight
                                                     className={cn(
                                                         "h-4 w-4 opacity-0 transition-all group-hover:opacity-100",

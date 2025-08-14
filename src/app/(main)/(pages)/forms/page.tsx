@@ -551,7 +551,7 @@ const confirmDeleteForm = async () => {
   // Loading skeleton
   if (accessStatus.loading) {
     return (
-      <div className="container mx-auto max-w-screen-xl px-4 py-8 mt-8">
+      <div className=" mx-auto max-w-screen-xl px-4 py-8 mt-8">
         <div className="flex justify-between items-center mb-8">
           <Skeleton className="h-8 w-40" />
           <Skeleton className="h-10 w-36" />
@@ -593,7 +593,7 @@ const confirmDeleteForm = async () => {
 
   if (!accessStatus.hasAccess) {
     return (
-      <div className="container mt-12 mx-auto max-w-screen-xl px-8 py-10 h-full">
+      <div className=" mt-12 mx-auto max-w-screen-xl px-8 py-10 h-full">
         <FormBuilderPricingPage />
       </div>
     );
@@ -604,15 +604,13 @@ const confirmDeleteForm = async () => {
       maxHeight: 'calc(100vh - 16px)', // Adjust based on your layout
       scrollBehavior: 'auto' // Prevent smooth scrolling which can interfere
   }}
-     className="container mt-12  mx-auto max-w-screen w-full px-8 py-10 h-full max-h-screen overflow-y-scroll ">
+     className=" mt-12 mx-auto max-w-screen w-full px-8 py-10 h-full max-h-screen overflow-y-scroll ">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Forms</h1>
           <p className="text-muted-foreground mt-1">Create, manage and analyze your forms</p>
         </div>
-
         <div className="flex gap-3">
-
           <Button onClick={createNewForm} variant="default">
             <Plus className="h-4 w-4 mr-2" />
             Create Form

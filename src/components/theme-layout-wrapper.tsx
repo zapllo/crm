@@ -11,7 +11,7 @@ export function ThemeLayoutWrapper({ children }: { children: React.ReactNode }) 
   return (
     <ThemeProvider
       attribute="class"
-      defaultTheme="dark"
+      defaultTheme="light"
       enableSystem={!isAuthPage && !isLiveFormPage}
       disableTransitionOnChange
       forcedTheme={isAuthPage ? "dark" : isLiveFormPage ? "light" : undefined}

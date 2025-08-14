@@ -3,6 +3,7 @@ import connectDB from '@/lib/db';
 import Call from '@/models/callModel';
 import { getDataFromToken } from '@/lib/getDataFromToken';
 import { User } from '@/models/userModel';
+import { Organization } from '@/models/organizationModel';
 
 export async function GET(req: NextRequest) {
     try {
@@ -19,6 +20,7 @@ export async function GET(req: NextRequest) {
         const contactId = url.searchParams.get('contactId');
         const leadId = url.searchParams.get('leadId');
         const limit = Number(url.searchParams.get('limit') || '50');
+        const includeCredits = url.searchParams.get('includeCredits') === 'true';
 
         await connectDB();
 
@@ -35,7 +37,18 @@ export async function GET(req: NextRequest) {
             .sort({ startTime: -1 })
             .limit(limit);
 
-        return NextResponse.json(calls);
+        let response: any = calls;
+
+        // Include AI credits if requested
+        if (includeCredits) {
+            const organization = await Organization.findById(user.organization);
+            response = {
+                calls,
+                aiCredits: organization?.aiCredits || 0
+            };
+        }
+
+        return NextResponse.json(response);
     } catch (error) {
         console.error('Error fetching calls:', error);
         return NextResponse.json(

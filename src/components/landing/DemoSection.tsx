@@ -4,340 +4,344 @@ import { useState, useRef } from "react"
 import { motion, useInView } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { PlayCircle, ChevronRight, CheckCircle, ArrowRight, MonitorSmartphone } from "lucide-react"
+import { PlayCircle, CheckCircle, ArrowRight, MonitorSmartphone, Smartphone, Monitor, Brain, Zap } from "lucide-react"
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Card, CardContent } from "@/components/ui/card"
 
 const demoTabs = [
     {
         id: "dashboard",
-        title: "Dashboard",
-        description: "Get a complete overview of your business at a glance.",
+        title: "AI Dashboard",
+        description: "Get intelligent insights and predictions at a glance",
         benefits: [
-            "Personalized KPI cards for quick insights",
-            "Interactive charts and analytics",
-            "Real-time activity feed",
-            "Customizable widgets and layouts"
+            "Real-time AI-powered analytics and forecasting",
+            "Personalized KPI cards with smart recommendations",
+            "Interactive charts with predictive modeling",
+            "Customizable widgets with machine learning insights"
         ],
         screenshot: "/demo/dashboard.png",
         mobileScreenshot: "/demo/dashboard.png",
-        color: "from-blue-500 to-blue-600"
+        color: "from-blue-500 to-blue-600",
+        icon: <Brain className="h-4 w-4" />
     },
     {
         id: "contacts",
-        title: "Contacts",
-        description: "Manage all your customer relationships in one place.",
+        title: "Smart Contacts",
+        description: "AI-enhanced customer relationship management",
         benefits: [
-            "Comprehensive contact profiles",
-            "Communication history tracking",
-            "Custom fields and tagging",
-            "Automated data enrichment"
+            "360° customer profiles with AI-generated insights",
+            "Automated contact scoring and prioritization",
+            "Smart communication history with sentiment analysis",
+            "Predictive customer behavior modeling"
         ],
         screenshot: "/demo/contact.png",
         mobileScreenshot: "/demo/contact.png",
-        color: "from-purple-500 to-purple-600"
+        color: "from-purple-500 to-purple-600",
+        icon: <Zap className="h-4 w-4" />
     },
     {
-        id: "pipeline",
-        title: "Sales Pipeline",
-        description: "Visualize and optimize your entire sales process.",
+        id: "sales",
+        title: "Sales Automation",
+        description: "Intelligent deal management and forecasting",
         benefits: [
-            "Drag-and-drop deal management",
-            "Multiple pipeline views",
-            "Advanced filtering options",
-            "Sales stage automation"
+            "AI-powered lead scoring and qualification",
+            "Automated pipeline management with smart alerts",
+            "Predictive deal closing probability",
+            "Intelligent next-best-action recommendations"
         ],
         screenshot: "/demo/sales.png",
         mobileScreenshot: "/demo/sales.png",
-        color: "from-emerald-500 to-emerald-600"
+        color: "from-emerald-500 to-emerald-600",
+        icon: <ArrowRight className="h-4 w-4" />
     },
     {
-        id: "reports",
-        title: "Analytics",
-        description: "Make data-driven decisions with powerful insights.",
+        id: "analytics",
+        title: "Predictive Analytics",
+        description: "AI-driven insights for data-driven decisions",
         benefits: [
-            "Customizable report builder",
-            "AI-powered insights and recommendations",
-            "Scheduled report delivery",
-            "Export capabilities"
+            "Machine learning-powered sales forecasting",
+            "Automated report generation with insights",
+            "Customer behavior prediction models",
+            "Performance optimization recommendations"
         ],
         screenshot: "/demo/analytics.png",
         mobileScreenshot: "/demo/analytics.png",
-        color: "from-orange-500 to-orange-600"
+        color: "from-orange-500 to-orange-600",
+        icon: <Brain className="h-4 w-4" />
     }
 ]
 
 export default function DemoSection({ id }: { id?: string }) {
     const [videoOpen, setVideoOpen] = useState(false)
     const [deviceView, setDeviceView] = useState<"desktop" | "mobile">("desktop")
+    const [activeTab, setActiveTab] = useState("dashboard")
     const ref = useRef(null)
     const isInView = useInView(ref, { once: true, amount: 0.2 })
 
+    const currentTab = demoTabs.find(tab => tab.id === activeTab) || demoTabs[0]
+
     return (
-        <section id={id} ref={ref} className="w-full py-12 md:py-24 bg-slate-50 dark:bg-slate-900 overflow-hidden">
+        <section id={id} ref={ref} className="w-full py-16 md:py-24 bg-gradient-to-b from-background to-muted/30">
             <div className="container px-4 md:px-6">
+                {/* Header */}
                 <motion.div
-                    className="flex flex-col items-center text-center space-y-4 mb-12"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-                    transition={{ duration: 0.5 }}
+                    className="flex flex-col items-center text-center space-y-6 mb-16"
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+                    transition={{ duration: 0.6 }}
                 >
-                    <div className="inline-block rounded-lg bg-primary/10 px-3 py-1 text-sm text-primary">
+                    <Badge className="bg-primary/10 text-primary border-primary/20">
+                        <PlayCircle className="h-3 w-3 mr-2" />
                         See it in action
-                    </div>
-                    <h2 className="text-3xl font-bold tracking-tighter md:text-4xl">
-                        Explore our powerful CRM platform
+                    </Badge>
+                    
+                    <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight">
+                        Experience the power of{" "}
+                        <span className="bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
+                            AI-driven CRM
+                        </span>
                     </h2>
-                    <p className="max-w-[700px] text-gray-500 md:text-xl/relaxed dark:text-gray-400">
-                        Discover how our CRM can transform your business operations and boost your sales across any device.
+                    
+                    <p className="max-w-[700px] text-muted-foreground text-lg md:text-xl leading-relaxed">
+                        Discover how our intelligent platform transforms your customer relationships, 
+                        automates complex workflows, and predicts business opportunities.
                     </p>
 
-                    <div className="flex items-center space-x-3 mt-2">
+                    {/* Device Toggle */}
+                    <div className="flex items-center gap-2 p-1 bg-muted rounded-lg">
                         <Button
-                            variant={deviceView === "desktop" ? "default" : "outline"}
+                            variant={deviceView === "desktop" ? "default" : "ghost"}
                             size="sm"
                             onClick={() => setDeviceView("desktop")}
-                            className="gap-1.5"
+                            className="gap-2"
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-monitor"><rect width="20" height="14" x="2" y="3" rx="2" /><line x1="8" x2="16" y1="21" y2="21" /><line x1="12" x2="12" y1="17" y2="21" /></svg>
+                            <Monitor className="h-4 w-4" />
                             Desktop
                         </Button>
                         <Button
-                            variant={deviceView === "mobile" ? "default" : "outline"}
+                            variant={deviceView === "mobile" ? "default" : "ghost"}
                             size="sm"
                             onClick={() => setDeviceView("mobile")}
-                            className="gap-1.5"
+                            className="gap-2"
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-smartphone"><rect width="14" height="20" x="5" y="2" rx="2" ry="2" /><path d="M12 18h.01" /></svg>
+                            <Smartphone className="h-4 w-4" />
                             Mobile
                         </Button>
                     </div>
                 </motion.div>
 
+                {/* Demo Interface */}
                 <motion.div
-                    className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start max-w-6xl mx-auto"
+                    className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start max-w-7xl mx-auto"
                     initial={{ opacity: 0 }}
                     animate={isInView ? { opacity: 1 } : { opacity: 0 }}
-                    transition={{ duration: 0.7, delay: 0.2 }}
+                    transition={{ duration: 0.8, delay: 0.3 }}
                 >
+                    {/* Demo Preview */}
                     <div className="lg:col-span-2">
-                        <Tabs defaultValue="dashboard" className="w-full">
-                            <TabsList className="grid grid-cols-2 mb-20 md:mb-6 md:grid-cols-4 gap-4 w-full ">
+                        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                            <TabsList className="grid grid-cols-2 md:grid-cols-4 gap-2 w-full mb-8 h-auto p-2 bg-muted">
                                 {demoTabs.map((tab) => (
                                     <TabsTrigger
                                         key={tab.id}
                                         value={tab.id}
-                                        className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
+                                        className="flex flex-col gap-2 p-4 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg h-auto"
                                     >
-                                        {tab.title}
+                                        <div className={`p-2 rounded-lg bg-gradient-to-r ${tab.color} text-white`}>
+                                            {tab.icon}
+                                        </div>
+                                        <span className="text-sm font-medium">{tab.title}</span>
                                     </TabsTrigger>
                                 ))}
                             </TabsList>
+
                             {demoTabs.map((tab) => (
                                 <TabsContent key={tab.id} value={tab.id} className="mt-0">
-                                    <div className="rounded-lg bg-gradient-to-b from-card to-card/50 p-1 shadow-xl relative">
-                                        {deviceView === "desktop" ? (
-                                            <div className="relative aspect-[16/9] overflow-hidden rounded-md bg-black">
-                                                <img
-                                                    src={tab.screenshot}
-                                                    alt={`${tab.title} Screenshot`}
-                                                    className="w-full h-full border blur-[0.5px] object-cover transition-transform duration-700 hover:scale-105"
-                                                />
-                                                <Dialog open={videoOpen} onOpenChange={setVideoOpen}>
-                                                    <DialogTrigger asChild>
-                                                        <Button
-                                                            variant="default"
-                                                            className="absolute top-1/2 left-1/2 border transform -translate-x-1/2 -translate-y-1/2 flex items-center gap-2 bg-background/80 backdrop-blur-sm hover:bg-primary"
-                                                        >
-                                                            <PlayCircle className="mr-1 h-5 w-5" /> Watch Demo
-                                                        </Button>
-                                                    </DialogTrigger>
-                                                    <DialogContent className="max-w-4xl">
-                                                        <div className="aspect-video">
-                                                            <iframe
-                                                                width="100%"
-                                                                height="100%"
-                                                                src="https://www.youtube.com/embed/dQw4w9WgXcQ"
-                                                                title="Product Demo"
-                                                                frameBorder="0"
-                                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                                                allowFullScreen
-                                                            ></iframe>
-                                                        </div>
-                                                    </DialogContent>
-                                                </Dialog>
-                                            </div>
-                                        ) : (
-                                            <div className="flex justify-center py-6 px-4 bg-slate-900 rounded-md">
-                                                <div className="relative w-[280px] h-[570px] bg-black rounded-[3rem] border-[14px] border-black overflow-hidden shadow-lg">
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ duration: 0.5 }}
+                                    >
+                                        <Card className="overflow-hidden border shadow-lg">
+                                            {deviceView === "desktop" ? (
+                                                <div className="relative aspect-[16/9] bg-muted">
                                                     <img
-                                                        src={tab.mobileScreenshot}
-                                                        alt={`${tab.title} Mobile Screenshot`}
+                                                        src={tab.screenshot}
+                                                        alt={`${tab.title} Screenshot`}
                                                         className="w-full h-full object-cover"
                                                     />
-                                                    <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-1/3 h-5 bg-black rounded-b-xl"></div>
+                                                    
+                                                    {/* Play Button Overlay */}
+                                                    <Dialog open={videoOpen} onOpenChange={setVideoOpen}>
+                                                        {/* <DialogTrigger asChild>
+                                                            <Button
+                                                                size="lg"
+                                                                className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 gap-2 bg-background/90 backdrop-blur-sm hover:bg-background/95 text-foreground border shadow-lg"
+                                                            >
+                                                                <PlayCircle className="h-5 w-5" />
+                                                                Watch Demo
+                                                            </Button> */}
+                                                        {/* </DialogTrigger> */}
+                                                        <DialogContent className="max-w-4xl">
+                                                            <div className="aspect-video">
+                                                                <iframe
+                                                                    width="100%"
+                                                                    height="100%"
+                                                                    src="https://www.youtube.com/embed/dQw4w9WgXcQ"
+                                                                    title="Zapllo CRM Demo"
+                                                                    frameBorder="0"
+                                                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                                                    allowFullScreen
+                                                                />
+                                                            </div>
+                                                        </DialogContent>
+                                                    </Dialog>
                                                 </div>
-                                            </div>
-                                        )}
+                                            ) : (
+                                                <div className="flex justify-center py-8 bg-gradient-to-b from-muted to-muted/50">
+                                                    <div className="relative w-[280px] h-[570px] bg-black rounded-[3rem] border-[8px] border-black shadow-xl">
+                                                        <img
+                                                            src={tab.mobileScreenshot}
+                                                            alt={`${tab.title} Mobile Screenshot`}
+                                                            className="w-full h-full object-left object-cover rounded-[2.2rem]"
+                                                        />
+                                                        {/* Mobile notch */}
+                                                        <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-1/3 h-6 bg-black rounded-b-2xl"></div>
+                                                    </div>
+                                                </div>
+                                            )}
 
-                                        <Badge className={`absolute top-4 left-4 bg-gradient-to-r ${tab.color} text-white`}>
-                                            {tab.title}
-                                        </Badge>
-                                    </div>
+                                            {/* Feature Badge */}
+                                            <Badge className={`absolute top-4 left-4 bg-gradient-to-r ${tab.color} text-white border-0`}>
+                                                {tab.title}
+                                            </Badge>
+                                        </Card>
 
-                                    <div className="mt-4 text-center md:text-left">
-                                        <h3 className="text-xl font-semibold">{tab.title}</h3>
-                                        <p className="text-muted-foreground mt-1">{tab.description}</p>
-                                    </div>
+                                        {/* Tab Description */}
+                                        <div className="mt-6 text-center">
+                                            <h3 className="text-xl font-semibold mb-2">{tab.title}</h3>
+                                            <p className="text-muted-foreground">{tab.description}</p>
+                                        </div>
+                                    </motion.div>
                                 </TabsContent>
                             ))}
                         </Tabs>
                     </div>
 
+                    {/* Benefits Sidebar */}
                     <div>
                         <motion.div
-                            className="bg-card rounded-lg border shadow-sm h-full p-6"
+                            className="sticky top-8"
                             initial={{ x: 50, opacity: 0 }}
                             animate={isInView ? { x: 0, opacity: 1 } : { x: 50, opacity: 0 }}
-                            transition={{ duration: 0.5, delay: 0.3 }}
+                            transition={{ duration: 0.6, delay: 0.4 }}
                         >
-                            <Tabs defaultValue="dashboard" className="h-full  flex flex-col">
-                                <div className="mb-4">
-                                    <h3 className="text-xl font-bold mb-2">Key Benefits</h3>
-                                    <p className="text-muted-foreground text-sm">
-                                        See how each feature helps your business grow:
-                                    </p>
-                                </div>
-
-                                <TabsList className="grid grid-cols-2 gap-4  md:grid-cols-4 lg:grid-cols-2 w-full mb-4">
-                                    {demoTabs.map((tab) => (
-                                        <TabsTrigger
-                                            key={tab.id}
-                                            value={tab.id}
-                                            className="text-xs sm:text-sm data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
-                                        >
-                                            {tab.title}
-                                        </TabsTrigger>
-                                    ))}
-                                </TabsList>
-
-                                <div className="flex-grow mt-8">
-                                    {demoTabs.map((tab) => (
-                                        <TabsContent key={tab.id} value={tab.id} className="h-full flex flex-col space-y-4">
-                                            <ul className="space-y-3 flex-grow">
-                                                {tab.benefits.map((benefit, index) => (
-                                                    <motion.li
-                                                        key={index}
-                                                        className="flex items-start gap-2"
-                                                        initial={{ opacity: 0, x: 20 }}
-                                                        whileInView={{ opacity: 1, x: 0 }}
-                                                        transition={{ duration: 0.3, delay: 0.1 * index }}
-                                                        viewport={{ once: true }}
-                                                    >
-                                                        <CheckCircle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                                                        <span>{benefit}</span>
-                                                    </motion.li>
-                                                ))}
-                                            </ul>
-
-                                            <TooltipProvider>
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <div className="bg-muted/50 rounded-lg p-4 border border-dashed border-muted-foreground/30">
-                                                            <div className="flex items-center gap-2">
-                                                                <div className="bg-primary/20 p-2 rounded-full">
-                                                                    <MonitorSmartphone className="h-5 w-5 text-primary" />
-                                                                </div>
-                                                                <div>
-                                                                    <p className="font-medium">Works across all devices</p>
-                                                                    <p className="text-sm text-muted-foreground">Cloud-based access anywhere</p>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent>
-                                                        <p>Available on desktop, tablet, and mobile devices</p>
-                                                    </TooltipContent>
-                                                </Tooltip>
-                                            </TooltipProvider>
-
-                                            <div className="pt-4">
-                                                <Button className="w-full group">
-                                                    <span>Schedule a personalized demo</span>
-                                                    <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                                                </Button>
-                                            </div>
-                                        </TabsContent>
-                                    ))}
-                                </div>
-
-                                <div className="mt-6 border-t pt-4">
-                                    <div className="flex items-center gap-4">
-                                        <div className="bg-green-100 dark:bg-green-900/30 h-10 w-10 rounded-full flex items-center justify-center flex-shrink-0">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-green-600 dark:text-green-400"><path d="M12 7c-.55 0-1 .45-1 1v4c0 .55.45 1 1 1h4c.55 0 1-.45 1-1s-.45-1-1-1h-3V8c0-.55-.45-1-1-1Z" /><circle cx="12" cy="12" r="10" /></svg>
-                                        </div>
+                            <Card className="border shadow-sm">
+                                <CardContent className="p-6">
+                                    <div className="space-y-6">
                                         <div>
-                                            <p className="font-medium text-sm">30-minute setup</p>
-                                            <p className="text-xs text-muted-foreground">Quick implementation with our team</p>
+                                            <h3 className="text-lg font-semibold mb-2">Key Benefits</h3>
+                                            <p className="text-sm text-muted-foreground">
+                                                See how {currentTab.title.toLowerCase()} drives results:
+                                            </p>
+                                        </div>
+
+                                        <ul className="space-y-4">
+                                            {currentTab.benefits.map((benefit, index) => (
+                                                <motion.li
+                                                    key={index}
+                                                    className="flex items-start gap-3"
+                                                    initial={{ opacity: 0, x: 20 }}
+                                                    animate={{ opacity: 1, x: 0 }}
+                                                    transition={{ duration: 0.3, delay: index * 0.1 }}
+                                                >
+                                                    <div className="flex-shrink-0 w-5 h-5 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mt-0.5">
+                                                        <CheckCircle className="h-3 w-3 text-green-600 dark:text-green-400" />
+                                                    </div>
+                                                    <span className="text-sm leading-relaxed">{benefit}</span>
+                                                </motion.li>
+                                            ))}
+                                        </ul>
+
+                                        {/* Device Compatibility */}
+                                        <div className="pt-4 border-t">
+                                            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                                                <MonitorSmartphone className="h-4 w-4" />
+                                                <span>Works on all devices</span>
+                                            </div>
+                                            <p className="text-xs text-muted-foreground">
+                                                Responsive design ensures perfect experience on desktop, tablet, and mobile
+                                            </p>
+                                        </div>
+
+                                        {/* CTA */}
+                                        <div className="pt-4">
+                                            <Button className="w-full group" size="lg">
+                                                Start free trial
+                                                <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                                            </Button>
+                                            <p className="text-xs text-center text-muted-foreground mt-2">
+                                                7-day free trial • No credit card required
+                                            </p>
                                         </div>
                                     </div>
-                                </div>
-                            </Tabs>
+                                </CardContent>
+                            </Card>
                         </motion.div>
                     </div>
                 </motion.div>
 
+                {/* Bottom CTA */}
                 <motion.div
-                    className="mt-20 max-w-3xl mx-auto"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-                    transition={{ duration: 0.5, delay: 0.6 }}
+                    className="mt-16 max-w-4xl mx-auto"
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+                    transition={{ duration: 0.6, delay: 0.8 }}
                 >
-                    <div className="relative">
-                        <div className="absolute -inset-x-4 -inset-y-4 z-0 bg-primary/5 rounded-xl skew-y-1"></div>
-                        <div className="relative z-10 bg-card border rounded-lg p-6 md:p-8 shadow-sm">
-                            <div className="flex flex-col md:flex-row gap-6 items-center">
-                                <div className="md:flex-1">
-                                    <h3 className="text-xl md:text-2xl font-bold mb-2">Ready to transform your business?</h3>
-                                    <p className="text-muted-foreground mb-4">
-                                        Join thousands of successful companies using our CRM platform to grow their business.
+                    <Card className="border-2 border-primary/10 bg-gradient-to-r from-primary/5 to-blue-500/5">
+                        <CardContent className="p-8">
+                            <div className="text-center space-y-6">
+                                <div>
+                                    <h3 className="text-2xl md:text-3xl font-bold mb-2">
+                                        Ready to transform your business?
+                                    </h3>
+                                    <p className="text-muted-foreground max-w-2xl mx-auto">
+                                        Join thousands of companies using Zapllo to automate workflows, 
+                                        enhance customer relationships, and drive unprecedented growth.
                                     </p>
-                                    <div className="flex flex-col sm:flex-row gap-3">
-                                        <Button className="group relative overflow-hidden">
-                                            <span className="relative z-10">Start free trial</span>
-                                            <span className="absolute inset-0 bg-primary group-hover:translate-y-full transition-transform duration-300" />
-                                            <span className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-                                            <ArrowRight className="ml-2 h-4 w-4 relative z-10 group-hover:translate-x-1 transition-transform" />
-                                        </Button>
-                                        <Button variant="outline" className="group">
-                                            Book a demo
-                                            <ChevronRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                                        </Button>
-                                    </div>
                                 </div>
-                                <div className="md:flex-1 flex justify-center md:justify-end">
-                                    <div className="relative">
-                                        <div className="flex -space-x-3">
-                                            {[1, 2, 3, 4, 5].map((i) => (
-                                                <div key={i} className="h-12 w-12 rounded-full bg-slate-100 dark:bg-slate-700 border-2 border-white dark:border-slate-900 flex items-center justify-center text-sm font-medium">
-                                                    <img
-                                                        src={`/avatars/man${i}.jpg`} // Replace with the actual path to your images
-                                                        alt={`user ${i}`} // Optional alt text
-                                                        className="h-full w-full rounded-full object-cover" // Ensures the image fits inside the circle
-                                                    />
-                                                </div>
-                                            ))}
-                                        </div>
-                                        <div className="mt-2 text-center text-xs text-muted-foreground">
-                                            <span className="font-medium text-foreground">2,000+</span> users joined last month
-                                        </div>
-                                    </div>
 
+                                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                                    <Button size="lg" className="group">
+                                        Start your free trial
+                                        <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                                    </Button>
+                                    <Button size="lg" variant="outline">
+                                        Schedule a demo
+                                    </Button>
+                                </div>
+
+                                {/* Social Proof */}
+                                <div className="flex items-center justify-center gap-6 pt-6 border-t">
+                                    <div className="flex -space-x-2">
+                                        {[1, 2, 3, 4, 5].map((i) => (
+                                            <div key={i} className="h-8 w-8 rounded-full bg-muted border-2 border-background flex items-center justify-center text-xs font-medium">
+                                                <img
+                                                    src={`/avatars/man${i}.jpg`}
+                                                    alt={`User ${i}`}
+                                                    className="h-full w-full rounded-full object-cover"
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="text-sm text-muted-foreground">
+                                        <span className="font-medium text-foreground">2,000+</span> businesses started this month
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
+                        </CardContent>
+                    </Card>
                 </motion.div>
             </div>
         </section>

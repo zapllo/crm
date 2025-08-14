@@ -248,7 +248,6 @@ const AddProduct: React.FC<AddProductProps> = ({ isOpen, setIsOpen, onProductCre
                         Create a new product with details, pricing, and images
                     </p>
                 </DialogHeader>
-
                 <div className="px-6 pb-6 overflow-y-auto max-h-[70vh]">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                         <div className="space-y-4">

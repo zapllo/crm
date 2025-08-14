@@ -523,7 +523,7 @@ export default function ContactDetailsPage() {
                                                 `No leads matching "${searchTerm}" were found.` :
                                                 `There are no leads associated with this contact yet.`}
                                         </p>
-                                       
+
                                     </div>
                                 ) : (
                                     <Table>
@@ -602,10 +602,8 @@ export default function ContactDetailsPage() {
                             <CallHistory contactId={contact._id} />
                         </CardContent>
                         <CardFooter>
-                            <Button
-                                onClick={() => setShowCallDialog(true)}
-                                className="w-full gap-2"
-                            >
+                            <Button onClick={() => setShowCallDialog(true)}
+                                className="w-full gap-2">
                                 <PhoneCall className="h-4 w-4" />
                                 Call {contact.firstName}
                             </Button>
