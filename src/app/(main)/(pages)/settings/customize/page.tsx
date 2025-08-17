@@ -477,7 +477,9 @@ export default function CustomizePage() {
                                     <Dialog open={isAIDialogOpen} onOpenChange={setIsAIDialogOpen}>
                                         {canAdd("Settings") ? (
                                             <DialogTrigger asChild>
-                                                <Button variant="outline" className="group flex justify-end gap-2">
+                                               <Button  variant="outline"
+                                                    className="bg-gradient-to-r from-purple-500 to-blue-500 text-white border-none hover:from-purple-600 hover:to-blue-600 hover:text-white gap-2"
+                                                >
                                                     <Brain className="h-4 w-4 group-hover:animate-pulse" />
                                                     Generate with AI
                                                 </Button>
@@ -486,7 +488,9 @@ export default function CustomizePage() {
                                             <TooltipProvider>
                                                 <Tooltip>
                                                     <TooltipTrigger asChild>
-                                                        <Button variant="outline" className="group flex opacity-30 gap-2">
+                                                          <Button  variant="outline"
+                                                    className="bg-gradient-to-r from-purple-500 to-blue-500 text-white border-none hover:from-purple-600 hover:to-blue-600 hover:text-white gap-2"
+                                                >
                                                             <Brain className="h-4 w-4 group-hover:animate-pulse" />
                                                             Generate with AI
                                                         </Button>
@@ -510,45 +514,45 @@ export default function CustomizePage() {
                                             />
                                         </DialogContent>
                                     </Dialog>
-                          
-                                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                                    {canAdd("Settings") ? (
 
-                                        <DialogTrigger asChild>
-                                            <Button className="group flex gap-2">
-                                                <Sparkles className="h-4 w-4 group-hover:animate-pulse" />
-                                                Create Pipeline
-                                            </Button>
+                                    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                                        {canAdd("Settings") ? (
 
-                                        </DialogTrigger>
-                                    ) : (
-                                        <TooltipProvider>
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <Button className="group flex opacity-30 gap-2">
-                                                        <Sparkles className="h-4 w-4 group-hover:animate-pulse" />
-                                                        Create Pipeline
-                                                    </Button>
-                                                </TooltipTrigger>
-                                                <TooltipContent>
-                                                    <p>You don't have permission to add companies</p>
-                                                </TooltipContent>
-                                            </Tooltip>
-                                        </TooltipProvider>
-                                    )}
-                                    <DialogContent className="z-[100] p-6 h-fit max-h-screen m-auto overflow-y-scroll scrollbar-hide max-w-lg w-full">
-                                        <DialogHeader>
-                                            <DialogTitle className="text-lg font-medium dark:text-white flex items-center gap-2">
-                                                <Sparkles className="h-5 w-5 text-primary" />
-                                                Create Pipeline
-                                            </DialogTitle>
-                                        </DialogHeader>
-                                        <div className="">
-                                            <CreatePipelineForm onClose={handleCloseDialog} />
-                                        </div>
-                                    </DialogContent>
-                                </Dialog>
-                                      </div>
+                                            <DialogTrigger asChild>
+                                                <Button className="group flex gap-2">
+                                                    <Sparkles className="h-4 w-4 group-hover:animate-pulse" />
+                                                    Create Pipeline
+                                                </Button>
+
+                                            </DialogTrigger>
+                                        ) : (
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button className="group flex opacity-30 gap-2">
+                                                            <Sparkles className="h-4 w-4 group-hover:animate-pulse" />
+                                                            Create Pipeline
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        <p>You don't have permission to add companies</p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                        )}
+                                        <DialogContent className="z-[100] p-6 h-fit max-h-screen m-auto overflow-y-scroll scrollbar-hide max-w-lg w-full">
+                                            <DialogHeader>
+                                                <DialogTitle className="text-lg font-medium dark:text-white flex items-center gap-2">
+                                                    <Sparkles className="h-5 w-5 text-primary" />
+                                                    Create Pipeline
+                                                </DialogTitle>
+                                            </DialogHeader>
+                                            <div className="">
+                                                <CreatePipelineForm onClose={handleCloseDialog} />
+                                            </div>
+                                        </DialogContent>
+                                    </Dialog>
+                                </div>
                             </CardHeader>
                             <CardContent className="p-0">
                                 <div className="p-4">
@@ -563,81 +567,105 @@ export default function CustomizePage() {
                                         <Filter className="h-4 w-4 absolute left-3 top-3 text-muted-foreground" />
                                     </div>
 
-                                    <ScrollArea className="h-[400px]">
+                                    <div className="border rounded-lg">
                                         <Table>
-                                            <TableHeader className="bg-muted/50 sticky top-0">
+                                            <TableHeader className="bg-muted/50 sticky top-0 z-10">
                                                 <TableRow>
-                                                    <TableHead>Pipeline Name</TableHead>
-                                                    <TableHead>Stages</TableHead>
-                                                    <TableHead>Custom Fields</TableHead>
-                                                    <TableHead className="w-[80px]">Actions</TableHead>
+                                                    <TableHead className="w-[200px]">Pipeline Name</TableHead>
+                                                    <TableHead className="w-[300px]">Stages</TableHead>
+                                                    <TableHead className="w-[120px]">Custom Fields</TableHead>
+                                                    <TableHead className="w-[120px]">Actions</TableHead>
                                                 </TableRow>
                                             </TableHeader>
-                                            <TableBody>
-                                                {filteredPipelines.length === 0 ? (
-                                                    <TableRow>
-                                                        <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                                                            No pipelines found. Create your first pipeline!
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ) : (
-                                                    filteredPipelines.map((pipeline) => (
-                                                        <TableRow key={pipeline._id} className="hover:bg-muted/50 transition-colors">
-                                                            <TableCell className="font-medium">{pipeline.name}</TableCell>
-                                                            <TableCell>
-                                                                <div className="flex flex-wrap gap-1">
-                                                                    {pipeline.openStages.map((stage, i) => (
-                                                                        <Badge key={`open-${i}`} variant="outline" className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
-                                                                            {typeof stage === 'object' ? stage.name : stage}
-                                                                        </Badge>
-                                                                    ))}
-                                                                    {pipeline.closeStages.map((stage, i) => (
-                                                                        <Badge key={`close-${i}`} variant="outline" className="bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300">
-                                                                            {typeof stage === 'object' ? stage.name : stage}
-                                                                        </Badge>
-                                                                    ))}
-                                                                </div>
-                                                            </TableCell>
-                                                            <TableCell>
-                                                                <span className="text-muted-foreground">
-                                                                    {pipeline.customFields.length} fields
-                                                                </span>
-                                                            </TableCell>
-                                                            <TableCell>
-                                                                <div className="flex space-x-2">
-                                                                    <TooltipProvider>
-                                                                        <Tooltip>
-                                                                            <TooltipTrigger asChild>
-                                                                                {canEdit("Settings") && (
-                                                                                    <Button variant="ghost" size="icon" onClick={() => openEditModal(pipeline)} className="h-8 w-8 text-blue-500">
-                                                                                        <Pencil className="h-4 w-4" />
-                                                                                    </Button>
-                                                                                )}
-                                                                            </TooltipTrigger>
-                                                                            <TooltipContent>Edit pipeline</TooltipContent>
-                                                                        </Tooltip>
-                                                                    </TooltipProvider>
+                                        </Table>
 
-                                                                    <TooltipProvider>
-                                                                        <Tooltip>
-                                                                            <TooltipTrigger asChild>
-                                                                                {canDelete("Settings") && (
-                                                                                    <Button variant="ghost" size="icon" onClick={() => handleDeletePipeline(pipeline)} className="h-8 w-8 text-red-500">
-                                                                                        <Trash2 className="h-4 w-4" />
-                                                                                    </Button>
-                                                                                )}
-                                                                            </TooltipTrigger>
-                                                                            <TooltipContent>Delete pipeline</TooltipContent>
-                                                                        </Tooltip>
-                                                                    </TooltipProvider>
-                                                                </div>
+                                        <ScrollArea className="h-[400px]">
+                                            <Table>
+                                                <TableBody>
+                                                    {filteredPipelines.length === 0 ? (
+                                                        <TableRow>
+                                                            <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                                                                No pipelines found. Create your first pipeline!
                                                             </TableCell>
                                                         </TableRow>
-                                                    ))
-                                                )}
-                                            </TableBody>
-                                        </Table>
-                                    </ScrollArea>
+                                                    ) : (
+                                                        filteredPipelines.map((pipeline) => (
+                                                            <TableRow key={pipeline._id} className="hover:bg-muted/50 transition-colors">
+                                                                <TableCell className="w-[200px] font-medium">
+                                                                    <div className="truncate pr-2" title={pipeline.name}>
+                                                                        {pipeline.name}
+                                                                    </div>
+                                                                </TableCell>
+                                                                <TableCell className="w-[300px]">
+                                                                    <div className="flex flex-wrap gap-1 max-w-[280px]">
+                                                                        {pipeline.openStages.slice(0, 2).map((stage, i) => (
+                                                                            <Badge key={`open-${i}`} variant="outline" className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 text-xs">
+                                                                                {typeof stage === 'object' ? stage.name : stage}
+                                                                            </Badge>
+                                                                        ))}
+                                                                        {pipeline.closeStages.slice(0, 1).map((stage, i) => (
+                                                                            <Badge key={`close-${i}`} variant="outline" className="bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 text-xs">
+                                                                                {typeof stage === 'object' ? stage.name : stage}
+                                                                            </Badge>
+                                                                        ))}
+                                                                        {(pipeline.openStages.length + pipeline.closeStages.length) > 3 && (
+                                                                            <Badge variant="outline" className="text-xs">
+                                                                                +{(pipeline.openStages.length + pipeline.closeStages.length) - 3} more
+                                                                            </Badge>
+                                                                        )}
+                                                                    </div>
+                                                                </TableCell>
+                                                                <TableCell className="w-[120px]">
+                                                                    <span className="text-muted-foreground">
+                                                                        {pipeline.customFields.length} fields
+                                                                    </span>
+                                                                </TableCell>
+                                                                <TableCell className="w-[120px]">
+                                                                    <div className="flex space-x-1">
+                                                                        <TooltipProvider>
+                                                                            <Tooltip>
+                                                                                <TooltipTrigger asChild>
+                                                                                    {canEdit("Settings") && (
+                                                                                        <Button
+                                                                                            variant="ghost"
+                                                                                            size="icon"
+                                                                                            onClick={() => openEditModal(pipeline)}
+                                                                                            className="h-8 w-8 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950"
+                                                                                        >
+                                                                                            <Pencil className="h-4 w-4" />
+                                                                                        </Button>
+                                                                                    )}
+                                                                                </TooltipTrigger>
+                                                                                <TooltipContent>Edit pipeline</TooltipContent>
+                                                                            </Tooltip>
+                                                                        </TooltipProvider>
+
+                                                                        <TooltipProvider>
+                                                                            <Tooltip>
+                                                                                <TooltipTrigger asChild>
+                                                                                    {canDelete("Settings") && (
+                                                                                        <Button
+                                                                                            variant="ghost"
+                                                                                            size="icon"
+                                                                                            onClick={() => handleDeletePipeline(pipeline)}
+                                                                                            className="h-8 w-8 text-red-500 hover:bg-red-50 dark:hover:bg-red-950"
+                                                                                        >
+                                                                                            <Trash2 className="h-4 w-4" />
+                                                                                        </Button>
+                                                                                    )}
+                                                                                </TooltipTrigger>
+                                                                                <TooltipContent>Delete pipeline</TooltipContent>
+                                                                            </Tooltip>
+                                                                        </TooltipProvider>
+                                                                    </div>
+                                                                </TableCell>
+                                                            </TableRow>
+                                                        ))
+                                                    )}
+                                                </TableBody>
+                                            </Table>
+                                        </ScrollArea>
+                                    </div>
                                 </div>
                             </CardContent>
                         </Card>

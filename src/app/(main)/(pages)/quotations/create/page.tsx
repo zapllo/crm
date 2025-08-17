@@ -7,7 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 export default function CreateQuotationPage() {
   return (
     <ScrollArea className="h-full">
-      <div className=" mx-auto p-6">
+      <div className=" mx-auto ">
         <CreateQuotationForm />
       </div>
     </ScrollArea>

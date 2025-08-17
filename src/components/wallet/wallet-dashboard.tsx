@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import axios from "axios";
 import {
   Tabs,
@@ -8,17 +9,42 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import { Wallet, Brain, Plus, History } from "lucide-react";
 import WalletOverview from "./wallet-overview";
 import WalletTopup from "./wallet-topup";
 import WalletHistory from "./wallet-history";
-// import WalletAnalytics from "./wallet-analytics";
+import AiCreditsTab from "./ai-credits-tab";
 
 export default function WalletDashboard() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const tabParam = searchParams.get('tab');
+  
+  const [activeTab, setActiveTab] = useState(tabParam || "overview");
   const [isLoading, setIsLoading] = useState(true);
   const [walletData, setWalletData] = useState({
     balance: 0,
     currency: "INR",
   });
+
+  // Update active tab when URL parameter changes
+  useEffect(() => {
+    if (tabParam && ['overview', 'topup', 'ai-credits', 'history'].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
+
+  // Update URL when tab changes
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    const url = new URL(window.location.href);
+    if (value === 'overview') {
+      url.searchParams.delete('tab');
+    } else {
+      url.searchParams.set('tab', value);
+    }
+    router.replace(url.pathname + url.search, { scroll: false });
+  };
 
   useEffect(() => {
     const fetchWalletData = async () => {
@@ -39,28 +65,66 @@ export default function WalletDashboard() {
     fetchWalletData();
   }, []);
 
+  // Function to refresh wallet data (can be called from child components)
+  const refreshWalletData = async () => {
+    try {
+      const response = await axios.get("/api/wallet/balance");
+      setWalletData({
+        balance: response.data.balance,
+        currency: response.data.currency,
+      });
+    } catch (error) {
+      console.error("Error refreshing wallet data:", error);
+    }
+  };
+
   return (
     <div className="mx-auto py-6 space-y-8">
       <div>
         <h1 className="text-3xl font-bold">Wallet Management</h1>
         <p className="text-muted-foreground mt-1">
-          Manage your calling credits and track usage
+          Manage your calling credits, AI credits, and track usage
         </p>
       </div>
 
-      <Tabs defaultValue="overview" className="">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="">
         <TabsList className="grid w-full max-w-2xl grid-cols-4 gap-2 bg-accent">
-          <TabsTrigger className='border-none' value="overview">Overview</TabsTrigger>
-          <TabsTrigger className='border-none' value="topup">Add Credits</TabsTrigger>
-          <TabsTrigger className='border-none' value="history">History</TabsTrigger>
-          {/* <TabsTrigger className='border-none' value="analytics">Analytics</TabsTrigger> */}
+          <TabsTrigger 
+            className='border-none flex items-center gap-2' 
+            value="overview"
+          >
+            <Wallet className="h-4 w-4" />
+            <span className="hidden sm:inline">Overview</span>
+          </TabsTrigger>
+          <TabsTrigger 
+            className='border-none flex items-center gap-2' 
+            value="topup"
+          >
+            <Plus className="h-4 w-4" />
+            <span className="hidden sm:inline">Add Credits</span>
+          </TabsTrigger>
+          <TabsTrigger 
+            className='border-none flex items-center gap-2' 
+            value="ai-credits"
+          >
+            <Brain className="h-4 w-4" />
+            <span className="hidden sm:inline">AI Credits</span>
+          </TabsTrigger>
+          <TabsTrigger 
+            className='border-none flex items-center gap-2' 
+            value="history"
+          >
+            <History className="h-4 w-4" />
+            <span className="hidden sm:inline">History</span>
+          </TabsTrigger>
         </TabsList>
         
         <TabsContent value="overview" className="mt-6">
           <WalletOverview 
             balance={walletData.balance} 
             currency={walletData.currency}
-            isLoading={isLoading} 
+            isLoading={isLoading}
+            onRefresh={refreshWalletData}
           />
         </TabsContent>
         
@@ -68,15 +132,16 @@ export default function WalletDashboard() {
           <WalletTopup 
             currentBalance={walletData.balance}
             currency={walletData.currency}
+            onSuccess={refreshWalletData}
           />
+        </TabsContent>
+        
+        <TabsContent value="ai-credits" className="mt-6">
+          <AiCreditsTab />
         </TabsContent>
         
         <TabsContent value="history" className="mt-6">
           <WalletHistory />
-        </TabsContent>
-        
-        <TabsContent value="analytics" className="mt-6">
-          {/* <WalletAnalytics /> */}
         </TabsContent>
       </Tabs>
     </div>

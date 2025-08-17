@@ -62,12 +62,12 @@ const Layout = (props: Props) => {
             {/* Main Content */}
             <div className="flex-1 flex flex-col min-w-0 relative">
                 {/* Toggle Button */}
-                <div className="absolute -ml-5 mt-2 p-2 z-10">
+                <div className="absolute -ml-5 mt-2 p-2 z-20">
                     <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                        className="h-7 border shadow-sm  border-primary rounded-full bg-white mt-2 w-7"
+                        className="h-7 z- border shadow-sm  border-primary rounded-full dark:text-black bg-white dark:hover:text-white mt-2  w-7"
                     >
                         {sidebarCollapsed ? (
                             <ChevronRight className="h-4 w-4" />

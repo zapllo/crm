@@ -256,8 +256,8 @@ export default function CompanyDetailsPage() {
                     >
                         <ArrowLeft className="h-4 w-4" /> Companies
                     </Button>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground mx-1" />
-                    <span className="text-sm font-medium truncate">{company.companyName}</span>
+                    {/* <ChevronRight className="h-4 w-4 text-muted-foreground mx-1" />
+                    <span className="text-sm font-medium truncate">{company.companyName}</span> */}
                 </div>
                 <div className="flex justify-between items-center">
                     <div className="flex items-center gap-4">

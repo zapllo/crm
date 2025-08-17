@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import {
   Plus, Search, Filter, Edit2, Copy, Trash2,
   MoreHorizontal, FileText, ExternalLink, Eye,
-  Sparkles, Calendar, Share2, RefreshCw, BarChart3, ArrowUpRight
+  Sparkles, Calendar, Share2, RefreshCw, BarChart3, ArrowUpRight,
+  Grid3X3, List, TrendingUp, Clock, Users, Settings
 } from 'lucide-react';
 
 import { useToast } from '@/hooks/use-toast';
@@ -42,69 +43,73 @@ import FormBuilderPricingPage from '@/components/billing/FormBuilderPricingPage'
 import { useUserContext } from '@/contexts/userContext';
 import FormBuilderUsageStats from '@/components/form-builder/FormBuilderUsageStats';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-
+import { cn } from '@/lib/utils';
 
 function FormLimitsWarning({ limits }: { limits: { maxForms: number, currentForms: number, maxSubmissionsPerMonth: number, currentMonthSubmissions: number, plan: string | null } | null }) {
   if (!limits) return null;
 
   const { maxForms, currentForms, maxSubmissionsPerMonth, currentMonthSubmissions, plan } = limits;
-
   const formUsagePercent = maxForms > 0 ? (currentForms / maxForms) * 100 : 0;
-  const submissionUsagePercent = maxSubmissionsPerMonth > 0
-    ? (currentMonthSubmissions / maxSubmissionsPerMonth) * 100
-    : 0;
+  const submissionUsagePercent = maxSubmissionsPerMonth > 0 ? (currentMonthSubmissions / maxSubmissionsPerMonth) * 100 : 0;
 
   if (formUsagePercent < 80 && submissionUsagePercent < 80) return null;
+  
   const router = useRouter();
+  
   return (
-    <Card className="mb-6 border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800/30">
-      <CardContent className="p-4">
-        <div className="flex flex-col md:flex-row gap-6">
-          {formUsagePercent >= 80 && (
-            <div className="flex-1">
-              <div className="flex justify-between mb-2">
-                <span className="font-medium">Published Forms</span>
-                <span className={formUsagePercent >= 90 ? "text-red-600" : "text-amber-600"}>
-                  {currentForms} / {maxForms}
-                </span>
-              </div>
-              <Progress value={formUsagePercent}
-                className={`h-2 ${formUsagePercent >= 90 ? "bg-red-200" : "bg-amber-200"}`}
+    <Card className="mb-6 border-amber-200/60 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 dark:border-amber-800/30">
+      <CardContent className="p-6">
+        <div className="flex items-start gap-4">
+          <div className="p-2 rounded-full bg-amber-100 dark:bg-amber-900/30">
+            <TrendingUp className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+          </div>
+          <div className="flex-1 space-y-4">
+            <div>
+              <h3 className="font-semibold text-amber-900 dark:text-amber-100 mb-1">Usage Alert</h3>
+              <p className="text-sm text-amber-700 dark:text-amber-200">You're approaching your plan limits</p>
+            </div>
+            
+            <div className="grid md:grid-cols-2 gap-4">
+              {formUsagePercent >= 80 && (
+                <div>
+                  <div className="flex justify-between mb-2">
+                    <span className="text-sm font-medium text-amber-800 dark:text-amber-200">Published Forms</span>
+                    <span className={cn("text-sm font-bold", formUsagePercent >= 90 ? "text-red-600" : "text-amber-600")}>
+                      {currentForms} / {maxForms}
+                    </span>
+                  </div>
+                  <Progress 
+                    value={formUsagePercent} 
+                    className={cn("h-2", formUsagePercent >= 90 ? "bg-red-200" : "bg-amber-200")}
+                  />
+                </div>
+              )}
 
-              />
-              {formUsagePercent >= 90 && (
-                <p className="text-sm mt-1 text-red-600">
-                  You've almost reached your form limit!
-                </p>
+              {submissionUsagePercent >= 80 && (
+                <div>
+                  <div className="flex justify-between mb-2">
+                    <span className="text-sm font-medium text-amber-800 dark:text-amber-200">Monthly Submissions</span>
+                    <span className={cn("text-sm font-bold", submissionUsagePercent >= 90 ? "text-red-600" : "text-amber-600")}>
+                      {currentMonthSubmissions} / {maxSubmissionsPerMonth}
+                    </span>
+                  </div>
+                  <Progress 
+                    value={submissionUsagePercent} 
+                    className={cn("h-2", submissionUsagePercent >= 90 ? "bg-red-200" : "bg-amber-200")}
+                  />
+                </div>
               )}
             </div>
-          )}
 
-          {submissionUsagePercent >= 80 && (
-            <div className="flex-1">
-              <div className="flex justify-between mb-2">
-                <span className="font-medium">Monthly Submissions</span>
-                <span className={submissionUsagePercent >= 90 ? "text-red-600" : "text-amber-600"}>
-                  {currentMonthSubmissions} / {maxSubmissionsPerMonth}
-                </span>
-              </div>
-              <Progress value={submissionUsagePercent}
-                className={`h-2 ${submissionUsagePercent >= 90 ? "bg-red-200" : "bg-amber-200"}`}
-
-              />
-              {submissionUsagePercent >= 90 && (
-                <p className="text-sm mt-1 text-red-600">
-                  You're close to your monthly submission limit!
-                </p>
-              )}
-            </div>
-          )}
-        </div>
-
-        <div className="flex justify-end mt-4">
-          <Button variant="outline" size="sm" onClick={() => router.push('/settings/billing')}>
-            Upgrade Plan
-          </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => router.push('/settings/billing')}
+              className="bg-white/50 dark:bg-amber-900/20 border-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/30"
+            >
+              Upgrade Plan
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>
@@ -118,48 +123,47 @@ export default function FormsPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState('all');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showAIDialog, setShowAIDialog] = useState(false);
   const [aiFormName, setAiFormName] = useState('');
   const [aiFormDescription, setAiFormDescription] = useState('');
   const [aiProcessing, setAiProcessing] = useState(false);
   const [aiProgress, setAiProgress] = useState(0);
   const [selectedFormId, setSelectedFormId] = useState<string | null>(null);
-  // First, add a deleteConfirmOpen state to track the confirmation dialog
-const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
-const deleteForm = (formId: string) => {
-  setSelectedFormId(formId);
-  setDeleteConfirmOpen(true);
-};
+  const deleteForm = (formId: string) => {
+    setSelectedFormId(formId);
+    setDeleteConfirmOpen(true);
+  };
 
-const confirmDeleteForm = async () => {
-  if (!selectedFormId) return;
+  const confirmDeleteForm = async () => {
+    if (!selectedFormId) return;
 
-  try {
-    const response = await axios.delete(`/api/forms/${selectedFormId}`);
+    try {
+      const response = await axios.delete(`/api/forms/${selectedFormId}`);
 
-    if (response.data.success) {
+      if (response.data.success) {
+        toast({
+          title: "Form deleted",
+          description: "Form has been deleted successfully.",
+        });
+        fetchForms();
+      } else {
+        throw new Error(response.data.message || "Failed to delete form");
+      }
+    } catch (error: any) {
       toast({
-        title: "Form deleted",
-        description: "Form has been deleted successfully.",
+        title: "Error deleting form",
+        description: error.message || "There was a problem deleting the form.",
+        variant: "destructive"
       });
-
-      fetchForms();
-    } else {
-      throw new Error(response.data.message || "Failed to delete form");
+    } finally {
+      setSelectedFormId(null);
+      setDeleteConfirmOpen(false);
     }
-  } catch (error: any) {
-    toast({
-      title: "Error deleting form",
-      description: error.message || "There was a problem deleting the form.",
-      variant: "destructive"
-    });
-  } finally {
-    setSelectedFormId(null);
-    setDeleteConfirmOpen(false);
-  }
-};
-  // Add at the beginning of the component
+  };
+
   const [accessStatus, setAccessStatus] = useState({
     hasAccess: false,
     needsPurchase: false,
@@ -167,7 +171,6 @@ const confirmDeleteForm = async () => {
     loading: true
   });
 
-  // Add useEffect to check access
   useEffect(() => {
     const checkAccess = async () => {
       try {
@@ -195,7 +198,6 @@ const confirmDeleteForm = async () => {
     fetchForms();
   }, []);
 
-  // Inside the component, add state to track usage stats
   const [usageStats, setUsageStats] = useState({
     totalForms: 0,
     publishedForms: 0,
@@ -209,22 +211,18 @@ const confirmDeleteForm = async () => {
 
   const { user } = useUserContext();
 
-  // Add this effect to get form and submission counts
   useEffect(() => {
     const fetchUsageStats = async () => {
       if (!accessStatus.hasAccess) return;
 
       try {
-        // Get the form counts
         const totalForms = forms.length;
         const publishedForms = forms.filter((form: any) => form.isPublished).length;
         const draftForms = totalForms - publishedForms;
 
-        // Get submission count from API
         const submissionsResponse = await axios.get('/api/forms/submission-stats');
         const submissionStats = submissionsResponse.data;
 
-        // Get limits from user context
         const maxForms = user?.organization?.formBuilder?.maxForms || 0;
         const maxSubmissionsPerMonth = user?.organization?.formBuilder?.maxSubmissionsPerMonth || 0;
         const currentMonthSubmissions = user?.organization?.formBuilder?.submissionsCount?.currentMonth || 0;
@@ -234,7 +232,6 @@ const confirmDeleteForm = async () => {
           resetDate = new Date(user.organization.formBuilder.submissionsCount.lastResetDate);
         }
 
-        // Get plan name
         let planName = 'Starter';
         if (user?.organization?.formBuilder?.plan) {
           planName = user.organization.formBuilder.plan.charAt(0).toUpperCase() +
@@ -261,7 +258,6 @@ const confirmDeleteForm = async () => {
     }
   }, [forms, user, accessStatus.hasAccess]);
 
-  // Simulate AI progress bar
   useEffect(() => {
     if (aiProcessing) {
       const interval = setInterval(() => {
@@ -279,7 +275,6 @@ const confirmDeleteForm = async () => {
     }
   }, [aiProcessing]);
 
-  // Reset AI progress when dialog closes
   useEffect(() => {
     if (!showAIDialog) {
       setAiProgress(0);
@@ -324,20 +319,14 @@ const confirmDeleteForm = async () => {
 
     setAiProcessing(true);
 
-    // Simulate AI form generation
     setTimeout(() => {
       setAiProcessing(false);
       setShowAIDialog(false);
-
       toast({
         title: "AI Form Created",
         description: "Your AI-powered form has been generated successfully!",
       });
-
-      // Navigate to the new form or refresh the list
       fetchForms();
-
-      // Reset form fields
       setAiFormName('');
       setAiFormDescription('');
     }, 3500);
@@ -364,7 +353,6 @@ const confirmDeleteForm = async () => {
           title: "Form duplicated",
           description: "Form has been duplicated successfully.",
         });
-
         fetchForms();
       } else {
         throw new Error(response.data.message || "Failed to duplicate form");
@@ -378,8 +366,6 @@ const confirmDeleteForm = async () => {
     }
   };
 
-
-
   const filteredForms = forms.filter((form: any) => {
     const matchesSearch = form.name.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesFilter = filter === 'all' ||
@@ -389,16 +375,117 @@ const confirmDeleteForm = async () => {
     return matchesSearch && matchesFilter;
   });
 
-  // Sort forms by recently created/modified
   const sortedForms = [...filteredForms].sort((a: any, b: any) => {
     return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
   });
 
   const getFormStatusColor = (form: any) => {
     return form.isPublished
-      ? "text-emerald-600 bg-emerald-50 hover:bg-emerald-100"
-      : "text-amber-600 bg-amber-50 hover:bg-amber-100";
+      ? "text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border-emerald-200"
+      : "text-amber-600 bg-amber-50 hover:bg-amber-100 border-amber-200";
   };
+
+  // Grid view component for forms
+  const FormGridCard = ({ form }: { form: any }) => (
+    <Card className="group hover:shadow-md transition-all duration-200 border-border/50 bg-card">
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between">
+          <div className={`p-2 rounded-lg ${form.isPublished ? 'bg-emerald-50 dark:bg-emerald-950/30' : 'bg-amber-50 dark:bg-amber-950/30'}`}>
+            <FileText className={`h-5 w-5 ${form.isPublished ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`} />
+          </div>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={() => editForm(form._id)}>
+                <Edit2 className="h-4 w-4 mr-2" />
+                Edit Form
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => previewForm(form._id)}>
+                <Eye className="h-4 w-4 mr-2" />
+                Preview
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => viewSubmissions(form._id)}>
+                <BarChart3 className="h-4 w-4 mr-2" />
+                Submissions
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => duplicateForm(form._id)}>
+                <Copy className="h-4 w-4 mr-2" />
+                Duplicate
+              </DropdownMenuItem>
+              {form.isPublished && (
+                <DropdownMenuItem onClick={() => window.open(`/live-form/${form._id}`, '_blank')}>
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Open Live Form
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => deleteForm(form._id)}
+                className="text-destructive focus:text-destructive"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+        
+        <div className="space-y-2">
+          <CardTitle className="text-lg font-semibold line-clamp-1">{form.name}</CardTitle>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className={cn("text-xs font-medium px-2 py-1", getFormStatusColor(form))}>
+              {form.isPublished ? 'Published' : 'Draft'}
+            </Badge>
+            <span className="text-xs text-muted-foreground">
+              Updated {new Date(form.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+            </span>
+          </div>
+        </div>
+      </CardHeader>
+      
+      <CardContent className="pt-0">
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <div className="flex items-center gap-2">
+            <BarChart3 className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-medium">{form.stats?.submissions || 0}</span>
+            <span className="text-xs text-muted-foreground">submissions</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <span className="text-xs text-muted-foreground">
+              {new Date(form.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+            </span>
+          </div>
+        </div>
+        
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => editForm(form._id)}
+            className="flex-1 text-xs"
+          >
+            <Edit2 className="h-3 w-3 mr-1" />
+            Edit
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => viewSubmissions(form._id)}
+            className="flex-1 text-xs"
+          >
+            <BarChart3 className="h-3 w-3 mr-1" />
+            View Data
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
 
   const columns = [
     {
@@ -406,13 +493,23 @@ const confirmDeleteForm = async () => {
       header: 'Form Name',
       cell: ({ row }: any) => (
         <div className="flex items-center gap-3 py-2">
-          <div className={`p-2 rounded-md ${row.original.isPublished ? 'bg-emerald-50' : 'bg-amber-50'}`}>
-            <FileText className={`h-5 w-5 ${row.original.isPublished ? 'text-emerald-600' : 'text-amber-600'}`} />
+          <div className={cn(
+            "p-2 rounded-lg",
+            row.original.isPublished 
+              ? 'bg-emerald-50 dark:bg-emerald-950/30' 
+              : 'bg-amber-50 dark:bg-amber-950/30'
+          )}>
+            <FileText className={cn(
+              "h-4 w-4",
+              row.original.isPublished 
+                ? 'text-emerald-600 dark:text-emerald-400' 
+                : 'text-amber-600 dark:text-amber-400'
+            )} />
           </div>
           <div className="flex flex-col">
-            <span className="font-medium text-base text-foreground">{row.original.name}</span>
+            <span className="font-medium text-base">{row.original.name}</span>
             <span className="text-xs text-muted-foreground">
-              Last updated {new Date(row.original.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+              Updated {new Date(row.original.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
             </span>
           </div>
         </div>
@@ -422,10 +519,7 @@ const confirmDeleteForm = async () => {
       accessorKey: 'status',
       header: 'Status',
       cell: ({ row }: any) => (
-        <Badge
-          variant="secondary"
-          className={`${getFormStatusColor(row.original)} font-medium px-3 py-1`}
-        >
+        <Badge variant="outline" className={cn("text-xs font-medium px-3 py-1", getFormStatusColor(row.original))}>
           {row.original.isPublished ? 'Published' : 'Draft'}
         </Badge>
       )
@@ -446,7 +540,7 @@ const confirmDeleteForm = async () => {
       cell: ({ row }: any) => (
         <div className="flex items-center gap-2">
           <Calendar className="h-4 w-4 text-muted-foreground" />
-          <span>{new Date(row.original.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+          <span className="text-sm">{new Date(row.original.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
         </div>
       )
     },
@@ -454,137 +548,97 @@ const confirmDeleteForm = async () => {
       accessorKey: 'actions',
       header: '',
       cell: ({ row }: any) => (
-        <div className="flex items-center justify-end space-x-1">
+        <div className="flex items-center justify-end gap-1">
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => previewForm(row.original._id)}
-                  className="hover:bg-accent"
-                >
+                <Button variant="ghost" size="icon" onClick={() => previewForm(row.original._id)} className="h-8 w-8">
                   <Eye className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>
-                <p>Preview Form</p>
-              </TooltipContent>
+              <TooltipContent>Preview Form</TooltipContent>
             </Tooltip>
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => editForm(row.original._id)}
-                  className="hover:bg-accent"
-                >
+                <Button variant="ghost" size="icon" onClick={() => editForm(row.original._id)} className="h-8 w-8">
                   <Edit2 className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>
-                <p>Edit Form</p>
-              </TooltipContent>
+              <TooltipContent>Edit Form</TooltipContent>
             </Tooltip>
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => viewSubmissions(row.original._id)}
-                  className="hover:bg-accent"
-                >
-                  <FileText className="h-4 w-4" />
+                <Button variant="ghost" size="icon" onClick={() => viewSubmissions(row.original._id)} className="h-8 w-8">
+                  <BarChart3 className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>
-                <p>View Submissions</p>
-              </TooltipContent>
+              <TooltipContent>View Submissions</TooltipContent>
             </Tooltip>
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="hover:bg-accent"
-                >
+                <Button variant="ghost" size="icon" className="h-8 w-8">
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuItem onClick={() => duplicateForm(row.original._id)}>
                   <Copy className="h-4 w-4 mr-2" />
-                  <span>Duplicate</span>
+                  Duplicate
                 </DropdownMenuItem>
-
                 {row.original.isPublished && (
-                  <DropdownMenuItem
-                    onClick={() => window.open(`/live-form/${row.original._id}`, '_blank')}
-                  >
+                  <DropdownMenuItem onClick={() => window.open(`/live-form/${row.original._id}`, '_blank')}>
                     <ExternalLink className="h-4 w-4 mr-2" />
-                    <span>Open Live Form</span>
+                    Open Live Form
                   </DropdownMenuItem>
                 )}
-
-
                 <DropdownMenuSeparator />
-
                 <DropdownMenuItem
                   onClick={() => deleteForm(row.original._id)}
-                  className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                  className="text-destructive focus:text-destructive"
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
-                  <span>Delete</span>
+                  Delete
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </TooltipProvider>
-
         </div>
       )
     }
   ];
 
-  // Loading skeleton
   if (accessStatus.loading) {
     return (
-      <div className=" mx-auto max-w-screen-xl px-4 py-8 mt-8">
+      <div className="mx-auto max-w-7xl px-6 py-8 mt-8">
         <div className="flex justify-between items-center mb-8">
-          <Skeleton className="h-8 w-40" />
-          <Skeleton className="h-10 w-36" />
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-32" />
+            <Skeleton className="h-4 w-64" />
+          </div>
+          <div className="flex gap-3">
+            <Skeleton className="h-10 w-32" />
+            <Skeleton className="h-10 w-36" />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          {Array(4).fill(0).map((_, i) => (
+            <Card key={i}>
+              <CardContent className="p-6">
+                <Skeleton className="h-20 w-full mb-4" />
+                <Skeleton className="h-4 w-3/4 mb-2" />
+                <Skeleton className="h-4 w-1/2" />
+              </CardContent>
+            </Card>
+          ))}
         </div>
 
         <Card>
           <CardContent className="p-6">
-            <div className="flex justify-between items-center mb-6">
-              <Skeleton className="h-10 w-64" />
-              <Skeleton className="h-10 w-48" />
-            </div>
-
-            <div className="space-y-4">
-              {Array(5).fill(0).map((_, i) => (
-                <div key={i} className="flex items-center justify-between py-4 border-b">
-                  <div className="flex items-center gap-3">
-                    <Skeleton className="h-10 w-10 rounded-md" />
-                    <div>
-                      <Skeleton className="h-5 w-48 mb-2" />
-                      <Skeleton className="h-4 w-32" />
-                    </div>
-                  </div>
-                  <Skeleton className="h-8 w-24" />
-                  <Skeleton className="h-8 w-20" />
-                  <Skeleton className="h-8 w-20" />
-                  <div className="flex gap-2">
-                    <Skeleton className="h-8 w-8 rounded-full" />
-                    <Skeleton className="h-8 w-8 rounded-full" />
-                    <Skeleton className="h-8 w-8 rounded-full" />
-                  </div>
-                </div>
-              ))}
-            </div>
+            <Skeleton className="h-64 w-full" />
           </CardContent>
         </Card>
       </div>
@@ -593,114 +647,175 @@ const confirmDeleteForm = async () => {
 
   if (!accessStatus.hasAccess) {
     return (
-      <div className=" mt-12 mx-auto max-w-screen-xl px-8 py-10 h-full">
+      <div className="mt-12 mx-auto max-w-7xl px-8 py-10 h-full">
         <FormBuilderPricingPage />
       </div>
     );
   }
+
   return (
-    <div
-    style={{
-      maxHeight: 'calc(100vh - 16px)', // Adjust based on your layout
-      scrollBehavior: 'auto' // Prevent smooth scrolling which can interfere
-  }}
-     className=" mt-12 mx-auto max-w-screen w-full px-8 py-10 h-full max-h-screen overflow-y-scroll ">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Forms</h1>
-          <p className="text-muted-foreground mt-1">Create, manage and analyze your forms</p>
+    <div className="mx-auto max-w-7xl px-6 mb-36 h-fit max-h-screen overflow-y-scroll py-8 mt-12 space-y-8">
+      {/* Modern Header */}
+      <div className="flex flex-col  lg:flex-row justify-between items-start gap-6">
+        <div className="space-y-2">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
+            Forms
+          </h1>
+          <p className="text-lg text-muted-foreground">
+            Create, manage and analyze your forms with powerful insights
+          </p>
         </div>
-        <div className="flex gap-3">
-          <Button onClick={createNewForm} variant="default">
-            <Plus className="h-4 w-4 mr-2" />
+
+        <div className="flex items-center gap-3">
+          {/* <Button onClick={createAIForm} variant="outline" className="gap-2 border-purple-200 hover:bg-purple-50 dark:border-purple-800 dark:hover:bg-purple-950/30">
+            <Sparkles className="h-4 w-4 text-purple-600" />
+            AI Form Builder
+          </Button> */}
+          <Button onClick={createNewForm} className="gap-2 bg-primary hover:bg-primary/90">
+            <Plus className="h-4 w-4" />
             Create Form
           </Button>
         </div>
       </div>
 
-
-
-      {/* Add this below the title section */}
+      {/* Usage Stats Grid */}
       {accessStatus.hasAccess && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <FormBuilderUsageStats stats={usageStats} />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Card className="border-border/50">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30">
+                  <FileText className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div>
+                  <div className="text-2xl font-bold">{usageStats.totalForms}</div>
+                  <p className="text-sm text-muted-foreground">Total Forms</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-          <Card className="md:col-span-2 border shadow-sm">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg font-semibold">Recent Activity</CardTitle>
-              <CardDescription>A summary of your recent form activity</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {/* You could add recent submission stats/charts here */}
-              <div className="space-y-4">
-                {forms.slice(0, 3).map((form: any) => (
-                  <div key={form._id} className="flex items-center justify-between p-2 border-b last:border-0">
-                    <div className="flex items-center gap-3">
-                      <div className={`p-2 rounded-md ${form.isPublished ? 'bg-emerald-50' : 'bg-amber-50'}`}>
-                        <FileText className={`h-4 w-4 ${form.isPublished ? 'text-emerald-600' : 'text-amber-600'}`} />
-                      </div>
-                      <div>
-                        <span className="font-medium text-sm">{form.name}</span>
-                        <p className="text-xs text-muted-foreground">
-                          {form.stats?.submissions || 0} submissions
-                        </p>
-                      </div>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => viewSubmissions(form._id)}
-                    >
-                      View
-                    </Button>
-                  </div>
-                ))}
+          <Card className="border-border/50">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/30">
+                  <Eye className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+                </div>
+                <div>
+                  <div className="text-2xl font-bold">{usageStats.publishedForms}</div>
+                  <p className="text-sm text-muted-foreground">Published</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-border/50">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30">
+                  <Edit2 className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                </div>
+                <div>
+                  <div className="text-2xl font-bold">{usageStats.draftForms}</div>
+                  <p className="text-sm text-muted-foreground">Drafts</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-border/50">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 rounded-lg bg-purple-50 dark:bg-purple-950/30">
+                  <BarChart3 className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                </div>
+                <div>
+                  <div className="text-2xl font-bold">{usageStats.currentMonthSubmissions}</div>
+<p className="text-sm text-muted-foreground">This Month</p>
+                </div>
               </div>
             </CardContent>
           </Card>
         </div>
       )}
 
-
+      {/* Usage Limits Warning */}
       {accessStatus.hasAccess && accessStatus.limits && (
         <FormLimitsWarning limits={accessStatus.limits} />
       )}
-      <Card className="mb-8 border shadow-sm">
-        <CardContent className="p-4 sm:p-6">
-          <div className="flex flex-col sm:flex-row justify-between gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input
-                placeholder="Search forms by name..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 w-full bg-background border-input"
-              />
-            </div>
-            <div className="flex items-center gap-4">
-              <Tabs value={filter} onValueChange={setFilter} className="w-full sm:w-auto">
-                <TabsList className="bg-accent  h-10 w-full">
-                  <TabsTrigger className="flex-1 border-none data-[state=active]:bg-background data-[state=active]:shadow-sm" value="all">All Forms</TabsTrigger>
-                  <TabsTrigger className="flex-1 border-none data-[state=active]:bg-background data-[state=active]:shadow-sm" value="published">Published</TabsTrigger>
-                  <TabsTrigger className="flex- border-none data-[state=active]:bg-background data-[state=active]:shadow-sm" value="drafts">Drafts</TabsTrigger>
+
+      {/* Modern Controls Bar */}
+      <Card className="border-border/50 shadow-sm">
+        <CardContent className="p-6">
+          <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+            <div className="flex flex-col sm:flex-row gap-4 flex-1">
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  placeholder="Search forms..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 border-border/50 bg-background/50 focus:bg-background"
+                />
+              </div>
+              
+              <Tabs value={filter} onValueChange={setFilter}>
+                <TabsList className="bg-muted/50 border border-border/50">
+                  <TabsTrigger value="all" className="data-[state=active]:bg-background data-[state=active]:shadow-sm border-none">
+                    All Forms
+                  </TabsTrigger>
+                  <TabsTrigger value="published" className="data-[state=active]:bg-background data-[state=active]:shadow-sm border-none">
+                    Published
+                  </TabsTrigger>
+                  <TabsTrigger value="drafts" className="data-[state=active]:bg-background data-[state=active]:shadow-sm border-none">
+                    Drafts
+                  </TabsTrigger>
                 </TabsList>
               </Tabs>
+            </div>
 
+            <div className="flex items-center gap-2">
               <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant={viewMode === 'grid' ? 'default' : 'outline'}
+                      size="icon"
+                      onClick={() => setViewMode('grid')}
+                      className="h-9 w-9"
+                    >
+                      <Grid3X3 className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Grid View</TooltipContent>
+                </Tooltip>
+
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant={viewMode === 'list' ? 'default' : 'outline'}
+                      size="icon"
+                      onClick={() => setViewMode('list')}
+                      className="h-9 w-9"
+                    >
+                      <List className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>List View</TooltipContent>
+                </Tooltip>
+
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
                       variant="outline"
                       size="icon"
                       onClick={fetchForms}
-                      className="h-10 w-10"
+                      className="h-9 w-9"
                     >
                       <RefreshCw className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Refresh forms</p>
-                  </TooltipContent>
+                  <TooltipContent>Refresh</TooltipContent>
                 </Tooltip>
               </TooltipProvider>
             </div>
@@ -708,25 +823,60 @@ const confirmDeleteForm = async () => {
         </CardContent>
       </Card>
 
-      {sortedForms.length === 0 ? (
-        <Card className="border shadow-sm overflow-hidden">
-          <div className="text-center py-16 px-4">
-            <div className="bg-muted/30 rounded-full p-4 inline-flex mb-4">
-              <FileText className="h-8 w-8 text-muted-foreground" />
+      {/* Forms Content */}
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {Array(8).fill(0).map((_, i) => (
+            <Card key={i} className="border-border/50">
+              <CardHeader>
+                <div className="flex items-start justify-between">
+                  <Skeleton className="h-10 w-10 rounded-lg" />
+                  <Skeleton className="h-8 w-8 rounded" />
+                </div>
+                <Skeleton className="h-6 w-3/4" />
+                <Skeleton className="h-4 w-1/2" />
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-full" />
+                  </div>
+                  <div className="flex gap-2">
+                    <Skeleton className="h-8 w-full" />
+                    <Skeleton className="h-8 w-full" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : sortedForms.length === 0 ? (
+        <Card className="border-border/50  shadow-sm">
+          <CardContent className="flex flex-col items-center justify-center py-16 px-4">
+            <div className="p-4 rounded-full bg-muted/30 mb-6">
+              <FileText className="h-12 w-12 text-muted-foreground" />
             </div>
-            <h2 className="text-2xl font-semibold">No forms found</h2>
-            <p className="text-muted-foreground mt-2 max-w-md mx-auto">
+            <h2 className="text-2xl font-semibold mb-2">
+              {searchQuery || filter !== 'all' ? 'No forms found' : 'No forms yet'}
+            </h2>
+            <p className="text-muted-foreground text-center max-w-md mb-8">
               {searchQuery || filter !== 'all'
                 ? "Try adjusting your search or filters to find what you're looking for."
-                : "Get started by creating your first form or use our AI-powered form builder."}
+                : "Get started by creating your first form or use our AI-powered form builder for instant results."
+              }
             </p>
-            <div className="flex flex-col sm:flex-row gap-3 mt-6 justify-center">
+            
+            <div className="flex flex-col sm:flex-row gap-3">
               {!searchQuery && filter === 'all' && (
                 <>
-
-                  <Button onClick={createNewForm} variant="default">
-                    <Plus className="h-4 w-4 mr-2" />
+                  <Button onClick={createNewForm} className="gap-2">
+                    <Plus className="h-4 w-4" />
                     Create Form
+                  </Button>
+                  <Button onClick={createAIForm} variant="outline" className="gap-2 border-purple-200 hover:bg-purple-50 dark:border-purple-800 dark:hover:bg-purple-950/30">
+                    <Sparkles className="h-4 w-4 text-purple-600" />
+                    Try AI Builder
                   </Button>
                 </>
               )}
@@ -739,143 +889,199 @@ const confirmDeleteForm = async () => {
                 </Button>
               )}
             </div>
-          </div>
-        </Card>
-      ) : (
-        <Card className="border shadow-sm mb-24 overflow-hidden">
-          <ScrollArea className="">
-            <DataTable
-              columns={columns}
-              data={sortedForms}
-              pagination
-            />
-          </ScrollArea>
-        </Card>
-      )}
-
-      {/* Recent activity card */}
-      {/* {sortedForms.length > 0 && (
-        <Card className="mt-8 border shadow-sm">
-          <CardHeader>
-            <h3 className="text-lg font-semibold">Recent Form Activity</h3>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {sortedForms.slice(0, 3).map((form: any) => (
-                <div key={form._id} className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-8 w-8 bg-primary/10">
-                      <AvatarFallback className="text-xs">{form.name.substring(0, 2).toUpperCase()}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="text-sm font-medium">{form.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {form.stats?.submissions || 0} submissions • Updated {new Date(form.updatedAt).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-                  <Button variant="ghost" size="sm" onClick={() => viewSubmissions(form._id)} className="gap-1">
-                    <span>View</span>
-                    <ArrowUpRight className="h-3 w-3" />
-                  </Button>
-                </div>
-              ))}
-            </div>
           </CardContent>
         </Card>
-      )} */}
-  <AlertDialog  open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
-  <AlertDialogContent>
-    <AlertDialogHeader>
-      <AlertDialogTitle className="text-xl flex items-center gap-2 text-red-500">
-        <Trash2 className="h-5 w-5" />
-        Confirm Deletion
-      </AlertDialogTitle>
-      <AlertDialogDescription className="text-base">
-        This action cannot be undone. This will permanently delete the form and all its submissions.
-        <br /><br />
-        Are you sure you want to continue?
-      </AlertDialogDescription>
-    </AlertDialogHeader>
-    <AlertDialogFooter className="mt-4">
-      <AlertDialogCancel className="font-medium">Cancel</AlertDialogCancel>
-      <AlertDialogAction
-        onClick={confirmDeleteForm}
-        className="bg-red-500 hover:bg-red-600 text-white font-medium"
-      >
-        Delete
-      </AlertDialogAction>
-    </AlertDialogFooter>
-  </AlertDialogContent>
-</AlertDialog>
+      ) : (
+        <>
+          {viewMode === 'grid' ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {sortedForms.map((form: any) => (
+                <FormGridCard key={form._id} form={form} />
+              ))}
+            </div>
+          ) : (
+            <Card className="border-border/50 shadow-sm overflow-hidden">
+              <DataTable columns={columns} data={sortedForms} pagination />
+            </Card>
+          )}
+
+          {/* Recent Activity Section */}
+          {sortedForms.length > 3 && (
+            <Card className="border-border/50 shadow-sm">
+              <CardHeader className="pb-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-lg font-semibold">Recent Activity</CardTitle>
+                    <CardDescription>Your most recently updated forms</CardDescription>
+                  </div>
+                  {/* <Button variant="outline" size="sm" onClick={() => router.push('/forms/analytics')}>
+                    View Analytics
+                    <ArrowUpRight className="h-3 w-3 ml-1" />
+                  </Button> */}
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {sortedForms.slice(0, 5).map((form: any) => (
+                    <div key={form._id} className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className={cn(
+                          "p-2 rounded-md",
+                          form.isPublished ? 'bg-emerald-50 dark:bg-emerald-950/50' : 'bg-amber-50 dark:bg-amber-950/50'
+                        )}>
+                          <FileText className={cn(
+                            "h-4 w-4",
+                            form.isPublished ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'
+                          )} />
+                        </div>
+                        <div>
+                          <p className="font-medium text-sm">{form.name}</p>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <span>{form.stats?.submissions || 0} submissions</span>
+                            <span>•</span>
+                            <span>Updated {new Date(form.updatedAt).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Button variant="ghost" size="sm" onClick={() => editForm(form._id)}>
+                          <Edit2 className="h-3 w-3 mr-1" />
+                          Edit
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => viewSubmissions(form._id)}>
+                          <BarChart3 className="h-3 w-3 mr-1" />
+                          Data
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </>
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent className="sm:max-w-lg">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-xl flex items-center gap-2 text-destructive">
+              <Trash2 className="h-5 w-5" />
+              Delete Form
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-base leading-relaxed">
+              This action cannot be undone. This will permanently delete the form and all its submissions.
+              <br /><br />
+              <strong>Are you sure you want to continue?</strong>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-3 mt-6">
+            <AlertDialogCancel className="font-medium">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteForm}
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground font-medium"
+            >
+              Delete Form
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* AI Form Creation Dialog */}
       <Dialog open={showAIDialog} onOpenChange={setShowAIDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-purple-500" />
+            <DialogTitle className="flex items-center gap-2 text-xl">
+              <div className="p-2 rounded-full bg-gradient-to-r from-purple-500 to-indigo-600">
+                <Sparkles className="h-4 w-4 text-white" />
+              </div>
               AI Form Builder
             </DialogTitle>
-            <DialogDescription>
-              Let AI create a professional form for you. Just provide a name and optional description.
+            <DialogDescription className="text-base leading-relaxed">
+              Let our AI create a professional form for you. Just provide a name and optional description, 
+              and we'll generate optimized fields with smart validation.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-2">
+          <div className="space-y-6 py-4">
             <div className="space-y-2">
-              <label htmlFor="ai-form-name" className="text-sm font-medium">
-                Form Name
+              <label htmlFor="ai-form-name" className="text-sm font-semibold">
+                Form Name *
               </label>
               <Input
                 id="ai-form-name"
-                placeholder="E.g. Contact Form, Job Application, Survey"
+                placeholder="e.g., Contact Form, Job Application, Customer Survey"
                 value={aiFormName}
                 onChange={(e) => setAiFormName(e.target.value)}
                 disabled={aiProcessing}
+                className="border-border/50"
               />
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="ai-form-description" className="text-sm font-medium">
+              <label htmlFor="ai-form-description" className="text-sm font-semibold">
                 Description (Optional)
               </label>
               <Input
                 id="ai-form-description"
-                placeholder="E.g. To collect contact information from customers"
+                placeholder="e.g., To collect contact information from potential customers"
                 value={aiFormDescription}
                 onChange={(e) => setAiFormDescription(e.target.value)}
                 disabled={aiProcessing}
+                className="border-border/50"
               />
             </div>
 
             {aiProcessing && (
-              <div className="space-y-2 mt-4">
-                <div className="flex justify-between text-sm">
-                  <span>Generating form...</span>
-                  <span>{Math.round(aiProgress)}%</span>
+              <div className="space-y-4 p-4 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/20 dark:to-indigo-950/20 rounded-lg border border-purple-200/50 dark:border-purple-800/50">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-full bg-gradient-to-r from-purple-500 to-indigo-600">
+                    <Sparkles className="h-4 w-4 text-white animate-pulse" />
+                  </div>
+                  <div>
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="font-semibold text-purple-900 dark:text-purple-100">Creating your form...</span>
+                      <span className="text-sm font-bold text-purple-700 dark:text-purple-300">{Math.round(aiProgress)}%</span>
+                    </div>
+                    <Progress 
+                      value={aiProgress} 
+                      className="h-2 bg-purple-200 dark:bg-purple-900"
+                    />
+                  </div>
                 </div>
-                <Progress value={aiProgress} className="h-2" />
-                <p className="text-xs text-muted-foreground animate-pulse">
-                  AI is creating your form with optimized fields and validation
+                <p className="text-sm text-purple-800 dark:text-purple-200 animate-pulse">
+                  AI is analyzing your requirements and creating optimized form fields with smart validation rules...
                 </p>
               </div>
             )}
           </div>
 
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter className="gap-3 mt-6">
             <Button
               variant="outline"
               onClick={() => setShowAIDialog(false)}
               disabled={aiProcessing}
+              className="font-medium"
             >
               Cancel
             </Button>
             <Button
               onClick={handleAIFormGeneration}
               disabled={!aiFormName.trim() || aiProcessing}
-              className={`${aiProcessing ? 'bg-purple-600' : 'bg-gradient-to-r from-purple-600 to-indigo-600'} text-white`}
+              className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-medium gap-2"
             >
-              {aiProcessing ? 'Creating...' : 'Generate Form'}
+              {aiProcessing ? (
+                <>
+                  <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4" />
+                  Generate Form
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

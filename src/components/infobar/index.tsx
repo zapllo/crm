@@ -29,6 +29,7 @@ import {
   FormInput,
   Tag,
   UserCog,
+  Brain,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
@@ -108,6 +109,9 @@ export default function InfoBar() {
 
   // Add wallet balance state
   const [walletBalance, setWalletBalance] = useState(0);
+  // Add AI credits state
+  const [aiCredits, setAiCredits] = useState(0);
+  // Add state for logout dialog
   // Add state for logout dialog
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -130,6 +134,22 @@ export default function InfoBar() {
     fetchWalletBalance();
     // Set up a refresh interval (every 5 minutes)
     const interval = setInterval(fetchWalletBalance, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
+  // Fetch AI credits
+  useEffect(() => {
+    const fetchAiCredits = async () => {
+      try {
+        const response = await axios.get("/api/organization/ai-credits");
+        setAiCredits(response.data.aiCredits || 0);
+      } catch (err) {
+        console.error("Error fetching AI credits:", err);
+      }
+    };
+
+    fetchAiCredits();
+    // Set up a refresh interval (every 5 minutes)
+    const interval = setInterval(fetchAiCredits, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
 
@@ -274,67 +294,67 @@ export default function InfoBar() {
 
   // Add these utility functions inside the InfoBar component
 
-// Get icon for notification type
-const getNotificationIcon = (entityType: string) => {
-  switch (entityType) {
-    case "lead":
-      return <User2 className="h-4 w-4 text-blue-500" />;
-    case "contact":
-      return <Users className="h-4 w-4 text-green-500" />;
-    case "company":
-      return <Building2 className="h-4 w-4 text-purple-500" />;
-    case "pipeline":
-      return <GitBranch className="h-4 w-4 text-orange-500" />;
-    case "followup":
-      return <Calendar className="h-4 w-4 text-amber-500" />;
-    case "product":
-      return <Package className="h-4 w-4 text-emerald-500" />;
-    case "quotation":
-      return <FileText className="h-4 w-4 text-rose-500" />;
-    case "form":
-      return <FormInput className="h-4 w-4 text-indigo-500" />;
-    case "category":
-      return <Tag className="h-4 w-4 text-teal-500" />;
-    case "user":
-      return <UserCog className="h-4 w-4 text-cyan-500" />;
-    default:
-      return <Bell className="h-4 w-4" />;
-  }
-};
+  // Get icon for notification type
+  const getNotificationIcon = (entityType: string) => {
+    switch (entityType) {
+      case "lead":
+        return <User2 className="h-4 w-4 text-blue-500" />;
+      case "contact":
+        return <Users className="h-4 w-4 text-green-500" />;
+      case "company":
+        return <Building2 className="h-4 w-4 text-purple-500" />;
+      case "pipeline":
+        return <GitBranch className="h-4 w-4 text-orange-500" />;
+      case "followup":
+        return <Calendar className="h-4 w-4 text-amber-500" />;
+      case "product":
+        return <Package className="h-4 w-4 text-emerald-500" />;
+      case "quotation":
+        return <FileText className="h-4 w-4 text-rose-500" />;
+      case "form":
+        return <FormInput className="h-4 w-4 text-indigo-500" />;
+      case "category":
+        return <Tag className="h-4 w-4 text-teal-500" />;
+      case "user":
+        return <UserCog className="h-4 w-4 text-cyan-500" />;
+      default:
+        return <Bell className="h-4 w-4" />;
+    }
+  };
 
-// Get action verb for notification
-const getActionVerb = (action: string) => {
-  switch (action) {
-    case "create":
-      return "created";
-    case "update":
-      return "updated";
-    case "delete":
-      return "deleted";
-    case "assign":
-      return "assigned";
-    case "stage_change":
-      return "changed stage of";
-    case "comment":
-      return "commented on";
-    case "note":
-      return "added a note to";
-    case "followup":
-      return "scheduled a follow-up for";
-    case "approve":
-      return "approved";
-    case "reject":
-      return "rejected";
-    case "remind":
-      return "set a reminder for";
-    case "view":
-      return "viewed";
-    case "publish":
-      return "published";
-    default:
-      return action;
-  }
-};
+  // Get action verb for notification
+  const getActionVerb = (action: string) => {
+    switch (action) {
+      case "create":
+        return "created";
+      case "update":
+        return "updated";
+      case "delete":
+        return "deleted";
+      case "assign":
+        return "assigned";
+      case "stage_change":
+        return "changed stage of";
+      case "comment":
+        return "commented on";
+      case "note":
+        return "added a note to";
+      case "followup":
+        return "scheduled a follow-up for";
+      case "approve":
+        return "approved";
+      case "reject":
+        return "rejected";
+      case "remind":
+        return "set a reminder for";
+      case "view":
+        return "viewed";
+      case "publish":
+        return "published";
+      default:
+        return action;
+    }
+  };
 
   return (
     <motion.div
@@ -384,7 +404,17 @@ const getActionVerb = (action: string) => {
                 <span>₹{(walletBalance / 100).toFixed(2)}</span>
               </Button>
             </Link>
-
+            {/* AI Credits display */}
+            <Link href="/settings/wallet?tab=ai-credits">
+              <Button
+                variant="outline"
+                size="sm"
+                className="hidden md:flex items-center gap-1.5 rounded-full"
+              >
+                <Brain className="h-4 w-4 text-purple-600" />
+                <span>{aiCredits} AI</span>
+              </Button>
+            </Link>
             {/* Help button with tooltip */}
             <TooltipProvider>
               <Tooltip>

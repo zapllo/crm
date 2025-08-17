@@ -141,8 +141,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
                   </motion.div>
                   
                   {/* Action Button */}
-                  <Tooltip>
-                    <TooltipTrigger asChild>
+              
                       <Button
                         size="icon"
                         className={cn(
@@ -153,11 +152,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
                       >
                         {action.icon}
                       </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="left">
-                      <p>{action.label}</p>
-                    </TooltipContent>
-                  </Tooltip>
+                  
                 </motion.div>
               ))}
             </motion.div>

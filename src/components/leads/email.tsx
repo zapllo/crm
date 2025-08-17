@@ -15,7 +15,11 @@ import {
   RefreshCw,
   LayoutTemplate,
   AlertCircle,
-  Send
+  Send,
+  Loader2,
+  Check,
+  Users,
+  Database
 } from "lucide-react";
 
 // Shadcn UI
@@ -31,6 +35,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { AlertDialog as Alert, AlertDialogDescription as AlertDescription } from "@/components/ui/alert-dialog";
+import RichTextEditor from "@/components/ui/rich-text-editor";
+import { useToast } from "@/hooks/use-toast";
 
 // Placeholders for lead/contact/company
 const LEAD_FIELDS = ["title", "description", "amount", "closeDate", "stage", "source"];
@@ -47,36 +53,46 @@ const FIELD_CATEGORIES = {
   contact: {
     title: "Contact Fields",
     description: "Insert information about the contact person",
-    icon: <Mail className="h-4 w-4" />
+    icon: <Users className="h-4 w-4" />
   },
   company: {
     title: "Company Fields",
     description: "Insert information about the company",
-    icon: <LayoutTemplate className="h-4 w-4" />
+    icon: <Database className="h-4 w-4" />
   }
 };
 
 interface EmailsTabProps {
   leadId: string;
-  contactEmail?: string; // Optional prop for the
+  contactEmail?: string;
   isDialogOpen?: boolean;
   setIsDialogOpen?: (open: boolean) => void;
-  // If you want to default the "To" field from the lead's contact email,
-  // you could pass that here, e.g. contactEmail?: string;
 }
 
-export default function EmailsTab({ leadId, contactEmail,   isDialogOpen,
-  setIsDialogOpen }: EmailsTabProps) {
-  // 1) Dialog state
+export default function EmailsTab({ leadId, contactEmail, isDialogOpen, setIsDialogOpen }: EmailsTabProps) {
+  const { toast } = useToast();
+  
+  // Dialog state
   const [internalDialogOpen, setInternalDialogOpen] = useState(false);
-
-  // Use the external control if provided, otherwise use internal state
   const dialogOpen = isDialogOpen !== undefined ? isDialogOpen : internalDialogOpen;
   const setDialogOpen = setIsDialogOpen || setInternalDialogOpen;
+  
   const [dialogMode, setDialogMode] = useState<"manual" | "template">("manual");
   const [isSending, setIsSending] = useState(false);
-
   const [leadDetails, setLeadDetails] = useState<any>(null);
+
+  // Email form state
+  const [recipient, setRecipient] = useState("");
+  const [subject, setSubject] = useState("");
+  const [body, setBody] = useState("");
+
+  // Templates state
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Preview state
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewData, setPreviewData] = useState<{ subject: string; body: string } | null>(null);
 
   useEffect(() => {
     async function fetchLeadDetails() {
@@ -84,12 +100,9 @@ export default function EmailsTab({ leadId, contactEmail,   isDialogOpen,
         const res = await axios.get(`/api/leads/details?leadId=${leadId}`);
         setLeadDetails(res.data);
 
-        // If contact email is available directly in the props, use it
         if (contactEmail) {
           setRecipient(contactEmail);
-        }
-        // Otherwise try to get it from the lead details
-        else if (res.data?.contact?.email && res.data.contact.email !== 'N/A') {
+        } else if (res.data?.contact?.email && res.data.contact.email !== 'N/A') {
           setRecipient(res.data.contact.email);
         }
       } catch (err) {
@@ -100,101 +113,13 @@ export default function EmailsTab({ leadId, contactEmail,   isDialogOpen,
     fetchLeadDetails();
   }, [leadId, contactEmail]);
 
+  // Insert placeholder function
+  const insertPlaceholder = useCallback((placeholder: string) => {
+    const placeholderText = `{{${placeholder}}}`;
+    setBody(prevBody => prevBody + placeholderText);
+  }, []);
 
-  // We'll store: to, subject, body
-  const [recipient, setRecipient] = useState(leadId);
-  const [subject, setSubject] = useState("");
-  const [body, setBody] = useState("");
-
-  // 2) Existing templates for "Send Email Template"
-  const [templates, setTemplates] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-
-  // 3) "activeField" to know if we're inserting placeholders into subject or body
-  const [activeField, setActiveField] = useState<"subject" | "body">("body");
-  const subjectRef = useRef<HTMLInputElement | null>(null);
-  const bodyRef = useRef<HTMLTextAreaElement | null>(null);
-
-  // 5) "Send Email" button -> manual mode
-  function handleSendEmail() {
-    setDialogMode("manual");
-
-    // Set the recipient to the contact's email from lead details if available
-    if (leadDetails?.contact?.email && leadDetails.contact.email !== 'N/A') {
-      setRecipient(leadDetails.contact.email);
-    } else if (contactEmail) {
-      setRecipient(contactEmail);
-    } else {
-      setRecipient("");
-    }
-
-    setSubject("");
-    setBody("");
-    setDialogOpen(true);
-  }
-
-  // 6) Template selection from dropdown
-  async function handleTemplateSelect(templateId: string) {
-    setDialogMode("template");
-    const found = templates.find((t) => t._id === templateId);
-    if (found) {
-      setSubject(found.subject);
-      setBody(found.body);
-    } else {
-      setSubject("");
-      setBody("");
-    }
-
-    // Set the recipient to the contact's email from lead details if available
-    if (leadDetails?.contact?.email && leadDetails.contact.email !== 'N/A') {
-      setRecipient(leadDetails.contact.email);
-    } else if (contactEmail) {
-      setRecipient(contactEmail);
-    } else {
-      setRecipient("");
-    }
-
-    setDialogOpen(true);
-  }
-
-  // Insert placeholder at the cursor in subject or body
-  const insertPlaceholder = useCallback(
-    (placeholder: string) => {
-      const toInsert = `{{${placeholder}}}`;
-
-      if (activeField === "subject") {
-        if (!subjectRef.current) return;
-        const start = subjectRef.current.selectionStart || 0;
-        const end = subjectRef.current.selectionEnd || 0;
-        const before = subject.slice(0, start);
-        const after = subject.slice(end);
-        const updated = before + toInsert + after;
-        setSubject(updated);
-        requestAnimationFrame(() => {
-          subjectRef.current?.focus();
-          const newPos = start + toInsert.length;
-          subjectRef.current?.setSelectionRange(newPos, newPos);
-        });
-      } else {
-        // body
-        if (!bodyRef.current) return;
-        const start = bodyRef.current.selectionStart || 0;
-        const end = bodyRef.current.selectionEnd || 0;
-        const before = body.slice(0, start);
-        const after = body.slice(end);
-        const updated = before + toInsert + after;
-        setBody(updated);
-        requestAnimationFrame(() => {
-          bodyRef.current?.focus();
-          const newPos = start + toInsert.length;
-          bodyRef.current?.setSelectionRange(newPos, newPos);
-        });
-      }
-    },
-    [activeField, subject, body]
-  );
-
-  // 4) On load, fetch templates
+  // Fetch templates
   useEffect(() => {
     fetchTemplates();
   }, []);
@@ -211,176 +136,209 @@ export default function EmailsTab({ leadId, contactEmail,   isDialogOpen,
     }
   }
 
+  // Handle send email
+  function handleSendEmail() {
+    setDialogMode("manual");
+    if (leadDetails?.contact?.email && leadDetails.contact.email !== 'N/A') {
+      setRecipient(leadDetails.contact.email);
+    } else if (contactEmail) {
+      setRecipient(contactEmail);
+    } else {
+      setRecipient("");
+    }
+    setSubject("");
+    setBody("");
+    setDialogOpen(true);
+  }
 
-  // 7) On "Send," call /api/channels/sendEmail
+  // Handle template selection
+  async function handleTemplateSelect(templateId: string) {
+    setDialogMode("template");
+    const found = templates.find((t) => t._id === templateId);
+    if (found) {
+      setSubject(found.subject);
+      setBody(found.body);
+    } else {
+      setSubject("");
+      setBody("");
+    }
+
+    if (leadDetails?.contact?.email && leadDetails.contact.email !== 'N/A') {
+      setRecipient(leadDetails.contact.email);
+    } else if (contactEmail) {
+      setRecipient(contactEmail);
+    } else {
+      setRecipient("");
+    }
+
+    setDialogOpen(true);
+  }
+
+  // Handle preview
+  function handlePreview() {
+    setPreviewData({ subject, body });
+    setShowPreview(true);
+  }
+
+  // Handle send
   async function handleSend() {
     try {
       if (!recipient) {
-        alert("Please enter a 'To' email address.");
+        toast({
+          title: "Error",
+          description: "Please enter a recipient email address.",
+          variant: "destructive"
+        });
         return;
       }
 
       setIsSending(true);
 
-      // your final payload
       const payload = {
         leadId,
         to: recipient,
         subject: subject,
         body: body,
-        // placeholders for lead/contact/company data in the server
       };
 
       await axios.post("/api/channels/sendEmail", payload);
 
+      toast({
+        title: "Success",
+        description: "Email sent successfully!"
+      });
+
       setDialogOpen(false);
-      // Show success toast or message
     } catch (error) {
       console.error("Error sending email", error);
-      // Show error toast or message
+      toast({
+        title: "Error",
+        description: "Failed to send email. Please try again.",
+        variant: "destructive"
+      });
     } finally {
       setIsSending(false);
     }
   }
 
   return (
-    <Card className="border-blue-100 dark:border-blue-900">
-      <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-b">
-        <CardTitle className="flex items-center gap-2">
-          <Mail className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-          Email Communication
-        </CardTitle>
-        <CardDescription>
-          Send emails and use templates for consistent communication
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="p-6 space-y-4">
-        <div className="flex flex-wrap gap-2">
-          <Button
-            onClick={handleSendEmail}
-            className="gap-2"
-          >
-            <Mail className="h-4 w-4" />
-            Send Email
-          </Button>
-
-          <div className="relative">
-            <Select onValueChange={(val) => handleTemplateSelect(val)}>
-              <SelectTrigger className="w-[200px] bg-gray-50 dark:bg-gray-900/50">
-                <SelectValue placeholder="Use Template" />
-              </SelectTrigger>
-              <SelectContent>
-                {isLoading ? (
-                  <div className="flex items-center justify-center py-2">
-                    <RefreshCw className="h-4 w-4 animate-spin mr-2" />
-                    Loading...
-                  </div>
-                ) : templates.length === 0 ? (
-                  <div className="px-2 py-3 text-center text-muted-foreground text-sm">
-                    No templates available
-                  </div>
-                ) : (
-                  templates.map((t) => (
-                    <SelectItem key={t._id} value={t._id}>
-                      {t.name}
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
+    <>
+      <Card className="overflow-hidden">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 bg-muted/30">
+          <div>
+            <CardTitle className="text-xl flex items-center gap-2">
+              <Mail className="h-5 w-5 text-primary" />
+              Email Communication
+            </CardTitle>
+            <CardDescription>Send emails and use templates for consistent communication</CardDescription>
           </div>
-        </div>
+          <div className="flex gap-2">
+            <Button
+              onClick={handleSendEmail}
+              className="group flex gap-2"
+            >
+              <Mail className="h-4 w-4 group-hover:animate-pulse" />
+              Send Email
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="p-6">
+          <div className="space-y-4">
+            <div>
+              <Label className="text-sm font-medium mb-2">Use Email Template</Label>
+              <Select onValueChange={(val) => handleTemplateSelect(val)}>
+                <SelectTrigger className="w-full bg-muted/50">
+                  <SelectValue placeholder="Select a template to use" />
+                </SelectTrigger>
+                <SelectContent>
+                  {isLoading ? (
+                    <div className="flex items-center justify-center py-4">
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      Loading templates...
+                    </div>
+                  ) : templates.length === 0 ? (
+                    <div className="px-4 py-6 text-center text-muted-foreground text-sm">
+                      No email templates available
+                    </div>
+                  ) : (
+                    templates.map((template) => (
+                      <SelectItem key={template._id} value={template._id}>
+                        <div className="flex flex-col">
+                          <span className="font-medium">{template.name}</span>
+                          <span className="text-xs text-muted-foreground truncate">
+                            {template.subject}
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-        {/* Add your email list/history component here if needed */}
-      </CardContent>
-
-      {/* The shared dialog for both manual and template modes */}
+      {/* Send Email Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-3xl h-[90vh] overflow-y-scroll scrollbar-hide z-[100]">
+        <DialogContent className="max-w-4xl h-fit max-h-screen overflow-y-scroll scrollbar-hide z-[100]">
           <DialogHeader>
             <DialogTitle className="text-xl flex items-center gap-2">
-              <Mail className="h-5 w-5 text-blue-500" />
+              <Mail className="h-5 w-5 text-primary" />
               {dialogMode === "manual" ? "Send New Email" : "Send Email From Template"}
             </DialogTitle>
           </DialogHeader>
 
           <div className="space-y-5 py-2">
-            {/* The "To" field */}
             <div>
-              <Label htmlFor="recipient" className="text-base">Recipient</Label>
+              <Label htmlFor="recipient" className="text-base">To</Label>
               <div className="mt-1.5">
                 <Input
                   id="recipient"
                   value={recipient}
-                  disabled={true}
                   onChange={(e) => setRecipient(e.target.value)}
-                  placeholder="e.g. user@example.com"
-                  className="bg-gray-50 dark:bg-gray-900/50"
+                  placeholder="Enter recipient email"
+                  className="bg-muted/50"
                 />
               </div>
             </div>
 
-            {/* Subject */}
             <div>
-              <Label htmlFor="subject" className="text-base">Subject</Label>
+              <Label htmlFor="subject" className="text-base">Email Subject</Label>
               <div className="mt-1.5">
                 <Input
                   id="subject"
-                  ref={subjectRef}
-                  onFocus={() => setActiveField("subject")}
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
-                  placeholder="Email subject line"
-                  className="bg-gray-50 dark:bg-gray-900/50"
+                  placeholder="Enter your email subject line"
+                  className="bg-muted/50"
                 />
               </div>
             </div>
 
-            {/* Body */}
             <div>
               <div className="flex justify-between items-center mb-1.5">
                 <Label htmlFor="body" className="text-base">Email Body</Label>
               </div>
-              <div className="rounded-md border overflow-hidden">
-                <div className="bg-gray-50 flex dark:bg-gray-900/50 px-3 py-2 text-sm border-b">
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div>
-                          <Badge variant="outline" className="bg-blue-50 dark:bg-blue-950 text-blue-500 px-2 py-0.5 mr-1.5">
-                            Tips
-                          </Badge>
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Use the placeholder buttons below to insert dynamic data</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                  Use placeholders below to insert dynamic content
-                </div>
-                <Textarea
-                  id="body"
-                  ref={bodyRef}
-                  onFocus={() => setActiveField("body")}
-                  value={body}
-                  onChange={(e) => setBody(e.target.value)}
-                  placeholder="Type your email content. Insert placeholders using the buttons below."
-                  className="min-h-[300px] border-none focus-visible:ring-0 focus-visible:ring-offset-0 rounded-none resize-none"
-                />
-              </div>
+
+              <RichTextEditor
+                value={body}
+                onChange={setBody}
+                placeholder="Type your email content here..."
+                minHeight="400px"
+              />
             </div>
 
-            {/* TABS for placeholders */}
-            <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg border p-4">
+            {/* Placeholder Tabs */}
+            <div className="bg-muted/50 rounded-lg border p-4">
               <h3 className="text-sm font-medium mb-3">Insert Dynamic Placeholders</h3>
               <Tabs defaultValue="lead" className="w-full">
-                <TabsList className="w-full mb-4 bg-white dark:bg-gray-900 border">
+                <TabsList className="w-full mb-4 bg-background border">
                   {Object.entries(FIELD_CATEGORIES).map(([key, category]) => (
                     <TabsTrigger
                       key={key}
                       value={key}
-                      className="flex-1 data-[state=active]:bg-blue-50 border-none dark:data-[state=active]:bg-blue-950/50 data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 data-[state=active]:shadow-none"
+                      className="flex-1 data-[state=active]:bg-primary/10 border-none data-[state=active]:text-primary data-[state=active]:shadow-none"
                     >
                       <div className="flex items-center gap-1.5">
                         {category.icon}
@@ -410,7 +368,7 @@ export default function EmailsTab({ leadId, contactEmail,   isDialogOpen,
                                 variant="outline"
                                 size="sm"
                                 onClick={() => insertPlaceholder(`${key}.${field}`)}
-                                className="border-blue-100 dark:border-blue-900 hover:bg-blue-50 dark:hover:bg-blue-950/50 hover:text-blue-600 dark:hover:text-blue-400"
+                                className="border-primary/20 hover:bg-primary/10 hover:text-primary"
                               >
                                 <Copy className="h-3.5 w-3.5 mr-1.5 opacity-70" />
                                 {field}
@@ -420,7 +378,7 @@ export default function EmailsTab({ leadId, contactEmail,   isDialogOpen,
                         </div>
                       </ScrollArea>
 
-                      <div className="mt-3 text-xs text-muted-foreground bg-blue-50 dark:bg-blue-950/30 p-2 rounded">
+                      <div className="mt-3 text-xs text-muted-foreground bg-primary/10 p-2 rounded">
                         <span className="font-medium">Example:</span> {`${key}.${fields[0]}`} will be replaced with actual {fields[0]} value
                       </div>
                     </TabsContent>
@@ -430,7 +388,7 @@ export default function EmailsTab({ leadId, contactEmail,   isDialogOpen,
             </div>
           </div>
 
-          <DialogFooter className="flex flex-col sm:flex-row gap-3 sm:gap-0 pt-2">
+          <DialogFooter className="flex flex-col sm:flex-row gap-3 sm:gap-0">
             <Button
               variant="outline"
               onClick={() => setDialogOpen(false)}
@@ -440,12 +398,9 @@ export default function EmailsTab({ leadId, contactEmail,   isDialogOpen,
             </Button>
 
             <div className="flex gap-3">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  // Preview functionality would go here
-                  // This could be implemented similar to the template preview
-                }}
+              <Button 
+                variant="outline" 
+                onClick={handlePreview}
               >
                 <Eye className="h-4 w-4 mr-2" />
                 Preview
@@ -458,13 +413,13 @@ export default function EmailsTab({ leadId, contactEmail,   isDialogOpen,
               >
                 {isSending ? (
                   <>
-                    <RefreshCw className="h-4 w-4 animate-spin" />
+                    <Loader2 className="h-4 w-4 animate-spin" />
                     Sending...
                   </>
                 ) : (
                   <>
                     <Send className="h-4 w-4" />
-                    Send
+                    Send Email
                   </>
                 )}
               </Button>
@@ -473,14 +428,63 @@ export default function EmailsTab({ leadId, contactEmail,   isDialogOpen,
         </DialogContent>
       </Dialog>
 
-      {/* Preview Dialog (Could be implemented similar to template preview) */}
-      {/*
+      {/* Email Preview Dialog */}
       <Dialog open={showPreview} onOpenChange={setShowPreview}>
-        <DialogContent>
-          Preview content would go here
+        <DialogContent className="max-w-4xl z-[100] max-h-[90vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Eye className="h-5 w-5 text-primary" />
+              Email Preview
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 mt-2">
+            {previewData?.subject && (
+              <div className="bg-muted/50 p-4 rounded-lg border">
+                <div className="text-sm text-muted-foreground mb-1">Subject:</div>
+                <div className="font-medium">{previewData.subject}</div>
+              </div>
+            )}
+
+            <div className="bg-background p-4 rounded-lg border min-h-[300px] max-h-[500px] overflow-auto">
+              <div className="text-sm text-muted-foreground mb-3">Body:</div>
+              <div className="prose dark:prose-invert max-w-none">
+                <div
+                  dangerouslySetInnerHTML={{ __html: previewData?.body || "" }}
+                  className="email-preview"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 p-3 bg-primary/10 border border-primary/20 rounded-lg">
+              <AlertCircle className="h-4 w-4 text-primary" />
+              <span className="text-sm text-primary">
+                Placeholders will be replaced with actual data when the email is sent.
+              </span>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowPreview(false)}
+              className="mr-auto"
+            >
+              Close
+            </Button>
+            <Button
+              className="gap-2"
+              onClick={() => {
+                setShowPreview(false);
+                // Return to send dialog
+              }}
+            >
+              <Send className="h-4 w-4" />
+              Back to Send
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
-      */}
-    </Card>
+    </>
   );
 }

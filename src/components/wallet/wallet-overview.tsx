@@ -18,7 +18,8 @@ import {
   ArrowUpRight, 
   BarChart3,
   Wallet,
-  RefreshCw
+  RefreshCw,
+  Brain
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
@@ -34,12 +35,31 @@ interface WalletOverviewProps {
 export default function WalletOverview({ balance, currency, isLoading }: WalletOverviewProps) {
   const { toast } = useToast();
   const [statsLoading, setStatsLoading] = useState(true);
+  const [aiCreditsLoading, setAiCreditsLoading] = useState(true);
+  const [aiCredits, setAiCredits] = useState(0);
   const [callStats, setCallStats] = useState({
     totalCalls: 0,
     totalDuration: 0,
     callsThisMonth: 0,
     avgDuration: "0:00"
   });
+
+  // Fetch AI credits
+  useEffect(() => {
+    const fetchAiCredits = async () => {
+      try {
+        setAiCreditsLoading(true);
+        const response = await axios.get("/api/organization/ai-credits");
+        setAiCredits(response.data.aiCredits || 0);
+      } catch (error) {
+        console.error("Error fetching AI credits:", error);
+      } finally {
+        setAiCreditsLoading(false);
+      }
+    };
+
+    fetchAiCredits();
+  }, []);
 
   // Fetch actual call stats from API
   useEffect(() => {
@@ -144,6 +164,27 @@ export default function WalletOverview({ balance, currency, isLoading }: WalletO
             </Button>
           </Link>
         </CardFooter> */}
+      </Card>
+  {/* AI Credits Card */}
+      <Card className="col-span-1">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium flex items-center">
+            <Brain className="mr-2 h-4 w-4 text-primary" />
+            AI Credits
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {aiCreditsLoading ? (
+            <Skeleton className="h-12 w-28" />
+          ) : (
+            <div className="text-3xl font-bold text-primary">
+              {aiCredits}
+            </div>
+          )}
+          <p className="text-xs text-muted-foreground mt-1">
+            For AI features
+          </p>
+        </CardContent>
       </Card>
 
       {/* Call Time Estimate Card */}

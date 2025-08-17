@@ -19,7 +19,7 @@ import {
 import LeadTimeline from '@/components/leads/timeline';
 import FollowupSection from '@/components/leads/followups';
 import NotesSection from '@/components/leads/notes';
-import QuotationsTab from '@/components/leads/quotations'; // Add this import
+import QuotationsTab from '@/components/leads/quotations';
 import axios from 'axios';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -111,16 +111,16 @@ export default function LeadDetails() {
     const searchParams = useSearchParams();
     const [leadDetails, setLeadDetails] = useState<LeadDetailsType | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [quotationsCount, setQuotationsCount] = useState(0); // Add this state
+    const [quotationsCount, setQuotationsCount] = useState(0);
     const router = useRouter();
-    
+
     // Add permission check
     const { isLoading: permissionsLoading, isInitialized } = usePermissions();
     const hasViewPermission = canView("Leads");
-    
+
     // Add this state for email dialog control
     const [emailDialogOpen, setEmailDialogOpen] = useState(false);
-    
+
     // Read "tab" parameter from URL
     const defaultTab = searchParams.get("tab") || "timeline";
 
@@ -281,7 +281,7 @@ export default function LeadDetails() {
                                     </div>
                                     <div>
                                         <p className="text-sm font-medium truncate" style={{ maxWidth: "150px" }}
-                                           title={fileName}>
+                                            title={fileName}>
                                             {shortName}
                                         </p>
                                         <p className="text-xs text-muted-foreground">Audio Recording</p>
@@ -393,86 +393,8 @@ export default function LeadDetails() {
             </div>
 
             <div className="grid grid-cols-12 gap-6 px-6">
-                {/* ---- RIGHT PANEL ---- */}
-                <div className="col-span-12 space-y-6">
-                    <Card className="shadow-sm border-muted">
-                        <Tabs defaultValue={defaultTab} className="">
-                            <CardHeader className="flex justify-center pb-0 overflow-x-scroll scrollbar-hide">
-                                <TabsList className="w-fit -ml-4 h-auto gap-4 bg-accent">
-                                    <TabsTrigger
-                                        value="timeline"
-                                        className="text- border-none"
-                                    >
-                                        <FaClock className="mr-2 h-4 w-4" />
-                                        Timeline
-                                    </TabsTrigger>
-                                    <TabsTrigger
-                                        value="stages"
-                                        className="text- border-none"
-                                    >
-                                        <FaTasks className="mr-2 h-4 w-4" />
-                                        Stages
-                                    </TabsTrigger>
-                                    <TabsTrigger
-                                        value="followups"
-                                        className="text- border-none"
-                                    >
-                                        <FaUserCheck className="mr-2 h-4 w-4" />
-                                        Follow-ups
-                                    </TabsTrigger>
-                                    <TabsTrigger
-                                        value="emails"
-                                        className="text- border-none"
-                                    >
-                                        <FaEnvelope className="mr-2 h-4 w-4" />
-                                        Emails
-                                    </TabsTrigger>
-                                    <TabsTrigger
-                                        value="notes"
-                                        className="text- border-none"
-                                    >
-                                        <FaStickyNote className="mr-2 h-4 w-4" />
-                                        Notes
-                                    </TabsTrigger>
-                                    {/* Add Quotations Tab - only show if there are quotations */}
-                                    {quotationsCount > 0 && (
-                                        <TabsTrigger
-                                            value="quotations"
-                                            className="text- border-none"
-                                        >
-                                            <FaFileInvoiceDollar className="mr-2 h-4 w-4" />
-                                            Quotations ({quotationsCount})
-                                        </TabsTrigger>
-                                    )}
-                                </TabsList>
-                            </CardHeader>
-                            <CardContent className="p-6">
-                                <TabsContent value="timeline" className="m-0 mt-6">
-                                    <LeadTimeline leadId={leadId || ''} />
-                                </TabsContent>
-                                <TabsContent value="stages" className="m-0 mt-6">
-                                    <LeadTimeline leadId={leadId || ''} onlyStages />
-                                </TabsContent>
-                                <TabsContent value="followups" className="m-0 mt-6">
-                                    <FollowupSection leadId={leadId || ''} />
-                                </TabsContent>
-                                <TabsContent value="notes" className="m-0 mt-6">
-                                    <NotesSection leadId={leadId || ''} />
-                                </TabsContent>
-                                <TabsContent value="emails" className="m-0 mt-6">
-                                    <EmailsTab leadId={leadId || ''} />
-                                </TabsContent>
-                                {/* Add Quotations Tab Content */}
-                                <TabsContent value="quotations" className="m-0 mt-6">
-                                    <QuotationsTab leadId={leadId || ''} />
-                                </TabsContent>
-                            </CardContent>
-                        </Tabs>
-                    </Card>
-                </div>
-
-                {/* ---- LEFT PANEL ---- */}
-                <div className="col-span-12 space-y-6">
+                {/* ---- LEFT PANEL - LEAD INFO (Fixed) ---- */}
+                <div className="col-span-12 lg:col-span-4 space-y-6">
                     <Card className="shadow-sm border-muted">
                         <CardHeader className="pb-2">
                             <CardTitle className="text-lg font-medium flex items-center">
@@ -564,109 +486,6 @@ export default function LeadDetails() {
                         </CardContent>
                     </Card>
 
-                    {/* Files Card */}
-                    {leadDetails.files && leadDetails.files.length > 0 && (
-                        <Card className="shadow-sm border-muted">
-                            <CardHeader className="pb-2">
-                                <CardTitle className="text-lg font-medium flex items-center justify-between">
-                                    <div className="flex items-center">
-                                        <FaPaperclip className="mr-2 h-4 w-4 text-primary" />
-                                        File Attachments
-                                    </div>
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <FileAttachments files={leadDetails.files} />
-                            </CardContent>
-                        </Card>
-                    )}
-
-                    {/* Audio Recordings Card */}
-                    {leadDetails.audioRecordings && leadDetails.audioRecordings.length > 0 && (
-                        <Card className="shadow-sm border-muted">
-                            <CardHeader className="pb-2">
-                                <CardTitle className="text-lg font-medium flex items-center justify-between">
-                                    <div className="flex items-center">
-                                        <FaPlayCircle className="mr-2 h-4 w-4 text-primary" />
-                                        Audio Recordings
-                                    </div>
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <AudioRecordings recordings={leadDetails.audioRecordings} />
-                            </CardContent>
-                        </Card>
-                    )}
-
-                    {/* Links Card */}
-                    {leadDetails.links && leadDetails.links.length > 0 && (
-                        <Card className="shadow-sm border-muted">
-                            <CardHeader className="pb-2">
-                                <CardTitle className="text-lg font-medium flex items-center justify-between">
-                                    <div className="flex items-center">
-                                        <FaLink className="mr-2 h-4 w-4 text-primary" />
-                                        Links
-                                    </div>
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <LinksList links={leadDetails.links} />
-                            </CardContent>
-                        </Card>
-                    )}
-
-                    {/* Custom Fields Card */}
-                    {leadDetails.customFieldValues &&
-                        Object.keys(leadDetails.customFieldValues).length > 0 && (
-                            <Card className="shadow-sm border-muted">
-                                <CardHeader className="pb-2">
-                                    <CardTitle className="text-lg font-medium flex items-center">
-                                        <FaLayerGroup className="mr-2 h-4 w-4 text-primary" />
-                                        Custom Fields
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent className="space-y-4">
-                                    {Object.entries(leadDetails.customFieldValues).map(([fieldName, value]) => {
-                                        // Find the field definition to determine the type
-                                        const fieldDef = leadDetails.pipeline.customFields?.find(
-                                            field => field.name === fieldName
-                                        );
-
-                                        return (
-                                            <div key={fieldName}>
-                                                <p className="text-xs text-muted-foreground mb-1">{fieldName}</p>
-                                                <div className="flex items-center">
-                                                    {/* Different icons based on field type */}
-                                                    {fieldDef?.type === "Date" ? (
-                                                        <FaCalendar className="mr-2 h-3 w-3 text-primary" />
-                                                    ) : fieldDef?.type === "Number" ? (
-                                                        <FaMoneyBill className="mr-2 h-3 w-3 text-primary" />
-                                                    ) : (
-                                                        <FaFileAlt className="mr-2 h-3 w-3 text-primary" />
-                                                    )}
-
-                                                    {/* Format the value based on field type */}
-                                                    {fieldDef?.type === "Date" && value ? (
-                                                        <p className="text-sm">{format(new Date(value), "dd MMM yyyy")}</p>
-                                                    ) : Array.isArray(value) ? (
-                                                        <div className="flex flex-wrap gap-1">
-                                                            {value.map((item, idx) => (
-                                                                <Badge key={idx} variant="outline" className="text-xs">
-                                                                    {item}
-                                                                </Badge>
-                                                            ))}
-                                                        </div>
-                                                    ) : (
-                                                        <p className="text-sm">{value?.toString() || "N/A"}</p>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </CardContent>
-                            </Card>
-                        )}
-
                     {/* Contact Details Card */}
                     {leadDetails.contact && (
                         <Card className="shadow-sm border-muted">
@@ -719,16 +538,6 @@ export default function LeadDetails() {
                                 </div>
                             </CardContent>
                         </Card>
-                    )}
-
-                    {/* Email Dialog */}
-                    {leadDetails?.contact?.email && (
-                        <EmailsTab
-                            leadId={leadId || ''}
-                            contactEmail={leadDetails.contact.email}
-                            isDialogOpen={emailDialogOpen}
-                            setIsDialogOpen={setEmailDialogOpen}
-                        />
                     )}
 
                     {/* Company Details Card */}
@@ -787,33 +596,187 @@ export default function LeadDetails() {
                         </Card>
                     )}
 
-                    {/* Activity Summary Card */}
-                    <Card className="shadow-sm border-muted">
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-lg font-medium flex items-center">
-                                <FaClock className="mr-2 h-4 w-4 text-primary" />
-                                Activity Summary
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="bg-muted/50 rounded-lg p-3 text-center">
-                                    <p className="text-2xl font-bold text-primary">
-                                        {leadDetails.timeline ? leadDetails.timeline.length : 0}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">Total Activities</p>
-                                </div>
-                                <div className="bg-muted/50 rounded-lg p-3 text-center">
-                                    <div className="flex items-center justify-center">
-                                        <Clock className="h-5 w-5 text-yellow-500" />
+                    {/* Files, Audio, Links Cards - Only show if they exist */}
+                    {leadDetails.files && leadDetails.files.length > 0 && (
+                        <Card className="shadow-sm border-muted">
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-lg font-medium flex items-center justify-between">
+                                    <div className="flex items-center">
+                                        <FaPaperclip className="mr-2 h-4 w-4 text-primary" />
+                                        File Attachments
                                     </div>
-                                    <p className="text-xs text-muted-foreground mt-1">Active for {formatDistanceToNow(new Date(leadDetails.createdAt))}</p>
-                                </div>
-                            </div>
-                        </CardContent>
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <FileAttachments files={leadDetails.files} />
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {leadDetails.audioRecordings && leadDetails.audioRecordings.length > 0 && (
+                        <Card className="shadow-sm border-muted">
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-lg font-medium flex items-center justify-between">
+                                    <div className="flex items-center">
+                                        <FaPlayCircle className="mr-2 h-4 w-4 text-primary" />
+                                        Audio Recordings
+                                    </div>
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <AudioRecordings recordings={leadDetails.audioRecordings} />
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {leadDetails.links && leadDetails.links.length > 0 && (
+                        <Card className="shadow-sm border-muted">
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-lg font-medium flex items-center justify-between">
+                                    <div className="flex items-center">
+                                        <FaLink className="mr-2 h-4 w-4 text-primary" />
+                                        Links
+                                    </div>
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <LinksList links={leadDetails.links} />
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {/* Custom Fields Card */}
+                    {leadDetails.customFieldValues &&
+                        Object.keys(leadDetails.customFieldValues).length > 0 && (
+                            <Card className="shadow-sm border-muted">
+                                <CardHeader className="pb-2">
+                                    <CardTitle className="text-lg font-medium flex items-center">
+                                        <FaLayerGroup className="mr-2 h-4 w-4 text-primary" />
+                                        Custom Fields
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    {Object.entries(leadDetails.customFieldValues).map(([fieldName, value]) => {
+                                        const fieldDef = leadDetails.pipeline.customFields?.find(
+                                            field => field.name === fieldName
+                                        );
+
+                                        return (
+                                            <div key={fieldName}>
+                                                <p className="text-xs text-muted-foreground mb-1">{fieldName}</p>
+                                                <div className="flex items-center">
+                                                    {fieldDef?.type === "Date" ? (
+                                                        <FaCalendar className="mr-2 h-3 w-3 text-primary" />
+                                                    ) : fieldDef?.type === "Number" ? (
+                                                        <FaMoneyBill className="mr-2 h-3 w-3 text-primary" />
+                                                    ) : (
+                                                        <FaFileAlt className="mr-2 h-3 w-3 text-primary" />
+                                                    )}
+
+                                                    {fieldDef?.type === "Date" && value ? (
+                                                        <p className="text-sm">{format(new Date(value), "dd MMM yyyy")}</p>
+                                                    ) : Array.isArray(value) ? (
+                                                        <div className="flex flex-wrap gap-1">
+                                                            {value.map((item, idx) => (
+                                                                <Badge key={idx} variant="outline" className="text-xs">
+                                                                    {item}
+                                                                </Badge>
+                                                            ))}
+                                                        </div>
+                                                    ) : (
+                                                        <p className="text-sm">{value?.toString() || "N/A"}</p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </CardContent>
+                            </Card>
+                        )}
+
+             
+                </div>
+
+                {/* ---- RIGHT PANEL - TABS (Dynamic Content) ---- */}
+                <div className="col-span-12 lg:col-span-8 space-y-6">
+                    <Card className="shadow-sm border-muted">
+                        <Tabs defaultValue={defaultTab} className="">
+                            <CardHeader className="flex justify-center pb-0 overflow-x-scroll scrollbar-hide">
+                                <TabsList className="w-fit  h-auto gap-4 bg-accent">
+                                    <TabsTrigger
+                                        value="timeline"
+                                        className="text- border-none"
+                                    >
+                                        <FaClock className="mr-2 h-4 w-4" />
+                                        Timeline
+                                    </TabsTrigger>
+                                    <TabsTrigger
+                                        value="stages"
+                                        className="text- border-none"
+                                    >
+                                        <FaTasks className="mr-2 h-4 w-4" />
+                                        Stages
+                                    </TabsTrigger>
+                                    <TabsTrigger
+                                        value="followups"
+                                        className="text- border-none"
+                                    >
+                                        <FaUserCheck className="mr-2 h-4 w-4" />
+                                        Follow-ups
+                                    </TabsTrigger>
+                                    <TabsTrigger
+                                        value="emails"
+                                        className="text- border-none"
+                                    >
+                                        <FaEnvelope className="mr-2 h-4 w-4" />
+                                        Emails
+                                    </TabsTrigger>
+                                    <TabsTrigger
+                                        value="notes"
+                                        className="text- border-none"
+                                    >
+                                        <FaStickyNote className="mr-2 h-4 w-4" />
+                                        Notes
+                                    </TabsTrigger>
+                                    {/* Add Quotations Tab - only show if there are quotations */}
+                                    {quotationsCount > 0 && (
+                                        <TabsTrigger
+                                            value="quotations"
+                                            className="text- border-none"
+                                        >
+                                            <FaFileInvoiceDollar className="mr-2 h-4 w-4" />
+                                            Quotations ({quotationsCount})
+                                        </TabsTrigger>
+                                    )}
+                                </TabsList>
+                            </CardHeader>
+                            <CardContent className="p-6">
+                                <TabsContent value="timeline" className="m-0 mt-6">
+                                    <LeadTimeline leadId={leadId || ''} />
+                                </TabsContent>
+                                <TabsContent value="stages" className="m-0 mt-6">
+                                    <LeadTimeline leadId={leadId || ''} onlyStages />
+                                </TabsContent>
+                                <TabsContent value="followups" className="m-0 mt-6">
+                                    <FollowupSection leadId={leadId || ''} />
+                                </TabsContent>
+                                <TabsContent value="notes" className="m-0 mt-6">
+                                    <NotesSection leadId={leadId || ''} />
+                                </TabsContent>
+                                <TabsContent value="emails" className="m-0 mt-6">
+                                    <EmailsTab leadId={leadId || ''} />
+                                </TabsContent>
+                                {/* Add Quotations Tab Content */}
+                                <TabsContent value="quotations" className="m-0 mt-6">
+                                    <QuotationsTab leadId={leadId || ''} />
+                                </TabsContent>
+                            </CardContent>
+                        </Tabs>
                     </Card>
                 </div>
             </div>
+
+         
         </div>
     );
 }
