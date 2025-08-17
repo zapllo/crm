@@ -18,16 +18,16 @@ import AiCreditsTab from "./ai-credits-tab";
 export default function WalletDashboard() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const tabParam = searchParams.get('tab');
+  const tabParam = searchParams?.get('tab');
   
-  const [activeTab, setActiveTab] = useState(tabParam || "overview");
+  const [activeTab, setActiveTab] = useState("overview");
   const [isLoading, setIsLoading] = useState(true);
   const [walletData, setWalletData] = useState({
     balance: 0,
     currency: "INR",
   });
 
-  // Update active tab when URL parameter changes
+  // Initialize active tab from URL parameter
   useEffect(() => {
     if (tabParam && ['overview', 'topup', 'ai-credits', 'history'].includes(tabParam)) {
       setActiveTab(tabParam);
@@ -37,13 +37,17 @@ export default function WalletDashboard() {
   // Update URL when tab changes
   const handleTabChange = (value: string) => {
     setActiveTab(value);
-    const url = new URL(window.location.href);
-    if (value === 'overview') {
-      url.searchParams.delete('tab');
-    } else {
-      url.searchParams.set('tab', value);
+    
+    // Only update URL if we're in the browser
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      if (value === 'overview') {
+        url.searchParams.delete('tab');
+      } else {
+        url.searchParams.set('tab', value);
+      }
+      router.replace(url.pathname + url.search, { scroll: false });
     }
-    router.replace(url.pathname + url.search, { scroll: false });
   };
 
   useEffect(() => {
